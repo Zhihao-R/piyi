@@ -59,14 +59,14 @@ public final class OpenRouter: Generation, Keyed {
         ])
         guard let choices = response["choices"] as? [[String: Any]],
               let message = choices.first?["message"] as? [String: Any],
-              let text = message["content"] as? String else { throw Failure(message: "OpenRouter 没有返回内容") }
+              let text = message["content"] as? String else { throw Failure(message: String(localized: "OpenRouter 没有返回内容")) }
         return text
     }
 
     func post(_ path: String, _ body: [String: Any]) async throws -> [String: Any] {
         let data = try await send(path, body, fetch: { try await self.session.data(for: $0) }, errorData: { $0 })
         let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
-        if let error = json["error"] as? [String: Any] { throw Failure(message: "OpenRouter：\(error["message"] as? String ?? "未知错误")") }
+        if let error = json["error"] as? [String: Any] { throw Failure(message: String(localized: "OpenRouter：\(error["message"] as? String ?? String(localized: "未知错误"))")) }
         charge(json["usage"])
         return json
     }
@@ -82,7 +82,7 @@ public final class OpenRouter: Generation, Keyed {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Collage", forHTTPHeaderField: "X-Title")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        var lastError: Error = Failure(message: "OpenRouter 请求失败")
+        var lastError: Error = Failure(message: String(localized: "OpenRouter 请求失败"))
         for attempt in 0..<3 {
             if attempt > 0 { try await Task.sleep(for: .seconds(Double(attempt))) }
             let (response, http): (Response, URLResponse)
@@ -147,7 +147,7 @@ extension OpenRouter: Conversation {
                         let payload = line.dropFirst(6)
                         if payload == "[DONE]" { break }
                         guard let json = (try? JSONSerialization.jsonObject(with: Data(payload.utf8))) as? [String: Any] else { continue }
-                        if let error = json["error"] as? [String: Any] { throw Failure(message: "OpenRouter：\(error["message"] as? String ?? "未知错误")") }
+                        if let error = json["error"] as? [String: Any] { throw Failure(message: String(localized: "OpenRouter：\(error["message"] as? String ?? String(localized: "未知错误"))")) }
                         if let used = json["usage"] as? [String: Any] { usage = Self.usage(used, cost: charge(used)) }
                         guard let delta = ((json["choices"] as? [[String: Any]])?.first)?["delta"] as? [String: Any] else { continue }
                         if let text = delta["content"] as? String, !text.isEmpty { continuation.yield(.text(text)) }

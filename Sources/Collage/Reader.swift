@@ -104,9 +104,9 @@ struct Reader: View {
     /// 公众号 · 出处（点了打开原文或原文件） · 收藏的日子，右端是「讨论」
     private var eyebrow: some View {
         let url = card.url.flatMap(URL.init(string:)), file = card.original.map(store.files.url(of:))
-        let source = card.source ?? url?.host() ?? (file == nil ? nil : "原文件")
+        let source = card.source ?? url?.host() ?? (file == nil ? nil : String(localized: "原文件"))
         return HStack(spacing: 6) {
-            if let format = card.format { Text(format); Text("·") }
+            if let format = card.format { Text(displayed(format)); Text("·") }
             if let source {
                 if let target = url ?? file {
                     Button(source + " ↗") { follow(target) }.buttonStyle(.plain).foregroundStyle(.secondary).help(url == nil ? "用默认应用打开" : "打开原文")

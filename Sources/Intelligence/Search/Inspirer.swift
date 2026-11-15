@@ -104,9 +104,9 @@ public actor Inspirer {
         case tooFew, silent, nothing
         public var errorDescription: String? {
             switch self {
-            case .tooFew: "理解完的卡还太少，凑不出一组"
-            case .silent: "模型没有回应，再试一次"
-            case .nothing: "这次没找出有联系的几张，再试一次"
+            case .tooFew: String(localized: "理解完的卡还太少，凑不出一组")
+            case .silent: String(localized: "模型没有回应，再试一次")
+            case .nothing: String(localized: "这次没找出有联系的几张，再试一次")
             }
         }
     }
@@ -246,7 +246,7 @@ public actor Inspirer {
         - 类型不同的几件（一张图和一段话、一个视频和一幅画）有联系时优先挑它们。
         - 只说附图和说明里看得见、读得到的；不提时长、格式、字数、网址这类信息，也不补你自己知道的背景。
         - 不讲道理，不写「都在说」「都是关于」「少即是多」这类总结；不用比喻，不用破折号。
-        - 用东西的名字称呼它们，不写「第 3 件」「第一张图」「三张图里」这样的叫法。不超过 100 字。
+        - 用东西的名字称呼它们，不写「第 3 件」「第一张图」「三张图里」这样的叫法。不超过 \(Writing.length(100))，用\(Writing.language)写。
         - 这几件里找不出这种联系，就让 cards 为空，不要凑。
 
         \(lines.joined(separator: "\n"))

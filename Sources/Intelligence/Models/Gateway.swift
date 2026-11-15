@@ -204,7 +204,7 @@ public enum Unavailable: Error, Equatable {
 
 /// 模型的回答不是约定的 JSON
 public struct MalformedReply: LocalizedError {
-    public var errorDescription: String? { "模型的回答格式不对" }
+    public var errorDescription: String? { String(localized: "模型的回答格式不对") }
 }
 
 public final class Gateway: Sendable {

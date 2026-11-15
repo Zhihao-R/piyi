@@ -16,15 +16,15 @@ enum Menu {
         if items.count == 1, let item = items.first {
             switch item.face {
             case .entry(let board, _, _):
-                menu.add("进入画板") { model.enter(board) }
+                menu.add(String(localized: "进入画板")) { model.enter(board) }
             case .card(let card):
-                menu.add("放大查看") { model.open(item) }
-                if let url = card.url.flatMap(URL.init(string:)) { menu.add("打开原链接") { model.follow(url, of: card.id) } }
+                menu.add(String(localized: "放大查看")) { model.open(item) }
+                if let url = card.url.flatMap(URL.init(string:)) { menu.add(String(localized: "打开原链接")) { model.follow(url, of: card.id) } }
                 if let file = card.original, let store = model.store {
-                    menu.add("用默认应用打开") { model.follow(store.files.url(of: file), of: card.id) }
+                    menu.add(String(localized: "用默认应用打开")) { model.follow(store.files.url(of: file), of: card.id) }
                 }
                 if card.url != nil, !inTrash {
-                    menu.add("重新抓取") {
+                    menu.add(String(localized: "重新抓取")) {
                         Task { if let full = try? await model.store?.card(card.id) { model.collector.refetch(full) } }
                     }
                 }
@@ -36,21 +36,21 @@ enum Menu {
             let visiting = Set(canvas.visitingCards)
             let keep = cards.compactMap(\.placement.cardID).filter(visiting.contains)
             if !keep.isEmpty, canvas.board != nil {
-                menu.add("放进当前画板") { model.search.keepVisitors(keep) }
+                menu.add(String(localized: "放进当前画板")) { model.search.keepVisitors(keep) }
             }
             if menu.items.last?.isSeparatorItem == true { menu.removeItem(at: menu.items.count - 1) }
             return menu.items.isEmpty ? nil : menu
         }
-        if canvas.canCrop { menu.add("裁剪") { canvas.beginCrop() } }
-        if onBoard, items.contains(where: { $0.placement.crop != nil }) { menu.add("恢复原图") { canvas.resetCrop() } }
-        if onBoard, items.count > 1 { menu.add("整理成行") { canvas.arrangeRows() } }
+        if canvas.canCrop { menu.add(String(localized: "裁剪")) { canvas.beginCrop() } }
+        if onBoard, items.contains(where: { $0.placement.crop != nil }) { menu.add(String(localized: "恢复原图")) { canvas.resetCrop() } }
+        if onBoard, items.count > 1 { menu.add(String(localized: "整理成行")) { canvas.arrangeRows() } }
         let actions = actions(for: cards, model: model)
         actions.discuss.map(menu.addItem)
         actions.more.forEach(menu.addItem)
         if menu.items.last?.isSeparatorItem == false { menu.addItem(.separator()) }
         actions.place.map(menu.addItem)
         actions.copy.map(menu.addItem)
-        if onBoard { menu.add("移出这个画板") { model.removeFromBoard(items) } }
+        if onBoard { menu.add(String(localized: "移出这个画板")) { model.removeFromBoard(items) } }
         actions.last.forEach(menu.addItem)
         return menu
     }
@@ -76,8 +76,8 @@ enum Menu {
         var actions = Actions()
         guard !cards.isEmpty else { return actions }
         if model.location == .collection(.trash) {
-            actions.last = [item("恢复") { model.restore(cards) },
-                            item("彻底删除…", destructive: true) { model.purge(cards) }]
+            actions.last = [item(String(localized: "恢复")) { model.restore(cards) },
+                            item(String(localized: "彻底删除…"), destructive: true) { model.purge(cards) }]
             return actions
         }
         let onBoard = model.canvas?.board != nil
@@ -86,11 +86,11 @@ enum Menu {
         let entry = model.discussions.entry(for: ids)
         if entry.enabled { actions.discuss = item(entry.title) { model.discussions.discuss(ids) } }
         if cards.contains(where: \.isNote) { actions.more.append(tints(for: cards.filter(\.isNote), model: model)) }
-        actions.more.append(item("重新理解") { model.reunderstand(cards) })
-        actions.place = boardMenu(onBoard ? "移到" : "放进画板", cards: cards, keepingHere: false, model: model)
-        if onBoard { actions.copy = boardMenu("也放进", cards: cards, keepingHere: true, model: model) }
+        actions.more.append(item(String(localized: "重新理解")) { model.reunderstand(cards) })
+        actions.place = boardMenu(onBoard ? String(localized: "移到") : String(localized: "放进画板"), cards: cards, keepingHere: false, model: model)
+        if onBoard { actions.copy = boardMenu(String(localized: "也放进"), cards: cards, keepingHere: true, model: model) }
         // 画板里还有「移出这个画板」，所以说清是从资料库删
-        actions.last = [item(onBoard ? "从资料库删除" : "删除", destructive: true) { model.trash(cards) }]
+        actions.last = [item(onBoard ? String(localized: "从资料库删除") : String(localized: "删除"), destructive: true) { model.trash(cards) }]
         return actions
     }
 
@@ -99,7 +99,7 @@ enum Menu {
         let sub = NSMenu()
         for board in model.boards where board.id != model.canvas?.board { sub.add(board.name) { model.put(cards, into: board.id!, keepingHere: keepingHere) } }
         if !sub.items.isEmpty { sub.addItem(.separator()) }
-        sub.add("新建画板") { model.newBoard(with: cards, keepingHere: keepingHere) }
+        sub.add(String(localized: "新建画板")) { model.newBoard(with: cards, keepingHere: keepingHere) }
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         item.submenu = sub
         return item
@@ -114,7 +114,7 @@ enum Menu {
 
 extension Menu {
     /// 底色名在菜单里的叫法，顺序跟 Palette.tints
-    private static let tintNames = ["yellow": "黄", "pink": "粉", "blue": "蓝", "green": "绿", "purple": "紫"]
+    private static let tintNames = ["yellow": String(localized: "黄"), "pink": String(localized: "粉"), "blue": String(localized: "蓝"), "green": String(localized: "绿"), "purple": String(localized: "紫")]
 
     /// 「颜色」子菜单：每种底色一个色块，当前的打勾（选了几张、颜色不一样时不打勾）
     private static func tints(for notes: [BoardItem], model: AppModel) -> NSMenuItem {
@@ -123,12 +123,12 @@ extension Menu {
         // 色块是卡片眼下会有的样子：深色外观下是压暗的那一档
         let dark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         for (name, color) in [(String?.none, Palette.card)] + Palette.tints.map({ (Optional($0.name), $0.color) }) {
-            sub.add(name.flatMap { tintNames[$0] } ?? "默认") { model.tint(notes, name) }
+            sub.add(name.flatMap { tintNames[$0] } ?? String(localized: "默认")) { model.tint(notes, name) }
             let item = sub.items.last!
             item.image = swatch(dark ? color.dark : color.light)
             item.state = current == [name] ? .on : .off
         }
-        let item = NSMenuItem(title: "颜色", action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: String(localized: "颜色"), action: nil, keyEquivalent: "")
         item.submenu = sub
         return item
     }

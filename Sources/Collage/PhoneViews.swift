@@ -68,7 +68,7 @@ struct PhoneGuide: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
-                    GuideStep(number: 1, text: "用 iPhone 相机扫码，添加快捷指令") {
+                    GuideStep(number: 1, text: String(localized: "用 iPhone 相机扫码，添加快捷指令")) {
                         HStack(spacing: 16) {
                             QRCode(url: PhoneInbox.shortcut)
                             Button("拷贝链接") {
@@ -78,7 +78,7 @@ struct PhoneGuide: View {
                             .buttonStyle(.link).font(.callout)
                         }
                     }
-                    GuideStep(number: 2, text: "在相册中分享一张照片，选择「收集拼贴」") { EmptyView() }
+                    GuideStep(number: 2, text: String(localized: "在相册中分享一张照片，选择「收集拼贴」")) { EmptyView() }
                     HStack(spacing: 8) {
                         StatusDot(on: false)
                         Text("等待接收").font(.callout).foregroundStyle(.secondary)
@@ -136,7 +136,7 @@ private extension Source {
         case .file(let url): url.lastPathComponent
         case .url(let url): url.host() ?? url.absoluteString
         case .text(let text): String(text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(40))
-        default: "一项内容"
+        default: String(localized: "一项内容")
         }
     }
 }

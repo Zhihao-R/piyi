@@ -23,9 +23,9 @@ public final class Hub: Sendable {
         case noBrowser, disconnected, timedOut, page(String)
         public var errorDescription: String? {
             switch self {
-            case .noBrowser: "没有连上的浏览器"
-            case .disconnected: "浏览器在抓取途中断开了"
-            case .timedOut: "浏览器读这个网页超时了"
+            case .noBrowser: String(localized: "没有连上的浏览器")
+            case .disconnected: String(localized: "浏览器在抓取途中断开了")
+            case .timedOut: String(localized: "浏览器读这个网页超时了")
             case .page(let why): why
             }
         }
@@ -115,7 +115,7 @@ public final class Hub: Sendable {
             defer { group.cancelAll() }
             do {
                 let result = try await group.next()!
-                guard result.ok == true else { throw Failure.page(result.error ?? "浏览器没读到这个网页") }
+                guard result.ok == true else { throw Failure.page(result.error ?? String(localized: "浏览器没读到这个网页")) }
                 return result
             } catch {
                 // 超时：等着的那一半还挂着，替它收尾
@@ -135,7 +135,7 @@ public final class Hub: Sendable {
 
     private func serve(_ channel: Channel) {
         guard let first = channel.readLine().flatMap(Message.decode), first.type == .relay else { return channel.close() }
-        let connection = Connection(channel, Browser(name: first.browser ?? "浏览器"))
+        let connection = Connection(channel, Browser(name: first.browser ?? String(localized: "浏览器")))
         changed { $0.connections.append(connection) }
         onEvent(.arrived)
         while let line = channel.readLine() {

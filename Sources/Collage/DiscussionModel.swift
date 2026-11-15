@@ -11,7 +11,7 @@ final class DiscussionModel {
     var isOpen = false { didSet { if isOpen, !oldValue { reload() } } }
     /// 讨论栏里的讨论；nil 是草稿：还没发第一句，不进侧边栏
     private(set) var current: Int64?
-    private(set) var name = "新讨论"
+    private(set) var name = String(localized: "新讨论")
     private(set) var desk: [Card] = []
     private(set) var events: [DiscussionEvent] = []
     /// 桌上这几张卡之前的讨论：还没说话时列在空白处
@@ -49,7 +49,7 @@ final class DiscussionModel {
     var suggestions: [String] {
         guard events.isEmpty else { return [] }
         let live = desk.filter { $0.trashedAt == nil }.count
-        return live == 1 ? ["用三句话讲讲", "我还收过类似的吗"] : live > 1 ? ["这几张说法一致吗"] : []
+        return live == 1 ? [String(localized: "用三句话讲讲"), String(localized: "我还收过类似的吗")] : live > 1 ? [String(localized: "这几张说法一致吗")] : []
     }
 
     func onDesk(_ card: Int64) -> Bool { desk.contains { $0.id == card } }
@@ -59,8 +59,8 @@ final class DiscussionModel {
     /// 入口上的叫法：讨论栏收起时是「讨论」，展开时是「引用」，都已引用是「已引用」（灰的）。界面上不说「桌」，用户不懂。
     /// 放大查看的玻璃按钮、操作条、右键菜单都从这里取
     func entry(for cards: [Int64]) -> (title: String, enabled: Bool) {
-        guard isOpen else { return ("讨论", true) }
-        return cards.allSatisfy(onDesk) ? ("已引用", false) : ("引用", true)
+        guard isOpen else { return (String(localized: "讨论"), true) }
+        return cards.allSatisfy(onDesk) ? (String(localized: "已引用"), false) : (String(localized: "引用"), true)
     }
 
     /// 讨论栏收起时开一段新讨论，展开时放上当前的桌
@@ -86,7 +86,7 @@ final class DiscussionModel {
         let name = discussion.discussion.displayName
         Task {
             guard let placed = await put(cards, on: discussion.id) else { return }
-            model.notify(placed.isEmpty ? "「\(name)」已经引用了这张" : "已引用到「\(name)」")
+            model.notify(placed.isEmpty ? String(localized: "「\(name)」已经引用了这张") : String(localized: "已引用到「\(name)」"))
             await refresh()
         }
     }
@@ -103,7 +103,7 @@ final class DiscussionModel {
         for id in Set(cards).subtracting(desk.compactMap(\.id)) { if let card = try? await store.card(id) { fresh.append(card) } }
         guard !fresh.isEmpty else { return [] }
         guard await kernel.fits(desk + fresh) else {
-            model.notify("引用的卡太多了，先取消几张")
+            model.notify(String(localized: "引用的卡太多了，先取消几张"))
             return nil
         }
         let ids = fresh.compactMap(\.id)
@@ -173,7 +173,7 @@ final class DiscussionModel {
                 run(id)
                 await refresh()
             } catch {
-                model.notify("没发出去：\(error.localizedDescription)")
+                model.notify(String(localized: "没发出去：\(error.localizedDescription)"))
             }
         }
     }
@@ -211,7 +211,7 @@ final class DiscussionModel {
                 tooLong.insert(discussion)
             } catch where Task.isCancelled || error is CancellationError {
             } catch {
-                model.notify("没答完：\(error.localizedDescription)")
+                model.notify(String(localized: "没答完：\(error.localizedDescription)"))
             }
             running[discussion] = nil
             writing[discussion] = nil
@@ -227,10 +227,10 @@ final class DiscussionModel {
     /// 收成文字卡：去掉引用小数字，放进当前画板；不在画板里时进资料库
     func collect(_ answer: Answer) {
         let text = Citations.plain(answer.text).trimmingCharacters(in: .whitespacesAndNewlines)
-        if model.canvas?.addNote(text, as: "收成文字卡") == nil {
+        if model.canvas?.addNote(text, as: String(localized: "收成文字卡")) == nil {
             Task {
                 guard (try? await store?.createNote(text)) != nil else { return }
-                model.notify("收成了一张文字卡，在资料库里")
+                model.notify(String(localized: "收成了一张文字卡，在资料库里"))
                 model.reload()
             }
         }
@@ -245,13 +245,13 @@ final class DiscussionModel {
     func open(_ citation: Citation) {
         guard let id = citation.card, let store else { return }
         Task {
-            guard let card = try? await store.card(id) else { return model.notify("这张卡已经删了") }
+            guard let card = try? await store.card(id) else { return model.notify(String(localized: "这张卡已经删了")) }
             var focus = AppModel.Focus(card: id, text: nil, seconds: citation.seconds)
             if let part = citation.part {
                 if let passage = Passages.find(citation.quote, part: part, in: card) {
                     (focus.text, focus.seconds) = (passage.text, passage.seconds ?? citation.seconds)
                 } else {
-                    model.notify("原文改过了")
+                    model.notify(String(localized: "原文改过了"))
                 }
             }
             model.focus = focus
@@ -273,10 +273,10 @@ final class DiscussionModel {
     /// 删除讨论：不能撤回，所以问一句
     func delete(_ discussion: DiscussionSummary) {
         let alert = NSAlert()
-        alert.messageText = "删除讨论「\(discussion.discussion.displayName)」？"
-        alert.informativeText = "讨论记录会被删掉，不能恢复。引用的卡还在资料库里。"
-        alert.addButton(withTitle: "删除")
-        alert.addButton(withTitle: "取消")
+        alert.messageText = String(localized: "删除讨论「\(discussion.discussion.displayName)」？")
+        alert.informativeText = String(localized: "讨论记录会被删掉，不能恢复。引用的卡还在资料库里。")
+        alert.addButton(withTitle: String(localized: "删除"))
+        alert.addButton(withTitle: String(localized: "取消"))
         guard alert.runModal() == .alertFirstButtonReturn, let store else { return }
         running[discussion.id]?.cancel()
         Task {
@@ -295,7 +295,7 @@ final class DiscussionModel {
     func refresh() async {
         guard let store else { return }
         let current = current, draft = draft
-        var (name, desk, events) = ("新讨论", [Card](), [DiscussionEvent]())
+        var (name, desk, events) = (String(localized: "新讨论"), [Card](), [DiscussionEvent]())
         if let current {
             name = (try? await store.discussion(current))??.displayName ?? name
             desk = (try? await store.desk(of: current)) ?? []

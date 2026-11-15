@@ -22,7 +22,7 @@ func log(_ text: String) {
 /// 启动我们的浏览器叫什么："…/Google Chrome.app/Contents/MacOS/Google Chrome" → "Google Chrome"
 func browserName() -> String {
     var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
-    guard proc_pidpath(getppid(), &path, UInt32(path.count)) > 0 else { return "浏览器" }
+    guard proc_pidpath(getppid(), &path, UInt32(path.count)) > 0 else { return String(localized: "浏览器") }
     let bytes = path.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
     return URL(fileURLWithPath: String(decoding: bytes, as: UTF8.self)).lastPathComponent
 }
@@ -52,7 +52,7 @@ Thread.detachNewThread {
             guard line.count <= Bridge.maxMessageToBrowser else {
                 log("App 发来的消息 \(line.count) 字节，超过浏览器 1 MB 上限，已丢弃")
                 app.writeLine(Message(.result, id: Message.decode(line)?.id, ok: false,
-                                      error: "消息 \(line.count) 字节，超过浏览器 1 MB 上限，中转程序已丢弃").encoded)
+                                      error: String(localized: "消息 \(line.count) 字节，超过浏览器 1 MB 上限，中转程序已丢弃")).encoded)
                 continue
             }
             toBrowser.writeFrame(line)
@@ -78,13 +78,13 @@ while let frame = fromBrowser.readFrame() {
         try saveToInbox(frame)
     } catch {
         log("收件箱写不进：\(error)")
-        toBrowser.writeFrame(Message(.collected, id: message?.id, ok: false, say: "没存下：\(error.localizedDescription)").encoded)
+        toBrowser.writeFrame(Message(.collected, id: message?.id, ok: false, say: String(localized: "没存下：\(error.localizedDescription)")).encoded)
         continue
     }
     let queued = link.withLock {
         $0.app?.writeLine(Message(.collect, id: message?.id).encoded)
         return $0.app == nil
     }
-    toBrowser.writeFrame(Message(.collected, id: message?.id, ok: true, queued: queued, say: queued ? "已存下，拼贴打开后收进" : nil).encoded)
+    toBrowser.writeFrame(Message(.collected, id: message?.id, ok: true, queued: queued, say: queued ? String(localized: "已存下，拼贴打开后收进") : nil).encoded)
 }
 exit(0)

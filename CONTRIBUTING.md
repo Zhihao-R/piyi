@@ -48,6 +48,25 @@ swift test               # 自动测试
 - **所有模型调用只走模型接入一个出口**（`Intelligence/Models/Gateway.swift`）。
 - **测试写在逻辑容易错、又不靠肉眼判断的地方**：数据库操作、查重、网格吸附、查询解析、抽取器的输出。用 Swift Testing。
 
+## 界面语言
+
+系统是中文时显示中文，其余语言显示英文。代码里写中文原文，英文翻译在 `Localization/en.lproj/`：
+
+- SwiftUI 里直接写的文字（`Text`、`Button`、`Label`、`.help`…）自动翻；其余显示给人看的写成 `String(localized: "…")`。
+- 同一句中文在不同地方要翻成不同英文时，用 `String(localized: "键名", defaultValue: "中文")`。
+- 带数量、要分单复数的句子写进 `Localizable.stringsdict`（中英两份都要有，否则中文会退回英文）。
+- 存在数据里、代码拿来当标识的中文名（格式、平台，如「公众号」）不翻数据本身，显示时用 `displayed(_:)`。
+- AI 写的标题、描述、回答跟界面语言走（`Intelligence/Writing.swift`），提示词本身保持中文。
+- 浏览器扩展的文字在 `Extension/static/_locales/`。
+
+加了界面文字后跑一遍，列出没翻译的：
+
+```sh
+python3 scripts/check_strings.py
+```
+
+调试版（`swift run`）不是打包好的 App，界面总是显示代码里的中文；要看英文，用 `./scripts/build_app.sh` 打包后，加 `-AppleLanguages "(en)"` 启动。
+
 ## 联网和真实模型的检查
 
 平时的 `swift test` 不联网、不调模型。下面几项要手动打开：
@@ -59,7 +78,7 @@ SUBTITLE_CHECK=1 swift test --filter SubtitleCheck    # 取一条 YouTube 视频
 
 ## 示例画板
 
-新装时放进「示例」画板的素材在 `Sources/Collage/Resources/Seed/`，清单是 `manifest.json`，每项可以带位置、宽高和旋转。想重新摆：在 App 里把示例画板摆好，再运行
+新装时放进「示例」画板的素材在 `Sources/Collage/Resources/Seed/`，清单是 `manifest.json`，每项可以带位置、宽高和旋转，引文和中文文件另带一份英文版（`en`），界面不是中文时换上。想重新摆：在 App 里把示例画板摆好，再运行
 
 ```sh
 python3 scripts/seed_export.py "画板名"

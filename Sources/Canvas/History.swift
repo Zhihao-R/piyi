@@ -121,11 +121,11 @@ extension CanvasView: NSMenuItemValidation {
     public func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
         case #selector(undo(_:)):
-            if cropper != nil { item.title = "取消裁剪"; return true }
-            item.title = "撤销" + (activeHistory?.undoActionName ?? "")
+            if cropper != nil { item.title = String(localized: "取消裁剪"); return true }
+            item.title = String(localized: "撤销") + (activeHistory?.undoActionName ?? "")
             return gathering == nil && activeHistory?.canUndo == true
         case #selector(redo(_:)):
-            item.title = "重做" + (activeHistory?.redoActionName ?? "")
+            item.title = String(localized: "重做") + (activeHistory?.redoActionName ?? "")
             return gathering == nil && cropper == nil && activeHistory?.canRedo == true
         case #selector(copy(_:)):
             return gathering == nil && content != .collection(.trash) && selectedItems.contains { $0.placement.cardID != nil }

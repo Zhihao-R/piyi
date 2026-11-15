@@ -1,0 +1,3 @@
+/* App 名的英文写法 */
+"CFBundleName" = "Collage";
+"CFBundleDisplayName" = "Collage";

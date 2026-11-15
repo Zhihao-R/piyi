@@ -191,14 +191,14 @@ final class AppModel {
                 } else { search.text = line; search.submit() }
             }
         } catch {
-            failure = "资料库打不开：\(error.localizedDescription)"
+            failure = String(localized: "资料库打不开：\(error.localizedDescription)")
         }
     }
 
     /// 第一次打开：建「我的画布」和「示例」画板，返回示例画板
     private func firstLaunch(_ store: Store) async throws -> Int64 {
-        _ = try await store.createBoard("我的画布")
-        let sample = try await addSample(store, named: "示例")
+        _ = try await store.createBoard(String(localized: "我的画布"))
+        let sample = try await addSample(store, named: String(localized: "示例"))
         Seed.board = sample
         return sample
     }
@@ -347,8 +347,8 @@ final class AppModel {
         let earlier: [Placement] = if case .sorted(let earlier)? = notice?.undo { earlier } else { [] }
         let all = earlier + written
         let cards = Set(all.compactMap(\.cardID))
-        let text = cards.count > 1 ? "放进了 \(cards.count) 张"
-            : "放进了" + all.compactMap { p in boards.first { $0.id == p.boardID }.map { "「\($0.name)」" } }.joined()
+        let text = cards.count > 1 ? String(localized: "放进了 \(cards.count) 张")
+            : String(localized: "放进了\(all.compactMap { p in boards.first { $0.id == p.boardID }.map { quoted($0.name) } }.formatted(.list(type: .and)))")
         post(Notice(text: text, undo: .sorted(all)))
         for board in Set(written.map(\.boardID)) { boardChanged(board) }
         reload()
@@ -369,7 +369,7 @@ final class AppModel {
         case .taken(let placements):
             perform { [self] in
                 try await store?.exchangePlacements(adding: placements, removing: [])
-                await did(.placed(added: placements, removed: []), as: "放回", on: placements.first.map { .board($0.boardID) })
+                await did(.placed(added: placements, removed: []), as: String(localized: "放回"), on: placements.first.map { .board($0.boardID) })
             }
         }
     }
@@ -386,7 +386,7 @@ final class AppModel {
     func resortUnplaced() {
         perform { [self] in
             guard let count = try await store?.resortUnplaced() else { return }
-            notify(count == 0 ? "这里没有卡" : keysReady ? "交给分拣：\(count) 张" : "填好密钥后开始分拣")
+            notify(count == 0 ? String(localized: "这里没有卡") : keysReady ? String(localized: "交给分拣：\(count) 张") : String(localized: "填好密钥后开始分拣"))
             sorter?.kick()
         }
     }
@@ -424,11 +424,11 @@ final class AppModel {
 
     var title: String {
         switch location {
-        case .board(let id): boards.first { $0.id == id }?.name ?? "拼贴"
-        case .collection(.all): "全部卡片"
-        case .collection(.unplaced): "未归类"
-        case .collection(.trash): "废纸篓"
-        case nil: "拼贴"
+        case .board(let id): boards.first { $0.id == id }?.name ?? String(localized: "拼贴")
+        case .collection(.all): String(localized: "全部卡片")
+        case .collection(.unplaced): String(localized: "未归类")
+        case .collection(.trash): String(localized: "废纸篓")
+        case nil: String(localized: "拼贴")
         }
     }
 
@@ -687,7 +687,7 @@ final class AppModel {
     /// 用选中的卡新建画板：卡放进去，人留在原处，接着给画板起名
     func newBoard(with items: [BoardItem], keepingHere: Bool = false) {
         perform { [self] in
-            guard let board = try await store?.createBoard("未命名画板") else { return }
+            guard let board = try await store?.createBoard(String(localized: "未命名画板")) else { return }
             try await refreshBoards()
             put(items, into: board.id!, keepingHere: keepingHere)
             renaming = board
@@ -696,7 +696,7 @@ final class AppModel {
 
     func newBoard() {
         perform { [self] in
-            guard let board = try await store?.createBoard("未命名画板") else { return }
+            guard let board = try await store?.createBoard(String(localized: "未命名画板")) else { return }
             try await refreshBoards()
             go(.board(board.id!))
             renaming = board
@@ -718,13 +718,13 @@ final class AppModel {
             guard let store, let id = board.id else { return }
             let orphans = try await store.cardsOnlyOn(id).count
             let alert = NSAlert()
-            alert.messageText = "删除画板「\(board.name)」？"
+            alert.messageText = String(localized: "删除画板「\(board.name)」？")
             alert.informativeText = orphans == 0
-                ? "画板里的卡都还在别的画板里，不受影响。别的画板里指向它的入口会一起移除。"
-                : "其中 \(orphans) 张卡不在任何别的画板里。别的画板里指向它的入口会一起移除。"
-            alert.addButton(withTitle: orphans == 0 ? "删除" : "删除，卡片留在资料库")
-            if orphans > 0 { alert.addButton(withTitle: "删除，卡片放进废纸篓") }
-            alert.addButton(withTitle: "取消")
+                ? String(localized: "画板里的卡都还在别的画板里，不受影响。别的画板里指向它的入口会一起移除。")
+                : String(localized: "其中 \(orphans) 张卡不在任何别的画板里。别的画板里指向它的入口会一起移除。")
+            alert.addButton(withTitle: orphans == 0 ? String(localized: "删除") : String(localized: "删除，卡片留在资料库"))
+            if orphans > 0 { alert.addButton(withTitle: String(localized: "删除，卡片放进废纸篓")) }
+            alert.addButton(withTitle: String(localized: "取消"))
             let response = alert.runModal()
             let cancel = orphans == 0 ? NSApplication.ModalResponse.alertSecondButtonReturn : .alertThirdButtonReturn
             guard response != cancel else { return }
@@ -752,11 +752,11 @@ final class AppModel {
             let existing = try await store.items(on: target)
             let already = Set(existing.compactMap(\.placement.cardID))
             let moving = cards.filter { !already.contains($0.placement.cardID!) }
-            let name = boards.first { $0.id == target }?.name ?? "画板"
+            let name = boards.first { $0.id == target }?.name ?? String(localized: "画板")
             let skipped = cards.count - moving.count
-            notify(fromTrash ? "从废纸篓恢复，放进了「\(name)」"
-                   : moving.isEmpty ? (cards.count == 1 ? "这张本来就在「\(name)」里" : "这几张本来就都在「\(name)」里")
-                   : (moves ? "移到了「\(name)」" : keepingHere ? "也放进了「\(name)」" : "放进了「\(name)」") + (skipped > 0 ? "，其中 \(skipped) 张本来就在" : ""))
+            notify(fromTrash ? String(localized: "从废纸篓恢复，放进了「\(name)」")
+                   : moving.isEmpty ? (cards.count == 1 ? String(localized: "这张本来就在「\(name)」里") : String(localized: "这几张本来就都在「\(name)」里"))
+                   : (moves ? String(localized: "移到了「\(name)」") : keepingHere ? String(localized: "也放进了「\(name)」") : String(localized: "放进了「\(name)」")) + (skipped > 0 ? String(localized: "，其中 \(skipped) 张本来就在") : ""))
             if moving.isEmpty, !moves, !fromTrash { return }
             let frames = Layout.below(existing.map(\.placement.frame), sizes: moving.map(\.placement.frame.size))
             let added = try await store.place(zip(moving, frames).map { item, frame in
@@ -769,7 +769,7 @@ final class AppModel {
             let removed = moves ? try await store.removePlacements(items.compactMap(\.placement.id)) : []
             // 恢复和放进画板算一步，⌘Z 一起撤回
             let placed = Edit.placed(added: added, removed: removed)
-            canvas?.record(.restored(restored), placed, as: fromTrash ? "移出废纸篓" : !removed.isEmpty ? "移到画板" : keepingHere ? "也放进画板" : "放进画板", on: here)
+            canvas?.record(.restored(restored), placed, as: fromTrash ? String(localized: "移出废纸篓") : !removed.isEmpty ? String(localized: "移到画板") : keepingHere ? String(localized: "也放进画板") : String(localized: "放进画板"), on: here)
             await refresh(after: placed)
         }
     }
@@ -782,19 +782,19 @@ final class AppModel {
             let old = try await store.notes(items.compactMap(\.placement.cardID))
             let new = old.map { Note(card: $0.card, text: $0.text, tint: tint) }
             try await store.saveNotes(new)
-            await did(.written(old: old, new: new), as: "换颜色", on: here)
+            await did(.written(old: old, new: new), as: String(localized: "换颜色"), on: here)
         }
     }
 
     /// 移出这个画板：只删摆放，卡片还在资料库里
     func removeFromBoard(_ items: [BoardItem]) {
         guard canvas?.isEditable == true, case .board(let board)? = location else { return }
-        let here = location, name = boards.first { $0.id == board }?.name ?? "画板"
+        let here = location, name = boards.first { $0.id == board }?.name ?? String(localized: "画板")
         perform { [self] in
             guard let removed = try await store?.removePlacements(items.compactMap(\.placement.id)) else { return }
             let cards = removed.contains { $0.cardID != nil }
-            post(Notice(text: "移出了「\(name)」" + (cards ? "，卡还在资料库里" : ""), undo: .taken(removed)))
-            await did(.placed(added: [], removed: removed), as: "移出画板", on: here)
+            post(Notice(text: String(localized: "移出了「\(name)」") + (cards ? String(localized: "，卡还在资料库里") : ""), undo: .taken(removed)))
+            await did(.placed(added: [], removed: removed), as: String(localized: "移出画板"), on: here)
         }
     }
 
@@ -809,10 +809,10 @@ final class AppModel {
             var names = Set<String>()
             for card in cards { for board in try await store.boards(containing: card) where board.id != current { names.insert(board.name) } }
             try await store.trash(cards)
-            let shown = names.sorted().prefix(3).map { "「\($0)」" }.joined()
-            post(Notice(text: "放进了废纸篓" + (names.isEmpty ? "" : names.count > 3 ? "，也移出了\(shown)等 \(names.count) 个画板" : "，也移出了\(shown)"),
+            let shown = names.sorted().prefix(3).map(quoted).formatted(.list(type: .and))
+            post(Notice(text: String(localized: "放进了废纸篓") + (names.isEmpty ? "" : names.count > 3 ? String(localized: "，也移出了\(shown)等 \(names.count) 个画板") : String(localized: "，也移出了\(shown)")),
                         undo: .trashed(cards)))
-            await did(.trashed(cards), as: "放进废纸篓", on: here)
+            await did(.trashed(cards), as: String(localized: "放进废纸篓"), on: here)
         }
     }
 
@@ -822,7 +822,7 @@ final class AppModel {
         let here = location
         perform { [self] in
             try await store?.restore(cards)
-            await did(.restored(cards), as: "恢复", on: here)
+            await did(.restored(cards), as: String(localized: "恢复"), on: here)
         }
     }
 
@@ -831,10 +831,10 @@ final class AppModel {
         let cards = items.compactMap(\.placement.cardID)
         guard !cards.isEmpty else { return }
         let alert = NSAlert()
-        alert.messageText = cards.count == 1 ? "彻底删除这张卡？" : "彻底删除这 \(cards.count) 张卡？"
-        alert.informativeText = "卡片和它们的文件会被删掉，不能恢复。"
-        alert.addButton(withTitle: "彻底删除")
-        alert.addButton(withTitle: "取消")
+        alert.messageText = cards.count == 1 ? String(localized: "彻底删除这张卡？") : String(localized: "彻底删除这 \(cards.count) 张卡？")
+        alert.informativeText = String(localized: "卡片和它们的文件会被删掉，不能恢复。")
+        alert.addButton(withTitle: String(localized: "彻底删除"))
+        alert.addButton(withTitle: String(localized: "取消"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         perform { [self] in
             try await store?.purge(cards)
@@ -846,10 +846,10 @@ final class AppModel {
 
     func emptyTrash() {
         let alert = NSAlert()
-        alert.messageText = "清空废纸篓？"
-        alert.informativeText = "废纸篓里的卡和它们的文件会被彻底删除，不能恢复。"
-        alert.addButton(withTitle: "清空")
-        alert.addButton(withTitle: "取消")
+        alert.messageText = String(localized: "清空废纸篓？")
+        alert.informativeText = String(localized: "废纸篓里的卡和它们的文件会被彻底删除，不能恢复。")
+        alert.addButton(withTitle: String(localized: "清空"))
+        alert.addButton(withTitle: String(localized: "取消"))
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         perform { [self] in
             try await store?.emptyTrash()
@@ -865,11 +865,11 @@ final class AppModel {
         perform { [self] in
             do {
                 guard let entry = try await store?.placeEntry(child, on: parent, frame: Layout.spot(Layout.entrySize, near: point, avoiding: canvas?.occupied ?? [])) else { return }
-                await did(.placed(added: [entry], removed: []), as: "放入画板入口", on: here)
+                await did(.placed(added: [entry], removed: []), as: String(localized: "放入画板入口"), on: here)
             } catch Store.Failure.cycle {
                 let alert = NSAlert()
-                alert.messageText = "不能放进来"
-                alert.informativeText = parent == child ? "画板不能放进它自己里面。" : "这个画板里（或者更里面）已经有当前画板的入口，放进来会绕成一个圈。"
+                alert.messageText = String(localized: "不能放进来")
+                alert.informativeText = parent == child ? String(localized: "画板不能放进它自己里面。") : String(localized: "这个画板里（或者更里面）已经有当前画板的入口，放进来会绕成一个圈。")
                 alert.runModal()
             }
         }
@@ -892,7 +892,7 @@ final class AppModel {
         Task {
             do { try await work() } catch {
                 let alert = NSAlert()
-                alert.messageText = "没做成"
+                alert.messageText = String(localized: "没做成")
                 alert.informativeText = error.localizedDescription
                 alert.runModal()
             }
@@ -940,7 +940,7 @@ extension AppModel: CanvasDelegate {
     /// 已经在这里的、复制之后进了废纸篓的不放
     func paste(_ copied: [Placement], at point: CGPoint) {
         let here = location
-        guard case .board(let board)? = here else { return notify("这几张已经在资料库里了，打开一个画板再粘贴") }
+        guard case .board(let board)? = here else { return notify(String(localized: "这几张已经在资料库里了，打开一个画板再粘贴")) }
         perform { [self] in
             guard let store else { return }
             let existing = try await store.items(on: board)
@@ -948,11 +948,11 @@ extension AppModel: CanvasDelegate {
             let live = try await store.live(copied.compactMap(\.cardID))
             let pasting = copied.filter { live.contains($0.cardID!) && !already.contains($0.cardID!) }
             let gone = copied.count { !live.contains($0.cardID!) }, there = copied.count - pasting.count - gone
-            let skipped = [there > 0 ? "\(there) 张本来就在这里" : nil, gone > 0 ? "\(gone) 张已经不在资料库里" : nil].compactMap { $0 }
+            let skipped = [there > 0 ? String(localized: "\(there) 张本来就在这里") : nil, gone > 0 ? String(localized: "\(gone) 张已经不在资料库里") : nil].compactMap { $0 }
             if pasting.isEmpty, skipped.count == 1 {
-                return notify(gone > 0 ? "拷贝的卡已经不在资料库里了" : copied.count == 1 ? "这张本来就在这个画板里" : "这几张本来就都在这个画板里")
+                return notify(gone > 0 ? String(localized: "拷贝的卡已经不在资料库里了") : copied.count == 1 ? String(localized: "这张本来就在这个画板里") : String(localized: "这几张本来就都在这个画板里"))
             }
-            if !skipped.isEmpty { notify(skipped.joined(separator: "，") + "，没再放") }
+            if !skipped.isEmpty { notify(String(localized: "\(skipped.formatted(.list(type: .and)))，没再放")) }
             guard !pasting.isEmpty else { return }
             let frames = Layout.around(point, frames: pasting.map(\.frame), avoiding: existing.map(\.placement.frame))
             let added = try await store.place(zip(pasting, frames).map { p, frame in
@@ -962,7 +962,7 @@ extension AppModel: CanvasDelegate {
                 return p
             })
             record(.placed, added.compactMap(\.cardID), board: board)
-            await did(.placed(added: added, removed: []), as: "粘贴", on: here)
+            await did(.placed(added: added, removed: []), as: String(localized: "粘贴"), on: here)
             if location == here { canvas?.reveal(Set(added.compactMap(\.id))) }
         }
     }
@@ -985,7 +985,7 @@ extension AppModel: CanvasDelegate {
 
     func canvasStateChanged(_ canvas: CanvasView) {
         if canvas.isGathered, !canvas.selectedItems.isEmpty || canvas.isMovingCards { search.settle() }
-        emptyHint = canvas.isEmpty ? Self.emptyHints[canvas.content] ?? "拖进来、粘贴，或双击空白处写一张" : nil
+        emptyHint = canvas.isEmpty ? Self.emptyHints[canvas.content] ?? String(localized: "拖进来、粘贴，或双击空白处写一张") : nil
         picked = canvas.browses ? canvas.selectedItems : []
         dragging = canvas.isDraggingOut
         leaving = canvas.isMovingCards && canvas.isEditable ? canvas.board : nil
@@ -1024,9 +1024,9 @@ extension AppModel: CanvasDelegate {
 
     /// 空着的时候说一句这里怎么会有东西；画板都用同一句
     private static let emptyHints: [CanvasContent?: String] = [
-        .collection(.all): "还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进拼贴」",
-        .collection(.unplaced): "都归进画板了",
-        .collection(.trash): "废纸篓是空的",
+        .collection(.all): String(localized: "还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进拼贴」"),
+        .collection(.unplaced): String(localized: "都归进画板了"),
+        .collection(.trash): String(localized: "废纸篓是空的"),
     ]
 }
 

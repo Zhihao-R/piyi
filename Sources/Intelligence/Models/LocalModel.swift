@@ -26,12 +26,12 @@ public enum LocalModel {
     public static func download(to root: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
         let target = file(in: root)
         try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-        var lastError: Error = Failure(message: "下载失败")
+        var lastError: Error = Failure(message: String(localized: "下载失败"))
         for source in sources {
             do {
                 let temporary = try await fetch(URL(string: source)!, progress: progress)
                 defer { try? FileManager.default.removeItem(at: temporary) }
-                guard try checksum(temporary) == sha256 else { throw Failure(message: "下载的文件不完整，请重试") }
+                guard try checksum(temporary) == sha256 else { throw Failure(message: String(localized: "下载的文件不完整，请重试")) }
                 _ = try FileManager.default.replaceItemAt(target, withItemAt: temporary)
                 return
             } catch is CancellationError {
@@ -51,7 +51,7 @@ public enum LocalModel {
                 let task = URLSession.shared.downloadTask(with: url) { file, response, error in
                     if let error { return continuation.resume(throwing: error) }
                     guard let file, (response as? HTTPURLResponse)?.statusCode ?? 0 < 400 else {
-                        return continuation.resume(throwing: Failure(message: "下载源返回错误"))
+                        return continuation.resume(throwing: Failure(message: String(localized: "下载源返回错误")))
                     }
                     // 回调结束后系统会删掉这个文件，先挪走
                     let kept = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".gguf")

@@ -5,7 +5,7 @@ import Tokens
 
 /// 画布底部居中、常驻的搜索栏：「对资料库说一句话」。筛选按钮在打字、聚焦或有条件时才浮出来
 struct SearchBar: View {
-    static let placeholder = "对资料库说一句话…"
+    static let placeholder = String(localized: "对资料库说一句话…")
     @Bindable var search: SearchModel
     /// 和操作栏共用一块玻璃：选中卡片时从这条变形过去
     let bar: Namespace.ID
@@ -44,7 +44,7 @@ struct SearchBar: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(search.inspirationBlocked == nil ? .primary : .tertiary)
                 .disabled(search.inspirationBlocked != nil)
-                .help(search.inspirationBlocked ?? "灵感：从这个画板挑几张卡，说出它们之间的联系")
+                .help(search.inspirationBlocked ?? String(localized: "灵感：从这个画板挑几张卡，说出它们之间的联系"))
                 .onHover { if $0 { search.prepare() } }
             }
             .padding(.leading, 16)
@@ -79,7 +79,7 @@ private struct FilterRow: View {
                     }
                     .pickerStyle(.inline)
                 } label: {
-                    chip(q.days.map { d in Self.days.first { $0.0 == d }?.1 ?? "最近 \(d) 天" } ?? "时间", active: q.days != nil)
+                    chip(q.days.map { d in Self.days.first { $0.0 == d }?.1 ?? String(localized: "最近 \(d) 天") } ?? String(localized: "时间"), active: q.days != nil)
                 }
                 .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
 
@@ -90,7 +90,7 @@ private struct FilterRow: View {
                     }
                     if !search.filters.kinds.isEmpty { Divider(); Button("不限") { search.filters.kinds = [] } }
                 } label: {
-                    chip(q.kinds.isEmpty ? "类型" : Kind.allCases.filter(q.kinds.contains).map(\.label).joined(separator: "、"), active: !q.kinds.isEmpty)
+                    chip(q.kinds.isEmpty ? String(localized: "类型") : Kind.allCases.filter(q.kinds.contains).map(\.label).formatted(.list(type: .or)), active: !q.kinds.isEmpty)
                 }
                 .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
 
@@ -112,7 +112,7 @@ private struct FilterRow: View {
                     }
                     .pickerStyle(.inline)
                 } label: {
-                    chip(q.scope == .all ? "全部卡片" : "当前画板", active: q.scope != .all)
+                    chip(q.scope == .all ? String(localized: "全部卡片") : String(localized: "当前画板"), active: q.scope != .all)
                 }
                 .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
 
@@ -135,7 +135,7 @@ private struct FilterRow: View {
     }
 
     /// 和句子里的时间词同一组天数（QueryRules.timePhrases），按钮上的字和句子解析出的对得上。「昨天」只从句子里来
-    static let days = [(1, "今天"), (2, "昨天以来"), (5, "这几天"), (7, "这一周"), (14, "最近两周"), (31, "这个月")]
+    static let days = [(1, String(localized: "今天")), (2, String(localized: "昨天以来")), (5, String(localized: "这几天")), (7, String(localized: "这一周")), (14, String(localized: "最近两周")), (31, String(localized: "这个月"))]
 }
 
 /// 颜色：十二种叫得出名字的颜色，点一下选中、再点取消
@@ -232,9 +232,9 @@ struct ReadingPanel: View {
 
     private var title: String {
         switch panel.kind {
-        case .inspire: "灵感"
-        case .draw: "抽到这一张"
-        case .ask: "回答"
+        case .inspire: String(localized: "灵感")
+        case .draw: String(localized: "抽到这一张")
+        case .ask: String(localized: "回答")
         }
     }
 }
@@ -258,12 +258,12 @@ struct Waiting: View {
 extension Kind {
     var label: String {
         switch self {
-        case .image: "图片"
-        case .text: "文字"
-        case .web: "网页"
-        case .document: "文档"
-        case .video: "视频"
-        case .audio: "音频"
+        case .image: String(localized: "图片")
+        case .text: String(localized: "文字")
+        case .web: String(localized: "网页")
+        case .document: String(localized: "文档")
+        case .video: String(localized: "视频")
+        case .audio: String(localized: "音频")
         }
     }
 }

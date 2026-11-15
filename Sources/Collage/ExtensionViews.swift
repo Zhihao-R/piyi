@@ -30,9 +30,9 @@ extension BrowserExtension.Status {
 
     var summary: String {
         switch self {
-        case .connected(let names): "已连上 " + names.joined(separator: "、")
-        case .idle: "没连上：浏览器开着时会自动连上"
-        case .absent: "还没安装"
+        case .connected(let names): String(localized: "已连上 \(names.formatted(.list(type: .and)))")
+        case .idle: String(localized: "没连上：浏览器开着时会自动连上")
+        case .absent: String(localized: "还没安装")
         }
     }
 }
@@ -61,7 +61,7 @@ struct ExtensionGuide: View {
         VStack(alignment: .leading, spacing: 20) {
             if case .connected(let names) = browserExtension.status {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("已连上 \(names.joined(separator: "、"))", systemImage: "checkmark.circle.fill")
+                    Label("已连上 \(names.formatted(.list(type: .and)))", systemImage: "checkmark.circle.fill")
                         .font(.headline)
                         .symbolRenderingMode(.multicolor)
                         .symbolEffect(.bounce, value: names)
@@ -72,10 +72,10 @@ struct ExtensionGuide: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
-                    GuideStep(number: 1, text: "在浏览器里打开扩展页，打开右上角的「开发者模式」") {
+                    GuideStep(number: 1, text: String(localized: "在浏览器里打开扩展页，打开右上角的「开发者模式」")) {
                         OpenPageButton(browserExtension: browserExtension)
                     }
-                    GuideStep(number: 2, text: "把下面这个文件夹拖进扩展页") {
+                    GuideStep(number: 2, text: String(localized: "把下面这个文件夹拖进扩展页")) {
                         FolderTile(browserExtension: browserExtension)
                     }
                     HStack(spacing: 8) {

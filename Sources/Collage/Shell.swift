@@ -105,11 +105,11 @@ struct Shell: View {
         }
         .alert("重命名画板", isPresented: Binding(get: { model.renaming != nil }, set: { if !$0 { model.renaming = nil } }),
                presenting: model.renaming) { board in
-            RenameField(name: board.name, label: "画板名") { model.rename(board, to: $0) }
+            RenameField(name: board.name, label: String(localized: "画板名")) { model.rename(board, to: $0) }
         }
         .alert("重命名讨论", isPresented: Binding(get: { model.discussions.renaming != nil }, set: { if !$0 { model.discussions.renaming = nil } }),
                presenting: model.discussions.renaming) { summary in
-            RenameField(name: summary.discussion.displayName, label: "讨论名") { model.discussions.rename(summary, to: $0) }
+            RenameField(name: summary.discussion.displayName, label: String(localized: "讨论名")) { model.discussions.rename(summary, to: $0) }
         }
     }
 
@@ -169,10 +169,10 @@ struct Sidebar: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                SidebarHeader(title: "资料库")
-                row("全部卡片", icon: "square.grid.2x2", to: .collection(.all))
-                row("未归类", icon: "tray", to: .collection(.unplaced))
-                SidebarHeader(title: "画板") {
+                SidebarHeader(title: String(localized: "资料库"))
+                row(String(localized: "全部卡片"), icon: "square.grid.2x2", to: .collection(.all))
+                row(String(localized: "未归类"), icon: "tray", to: .collection(.unplaced))
+                SidebarHeader(title: String(localized: "sidebar.boards", defaultValue: "画板")) {
                     Button { model.newBoard() } label: { Image(systemName: "plus") }
                         .buttonStyle(.borderless)
                         .help("新建画板")
@@ -196,10 +196,10 @@ struct Sidebar: View {
             VStack(spacing: 0) {
                 // 在画板里一拖起卡，废纸篓上面就弹出一行：移出这个画板（卡还在资料库里）
                 if let board = model.boards.first(where: { $0.id == model.leaving }) {
-                    SidebarRow(title: "移出「\(board.name)」", icon: "rectangle.badge.minus", accepts: model.dragging) { take($0) }
+                    SidebarRow(title: String(localized: "移出「\(board.name)」"), icon: "rectangle.badge.minus", accepts: model.dragging) { take($0) }
                         .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
                 }
-                row("废纸篓", icon: "trash", to: .collection(.trash), accepts: model.dragging && model.location != .collection(.trash)) { trash($0) }
+                row(String(localized: "废纸篓"), icon: "trash", to: .collection(.trash), accepts: model.dragging && model.location != .collection(.trash)) { trash($0) }
                     .contextMenu { Button("清空废纸篓…") { model.emptyTrash() } }
             }
             .padding(10)
@@ -248,7 +248,7 @@ private struct DiscussionGroup: View {
         let now = Date.now
         let active = d.all.filter { !$0.isArchived(now: now) }, archived = d.all.filter { $0.isArchived(now: now) }
         if !d.all.isEmpty {
-            SidebarHeader(title: "讨论").padding(.top, 12)
+            SidebarHeader(title: String(localized: "sidebar.discussions", defaultValue: "讨论")).padding(.top, 12)
             ForEach(active) { row($0) }
             if !archived.isEmpty {
                 Button { showsArchived.toggle() } label: {

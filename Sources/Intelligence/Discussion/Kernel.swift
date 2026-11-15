@@ -31,7 +31,7 @@ public final class DiscussionKernel: Sendable {
 
     /// 发给模型的内容超过了模型的上限：开一段新讨论
     public struct TooLong: LocalizedError {
-        public var errorDescription: String? { "这段讨论太长了" }
+        public var errorDescription: String? { String(localized: "这段讨论太长了") }
     }
 
     /// 这一轮的花费、速度和缓存，测试集记下来
@@ -126,7 +126,7 @@ public final class DiscussionKernel: Sendable {
     /// 停下了照样抛出去
     func execute(_ call: ToolCall, desk: Set<Int64>) async throws -> ToolResult {
         guard let tool = tools.first(where: { $0.spec.name == call.name }), tool.nature == .reading else {
-            return ToolResult(call: call.id, label: "\(call.name)没成功", text: "工具失败：没有这个工具", failed: true)
+            return ToolResult(call: call.id, label: String(localized: "\(call.name)没成功"), text: String(localized: "工具失败：没有这个工具"), failed: true)
         }
         do {
             let output = try await tool.run(call.arguments, desk: desk)
@@ -135,7 +135,7 @@ public final class DiscussionKernel: Sendable {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            return ToolResult(call: call.id, label: "\(tool.title)没成功", text: "工具失败：\(error.localizedDescription)", failed: true)
+            return ToolResult(call: call.id, label: String(localized: "\(tool.title)没成功"), text: String(localized: "工具失败：\(error.localizedDescription)"), failed: true)
         }
     }
 
@@ -195,7 +195,7 @@ public final class DiscussionKernel: Sendable {
               case .answer(let answer)? = events.last(where: { if case .answer = $0.what { true } else { false } })?.what else { return }
         struct Reply: Decodable { var name: String }
         let prompt = """
-            给下面这段讨论起一个名字，12 个字以内的中文，说清在讨论什么，不加引号和标点。
+            给下面这段讨论起一个名字，\(Writing.length(12))以内的\(Writing.language)，说清在讨论什么，不加引号和标点。
             问：\(asked.prefix(300))
             答：\(Citations.plain(answer.text).prefix(600))
             只输出 JSON：{"name":"名字"}

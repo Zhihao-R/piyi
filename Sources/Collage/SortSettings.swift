@@ -48,8 +48,8 @@ struct SortSettings: View {
     }
 
     private var footer: String {
-        guard autoSort else { return "关掉后，这个画板不再自动收卡。" }
-        if empty, rule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "放进一张卡或写一句规则后开始收卡。" }
-        return "新收的卡有把握属于这里时，会自动放进来。不写规则就按画板里已有的卡判断。"
+        guard autoSort else { return String(localized: "关掉后，这个画板不再自动收卡。") }
+        if empty, rule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return String(localized: "放进一张卡或写一句规则后开始收卡。") }
+        return String(localized: "新收的卡有把握属于这里时，会自动放进来。不写规则就按画板里已有的卡判断。")
     }
 }

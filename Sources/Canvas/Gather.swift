@@ -148,7 +148,7 @@ extension CanvasView {
     private func settle(_ placed: [(visitor: Int64, home: Placement)]) {
         guard !placed.isEmpty else { return }
         defer { delegate?.canvasDidEdit(self, error: nil) }
-        record(.placed(added: placed.map(\.home), removed: []), as: "放进当前画板", on: .board(placed[0].home.boardID))
+        record(.placed(added: placed.map(\.home), removed: []), as: String(localized: "放进当前画板"), on: .board(placed[0].home.boardID))
         // 写库期间退出了聚拢：访客已经淡出，重读一遍让留下的卡出现在画板上
         guard var state = gathering else { Task { try? await reload() }; return }
         for (id, home) in placed {
@@ -303,7 +303,7 @@ extension CanvasView {
         overlay.setTags(state.members.compactMap { id in
             guard let visitor = state.visitors[id], let item = items[id] else { return nil }
             let corner = screenPoint(CGPoint(x: item.placement.frame.minX, y: item.placement.frame.maxY))
-            return (id, visitor.home.map { "来自「\($0.boardName)」" } ?? "未放进画板", CGPoint(x: corner.x, y: corner.y + 6))
+            return (id, visitor.home.map { String(localized: "来自「\($0.boardName)」") } ?? String(localized: "未放进画板"), CGPoint(x: corner.x, y: corner.y + 6))
         })
     }
 }

@@ -1,0 +1,50 @@
+{
+  "name": {
+    "message": "Collage"
+  },
+  "description": {
+    "message": "Collect the page you’re viewing, images on it, and selected text into Collage. Also opens pages that need sign-in or scripts in the background for Collage, and fetches subtitles that require sign-in."
+  },
+  "collect": {
+    "message": "Collect to Collage"
+  },
+  "collecting": {
+    "message": "Collecting to Collage…"
+  },
+  "cannotCollectPage": {
+    "message": "This page can’t be collected"
+  },
+  "notConnected": {
+    "message": "Not connected to Collage. Open the Collage app and try again"
+  },
+  "notSaved": {
+    "message": "Couldn’t save"
+  },
+  "savedQueued": {
+    "message": "Saved; Collage will collect it when it opens"
+  },
+  "savedLater": {
+    "message": "Saved; Collage will collect it shortly"
+  },
+  "unreadable": {
+    "message": "This page can’t be read"
+  },
+  "siteError": {
+    "message": "The site returned an error ($1)"
+  },
+  "readTimeout": {
+    "message": "Timed out reading this page"
+  },
+  "tabClosed": {
+    "message": "The tab was closed"
+  },
+  "readerTitle": {
+    "message": "Collage · Background reading"
+  },
+  "readerLine1": {
+    "message": "Collage reads pages in this window in the background"
+  },
+  "readerLine2": {
+    "message": "It closes itself after a few idle minutes"
+  }
+}

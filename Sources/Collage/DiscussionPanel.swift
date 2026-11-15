@@ -146,7 +146,7 @@ private struct ChatList: View {
         let d = model.discussions
         VStack(alignment: .leading, spacing: 10) {
             if d.desk.isEmpty { Text("还没有引用卡片").foregroundStyle(.tertiary) }
-            if !d.earlier.isEmpty { Line("之前聊过") }
+            if !d.earlier.isEmpty { Line(String(localized: "之前聊过")) }
             ForEach(d.earlier) { summary in
                 Button { d.open(summary.id) } label: {
                     Label(summary.discussion.displayName, systemImage: "bubble.left.and.bubble.right").lineLimit(1)
@@ -180,7 +180,7 @@ private struct ChatList: View {
                     ForEach(cards, id: \.self) { card in
                         HStack(spacing: 8) {
                             Button { model.detail = card } label: {
-                                Text(d.titles[card] ?? "卡 \(card)").lineLimit(1)
+                                Text(d.titles[card] ?? String(localized: "卡 \(card)")).lineLimit(1)
                                     .padding(.horizontal, 8).frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
                             }
                             .buttonStyle(.hoverRow)
@@ -195,8 +195,8 @@ private struct ChatList: View {
                     }
                 }
             }
-        case .placed(let mention): Line("引用 · \(mention.title)")
-        case .removed(let mention): Line("取消引用 · \(mention.title)")
+        case .placed(let mention): Line(String(localized: "引用 · \(mention.title)"))
+        case .removed(let mention): Line(String(localized: "取消引用 · \(mention.title)"))
         case .calls, .renamed: EmptyView()
         }
     }

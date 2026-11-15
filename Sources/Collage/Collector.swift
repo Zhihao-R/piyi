@@ -101,7 +101,7 @@ final class Collector {
             // 5. 补全正文
             completeBodies(filled.map { ($0.id, $0.transcribes) })
         } catch {
-            model.notify("收集没完成：\(error.localizedDescription)")
+            model.notify(String(localized: "收集没完成：\(error.localizedDescription)"))
             heard?(Receipt(failed: sources.count))
         }
     }
@@ -119,9 +119,9 @@ final class Collector {
         if placed, let board { model.record(.placed, [existing.id!], board: board) }
         guard !quietly, let store = model.store else { return }
         let elsewhere = ((try? await store.boards(containing: existing.id!)) ?? []).filter { $0.id != board }.map(\.name)
-        var notice = restored ? "已从废纸篓恢复" : "已经收过"
-        if placed { notice += "，已放进本画板" }
-        if !elsewhere.isEmpty { notice += "，它也在\(elsewhere.map { "「\($0)」" }.joined(separator: "、"))里" }
+        var notice = restored ? String(localized: "已从废纸篓恢复") : String(localized: "已经收过")
+        if placed { notice += String(localized: "，已放进本画板") }
+        if !elsewhere.isEmpty { notice += String(localized: "，它也在\(elsewhere.map(quoted).formatted(.list(type: .and)))里") }
         model.notify(notice)
     }
 
@@ -167,7 +167,7 @@ final class Collector {
                 try await Inbox.local.put(sources, id: UUID().uuidString, spot: Inbox.Spot(board: board, x: point.x, y: point.y))
                 drainLocal(quick: quick)
             } catch {
-                model.notify("没收下：\(error.localizedDescription)")
+                model.notify(String(localized: "没收下：\(error.localizedDescription)"))
             }
         }
     }

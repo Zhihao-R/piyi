@@ -6,6 +6,9 @@
 import { HOST, type Message } from './wire'
 import { toast } from './toast'
 
+/** 界面文字：按浏览器语言取 _locales 里的那一份 */
+const t = (key: string, ...subs: string[]) => chrome.i18n.getMessage(key, subs)
+
 const version = chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version
 
 let port: chrome.runtime.Port | null = null
@@ -48,7 +51,7 @@ function reply(id: string, limit: number) {
 /// 右键菜单只有一项，由右键的位置决定收什么：落在图上收这张图，否则有选中的文字收这段话，否则收整页
 const MENU = 'collect'
 chrome.contextMenus.removeAll(() => chrome.contextMenus.create({
-  id: MENU, title: '收进拼贴', contexts: ['page', 'frame', 'selection', 'link', 'editable', 'image', 'video', 'audio'],
+  id: MENU, title: t('collect'), contexts: ['page', 'frame', 'selection', 'link', 'editable', 'image', 'video', 'audio'],
 }))
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -62,11 +65,11 @@ chrome.action.onClicked.addListener(tab => collect(tab, page))
 
 /// take 交回要发给拼贴的内容：整页、选中的话，或者一张图
 async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, page: string) => Promise<Partial<Message>>) {
-  if (!tab?.id || !/^https?:/.test(tab.url ?? '')) return flag('这个页面收不了')
+  if (!tab?.id || !/^https?:/.test(tab.url ?? '')) return flag(t('cannotCollectPage'))
   const tabId = tab.id
   const say = (text: string, state: 'busy' | 'done' | 'fail') =>
     chrome.scripting.executeScript({ target: { tabId }, func: toast, args: [text, state] }).catch(() => flag(text))
-  await say('收进拼贴…', 'busy')
+  await say(t('collecting'), 'busy')
   let content: Partial<Message>
   try {
     content = await take(tabId, tab.url!)
@@ -78,16 +81,16 @@ async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, p
   // url 是所在的网页：收图、收文字时记作出处
   connect().postMessage({ type: 'collect', id, url: tab.url, ...content } satisfies Message)
   const ack = await saved
-  if (!ack) return say('没连上拼贴：打开一次拼贴 App 再试', 'fail')
-  if (ack.ok === false) return say(ack.say ?? '没存下', 'fail')
-  if (ack.queued) return say(ack.say ?? '已存下，拼贴打开后收进', 'done')
+  if (!ack) return say(t('notConnected'), 'fail')
+  if (ack.ok === false) return say(ack.say ?? t('notSaved'), 'fail')
+  if (ack.queued) return say(ack.say ?? t('savedQueued'), 'done')
   // 到这里已经落在拼贴的收件箱里，不会丢；等 App 查过重，说收下的是什么、是不是收过。它一时没回话，东西也在收件箱里
   const verdict = await reply(id, 8000)
-  await say(verdict?.say ?? '已存下，拼贴稍后收进', verdict?.ok === false ? 'fail' : 'done')
+  await say(verdict?.say ?? t('savedLater'), verdict?.ok === false ? 'fail' : 'done')
 }
 
 function page(tabId: number): Promise<Partial<Message>> {
-  return read(tabId, { settle: false, scroll: false }).catch(() => { throw new Error('这个页面读不出来') })
+  return read(tabId, { settle: false, scroll: false }).catch(() => { throw new Error(t('unreadable')) })
 }
 
 /// 选中的文字从页面里读：浏览器随右键给的那份会丢掉换行，它只作读不到时的退路
@@ -147,7 +150,7 @@ function flag(text: string) {
   chrome.action.setTitle({ title: text })
   setTimeout(() => {
     chrome.action.setBadgeText({ text: '' })
-    chrome.action.setTitle({ title: '收进拼贴' })
+    chrome.action.setTitle({ title: t('collect') })
   }, 2500)
 }
 
@@ -173,7 +176,7 @@ const REQUEST_LIMIT = 15_000
 async function request(message: Message) {
   try {
     const response = await fetch(message.url!, { credentials: 'include', signal: AbortSignal.timeout(REQUEST_LIMIT) })
-    if (!response.ok) throw new Error(`网站返回错误（${response.status}）`)
+    if (!response.ok) throw new Error(t('siteError', String(response.status)))
     port?.postMessage({ type: 'result', id: message.id, ok: true, body: await response.text() } satisfies Message)
   } catch (error) {
     port?.postMessage({ type: 'result', id: message.id, ok: false, error: (error as Error)?.message ?? String(error) } satisfies Message)
@@ -183,7 +186,7 @@ async function request(message: Message) {
 async function fetchPage(url: string, scroll: boolean) {
   const tabId = (await openTab(url)).id!
   let timer: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('读这个网页超时了')), READ_LIMIT) })
+  const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(t('readTimeout'))), READ_LIMIT) })
   try {
     // 加载完之后还可能跳转（登录检查、短链），注入的页面被换掉时再来一次
     const attempt = async () => {
@@ -221,7 +224,7 @@ async function read(tabId: number, options: { settle: boolean; scroll: boolean }
 function loaded(tabId: number) {
   return new Promise<void>((resolve, reject) => {
     const updated = (id: number, change: chrome.tabs.OnUpdatedInfo) => { if (id === tabId && change.status === 'complete') done() }
-    const removed = (id: number) => { if (id === tabId) done(new Error('标签页被关掉了')) }
+    const removed = (id: number) => { if (id === tabId) done(new Error(t('tabClosed'))) }
     function done(error?: Error) {
       chrome.tabs.onUpdated.removeListener(updated)
       chrome.tabs.onRemoved.removeListener(removed)
@@ -229,7 +232,7 @@ function loaded(tabId: number) {
     }
     chrome.tabs.onUpdated.addListener(updated)
     chrome.tabs.onRemoved.addListener(removed)
-    chrome.tabs.get(tabId).then(tab => tab.status === 'complete' && done(), () => done(new Error('标签页被关掉了')))
+    chrome.tabs.get(tabId).then(tab => tab.status === 'complete' && done(), () => done(new Error(t('tabClosed'))))
   })
 }
 

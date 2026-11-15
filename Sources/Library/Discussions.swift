@@ -15,7 +15,7 @@ public struct Discussion: Codable, Sendable, Identifiable, Equatable, FetchableR
     public static let databaseTableName = "discussion"
 
     /// 侧边栏、标题行显示的名字
-    public var displayName: String { name ?? "新讨论" }
+    public var displayName: String { name ?? String(localized: "新讨论") }
 
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 }

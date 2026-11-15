@@ -4,7 +4,7 @@ import llama
 /// 本机向量：llama.cpp 跑 Qwen3-Embedding-0.6B（8 位量化）。
 /// llama.cpp 的上下文不能多线程同时用，所有调用在锁里串行做；调用方放在 utility 优先级的后台任务里，不和界面抢
 public final class LocalEmbedder: Embedding, @unchecked Sendable {
-    public static let name = "本机"
+    public static let name = String(localized: "本机")
     public var name: String { Self.name }
     public var isReady: Bool { FileManager.default.fileExists(atPath: file.path) }
     public var model: String { LocalModel.name }
@@ -74,9 +74,9 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
         case missing, load, compute
         var errorDescription: String? {
             switch self {
-            case .missing: "本机向量模型还没下载"
-            case .load: "本机向量模型加载失败"
-            case .compute: "本机向量模型计算失败"
+            case .missing: String(localized: "本机向量模型还没下载")
+            case .load: String(localized: "本机向量模型加载失败")
+            case .compute: String(localized: "本机向量模型计算失败")
             }
         }
     }

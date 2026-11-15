@@ -68,11 +68,11 @@ public enum Partial: Codable, Sendable, Equatable {
     /// 给人看的一句话
     public var reason: String {
         switch self {
-        case .offline: "断网时收的，联网后自动补全"
-        case .login(let site): "要登录 \(site)：去浏览器登录后重试"
-        case .needsBrowser: "页面要在浏览器里打开才读得到，扩展连上后自动补全"
+        case .offline: String(localized: "断网时收的，联网后自动补全")
+        case .login(let site): String(localized: "要登录 \(displayed(site))：去浏览器登录后重试")
+        case .needsBrowser: String(localized: "页面要在浏览器里打开才读得到，扩展连上后自动补全")
         case .failed(let why): why
-        case .unfinished: "还没抓完，联网后自动补全"
+        case .unfinished: String(localized: "还没抓完，联网后自动补全")
         }
     }
 }

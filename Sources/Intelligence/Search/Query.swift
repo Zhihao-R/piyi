@@ -162,7 +162,8 @@ public enum QueryRules {
     static let timePhrases: [(String, Int)] = [
         ("今天", 1), ("昨天", 2), ("这几天", 5), ("前几天", 7), ("本周", 7), ("这周", 7), ("这个星期", 7),
         ("上周", 14), ("上个星期", 14), ("本月", 31), ("这个月", 31), ("最近一个月", 31), ("上个月", 62), ("最近", 14), ("近期", 14),
-        ("today", 1), ("this week", 7), ("recently", 14), ("recent", 14),
+        ("today", 1), ("yesterday", 2), ("these days", 5), ("this week", 7), ("last week", 14), ("this month", 31), ("last month", 62),
+        ("recently", 14), ("recent", 14), ("lately", 14),
     ]
     /// 类型词。「文章」「笔记」在用户心里不分网页、文档还是自己写的长文，所以同时匹配几类
     static let kindWords: [(String, Set<Kind>)] = [

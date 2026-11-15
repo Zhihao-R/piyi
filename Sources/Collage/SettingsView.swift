@@ -62,9 +62,9 @@ struct KeyField: View {
 
     private var prompt: String {
         switch state {
-        case .missing: "填入密钥"
-        case .rejected: "密钥被拒绝，请换一把"
-        case .ready: "已填，输入新的可以替换"
+        case .missing: String(localized: "填入密钥")
+        case .rejected: String(localized: "密钥被拒绝，请换一把")
+        case .ready: String(localized: "已填，输入新的可以替换")
         }
     }
 

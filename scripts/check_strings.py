@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+"""检查界面文字有没有漏翻：让编译器提取代码里所有要翻译的句子，和 Localization/en.lproj 里的英文对一遍。
+用法：python3 scripts/check_strings.py   （有漏的就列出来，并以非零状态退出）
+
+要翻译的句子怎么写：SwiftUI 里直接写的文字（Text、Button、Label、.help…）自动算；其余显示给人看的写成 String(localized: "…")。
+同一句中文在不同地方要翻成不同英文时，用 String(localized: "键名", defaultValue: "中文")。"""
+import glob, json, os, plistlib, re, subprocess, sys, tempfile
+
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+EN = os.path.join(ROOT, "Localization/en.lproj")
+
+def strings_keys(path):
+    text = open(path, encoding="utf-8").read()
+    return set(re.findall(r'^"((?:[^"\\]|\\.)*)"\s*=', text, re.M))
+
+def unescape(key):
+    return key.encode().decode("unicode_escape").encode("latin-1").decode("utf-8")
+
+with tempfile.TemporaryDirectory() as out:
+    build = subprocess.run(["swift", "build", "-Xswiftc", "-emit-localized-strings", "-Xswiftc", "-emit-localized-strings-path", "-Xswiftc", out],
+                           cwd=ROOT, capture_output=True, text=True)
+    if build.returncode != 0:
+        sys.exit(build.stdout + build.stderr)
+    found = {}
+    for f in glob.glob(f"{out}/*.stringsdata"):
+        data = json.load(open(f))
+        source = os.path.relpath(data["source"], ROOT)
+        for entries in data["tables"].values():
+            for e in entries:
+                found.setdefault(e["key"], f"{source}:{e['location']['startingLine']}")
+
+translated = {unescape(k) for k in strings_keys(f"{EN}/Localizable.strings")} | set(plistlib.load(open(f"{EN}/Localizable.stringsdict", "rb")))
+missing = {k: where for k, where in found.items() if k not in translated}
+for key, where in sorted(missing.items(), key=lambda kv: kv[1]):
+    print(f"{where}: {key}")
+print(f"共 {len(found)} 句，没翻译的 {len(missing)} 句")
+sys.exit(1 if missing else 0)

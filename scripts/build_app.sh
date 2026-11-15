@@ -16,8 +16,9 @@ cp "$BIN/CollageRelay" "$APP/Contents/MacOS/CollageRelay"
 # 浏览器扩展：App 启动时装到 ~/Library/Application Support/Collage Bridge/Extension，你在扩展页加载的是那一份
 cp -R Extension/dist "$APP/Contents/Resources/Extension"
 cp -R "$BIN/Collage_Collage.bundle" "$BIN/Collage_Library.bundle" "$APP/Contents/Resources/"
-# 声明界面是中文：系统自带的菜单（文件、编辑、窗口、帮助）和「设置」窗口标题跟着用中文
-mkdir -p "$APP/Contents/Resources/zh-Hans.lproj"
+# 界面语言：系统是中文时用中文，其余用英文。翻译表放在 App 自己的 en.lproj 里，SwiftUI 的文字和 String(localized:) 默认都到这里查；
+# 中文就是代码里的原文。两个文件夹都在，系统自带的菜单（文件、编辑、窗口、帮助）和「设置」窗口标题也跟着切
+cp -R Localization/*.lproj "$APP/Contents/Resources/"
 # llama.cpp 是动态库：放进 Contents/Frameworks，并告诉程序去那里找。本机模型文件不进安装包，在设置里下载
 cp -R "$BIN/llama.framework" "$APP/Contents/Frameworks/"
 install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/Collage"
@@ -28,8 +29,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleName</key><string>拼贴</string>
   <key>CFBundleDisplayName</key><string>拼贴</string>
   <key>CFBundleIdentifier</key><string>local.collage</string>
-  <key>CFBundleDevelopmentRegion</key><string>zh-Hans</string>
-  <key>CFBundleLocalizations</key><array><string>zh-Hans</string></array>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string></array>
   <key>CFBundleExecutable</key><string>Collage</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1</string>

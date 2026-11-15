@@ -38,7 +38,7 @@ public struct WebExtractor: Sendable {
         await finished(page.url) {
             if let api = try? await platform(page.url) { return api }
             var attempt = await parsed(Page(html: page.html, url: page.url))
-            if attempt.material.partial == .needsBrowser { attempt.material.partial = .failed("页面上没读到内容") }
+            if attempt.material.partial == .needsBrowser { attempt.material.partial = .failed(String(localized: "页面上没读到内容")) }
             return await rescued(attempt)
         }
     }
@@ -52,7 +52,7 @@ public struct WebExtractor: Sendable {
             m.partial = .offline
         } catch {
             m = Material(kind: .web)
-            m.partial = .failed("没抓到：\(error.localizedDescription)")
+            m.partial = .failed(String(localized: "没抓到：\(error.localizedDescription)"))
         }
         m.url = m.url ?? url.absoluteString
         if m.title == nil, m.kind != .image, m.kind != .text { m.title = url.host() }
@@ -76,10 +76,10 @@ public struct WebExtractor: Sendable {
                 if let page = try await browser.render(url, scroll: !Self.isXiaohongshu(url)) {
                     attempt = await parsed(Page(html: page.html, url: page.url))
                     // 浏览器里也是空的：不是缺浏览器，别再等扩展
-                    if attempt.material.partial == .needsBrowser { attempt.material.partial = .failed("浏览器里打开也没读到内容") }
+                    if attempt.material.partial == .needsBrowser { attempt.material.partial = .failed(String(localized: "浏览器里打开也没读到内容")) }
                 }
             } catch {
-                attempt.material.partial = .failed("浏览器里没读成：\(error.localizedDescription)")
+                attempt.material.partial = .failed(String(localized: "浏览器里没读成：\(error.localizedDescription)"))
             }
         }
         // 5
@@ -244,7 +244,7 @@ public struct WebExtractor: Sendable {
                            author: (status["user"] as? [String: Any])?["screen_name"] as? String, images: images,
                            isVideo: video != nil, duration: ((video?["media_info"] as? [String: Any])?["duration"] as? NSNumber)?.doubleValue)
         m.url = "https://m.weibo.cn/detail/\(id)"
-        if !own.complete || quoted?.complete == false { m.partial = .failed("长微博只取到前一段") }
+        if !own.complete || quoted?.complete == false { m.partial = .failed(String(localized: "长微博只取到前一段")) }
         return m
     }
 
@@ -352,7 +352,7 @@ public struct WebExtractor: Sendable {
         // 正文截断后没有位置的图不存
         let gallery = Array(kept.prefix(m.body!.components(separatedBy: Article.imageMark).count - 1))
         m.images = ((cover == nil ? nil : fetched[0]) ?? gallery.first).map { [$0] + gallery } ?? []
-        if m.title == nil, m.images.isEmpty { m.partial = .failed("公众号页面没读到内容") } else if Article.plain(m.body ?? "").count < Self.shortest { m.partial = .needsBrowser }
+        if m.title == nil, m.images.isEmpty { m.partial = .failed(String(localized: "公众号页面没读到内容")) } else if Article.plain(m.body ?? "").count < Self.shortest { m.partial = .needsBrowser }
         return m
     }
 
@@ -442,7 +442,7 @@ public struct WebExtractor: Sendable {
         switch verdict {
         case .content: nil
         case .login: .login(site: site)
-        case .error: .failed("网站返回的是报错页")
+        case .error: .failed(String(localized: "网站返回的是报错页"))
         case .empty: .needsBrowser
         }
     }
@@ -484,7 +484,7 @@ public struct WebExtractor: Sendable {
         let head = ((title ?? "") + " " + text.prefix(300)).lowercased()
         // 正文几乎没有、又有登录字样才算登录页：正常的短页面导航里也常有 Log in
         if status == 401 || (text.count < 200 && !hasImage && Self.loginWords.contains { head.contains($0) }) { return .login(site: site) }
-        if status >= 400 { return .failed("网站返回错误（\(status)）") }
+        if status >= 400 { return .failed(String(localized: "网站返回错误（\(status)）")) }
         if text.count <= 200, !hasImage { return .needsBrowser }
         return nil
     }

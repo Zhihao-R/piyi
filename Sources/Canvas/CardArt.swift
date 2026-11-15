@@ -48,15 +48,15 @@ struct CardArt {
             pen.fill(Palette.placeholder.now)
             if let cover { pen.image(cover, in: pen.bounds) }
             var badges: [String] = []
-            if card.form == .long { badges.append("长图") }
-            if card.form == .animated { badges.append(card.format ?? "GIF") }
-            if card.images > 1 { badges.append("\(card.images) 张") }
-            if let platform = card.format, card.url != nil, card.form == nil { badges.append(platform) }
+            if card.form == .long { badges.append(String(localized: "长图")) }
+            if card.form == .animated { badges.append(card.format.map(displayed) ?? "GIF") }
+            if card.images > 1 { badges.append(String(localized: "\(card.images) 张")) }
+            if let platform = card.format, card.url != nil, card.form == nil { badges.append(displayed(platform)) }
             pen.badges(badges, w: t)
         case .text where card.form == .note:
             note(card, &pen)
         case .text:
-            if card.isOwnText, card.length <= CardType.shortTextLimit { quote(card, &pen) } else { article(card, footer: "\(card.length) 字", &pen) }
+            if card.isOwnText, card.length <= CardType.shortTextLimit { quote(card, &pen) } else { article(card, footer: String(localized: "\(card.length) 字"), &pen) }
         case .web:
             // 有平台角标（公众号、小红书）时底部写作者，没有时写网站
             let footer = card.format != nil ? card.source : card.site ?? card.source
@@ -67,9 +67,9 @@ struct CardArt {
             } else {
                 article(card, footer: footer, &pen)
             }
-            if let platform = card.format { pen.badges([platform], w: t) }
+            if let platform = card.format { pen.badges([displayed(platform)], w: t) }
         case .document:
-            let label = [card.format, card.pages.map { "\($0) 页" }].compactMap { $0 }.joined(separator: " · ")
+            let label = [card.format.map(displayed), card.pages.map { String(localized: "\($0) 页") }].compactMap { $0 }.joined(separator: " · ")
             if let cover {
                 pen.fill(Palette.card.now)
                 pen.image(cover, in: pen.bounds)
@@ -81,7 +81,7 @@ struct CardArt {
             pen.fill(Palette.media)
             if let cover { pen.image(cover, in: pen.bounds) }
             pen.playMark(w: t)
-            pen.badges([card.format].compactMap { $0 }, w: t)
+            pen.badges([card.format.map(displayed)].compactMap { $0 }, w: t)
             if let d = card.duration { pen.badges([Self.clock(d)], w: t, bottom: true, trailing: true) }
         case .audio:
             pen.fill(Palette.card.now)
@@ -89,11 +89,11 @@ struct CardArt {
             let p = t * CardType.padding
             pen.text(card.title.isEmpty ? (card.source ?? "") : card.title, size: t * CardType.title, weight: .semibold,
                      color: Palette.ink.now, in: CGRect(x: p, y: size.height * 0.56, width: w - p * 2, height: size.height * 0.28))
-            pen.text([card.duration.map(Self.clock), card.format].compactMap { $0 }.joined(separator: " · "), size: t * CardType.footer,
+            pen.text([card.duration.map(Self.clock), card.format.map(displayed)].compactMap { $0 }.joined(separator: " · "), size: t * CardType.footer,
                      color: Palette.inkTertiary.now, in: footerRect)
         }
         state(card, &pen)
-        if unseen { pen.badges(["新"], w: t, trailing: true) }
+        if unseen { pen.badges([String(localized: "新")], w: t, trailing: true) }
     }
 
     /// 短文：引文卡，宋体 / 衬线，留白多
@@ -198,18 +198,18 @@ struct CardArt {
         let p = t * CardType.padding
         pen.text(name, size: t * CardType.title, weight: .bold, color: Palette.ink.now, maxLines: 1,
                  in: CGRect(x: p, y: size.height - bar + bar * 0.18, width: w - p * 2, height: bar * 0.5))
-        pen.text("画板", size: t * CardType.footer, color: Palette.inkTertiary.now, in: CGRect(x: p, y: size.height - bar * 0.38, width: w - p * 2, height: bar * 0.3))
+        pen.text(String(localized: "画板"), size: t * CardType.footer, color: Palette.inkTertiary.now, in: CGRect(x: p, y: size.height - bar * 0.38, width: w - p * 2, height: bar * 0.3))
     }
 
     /// 正在抽取、残缺、正在理解：一种轻量的标示
     private func state(_ card: CardFace, _ pen: inout Pen) {
         if card.extraction == .extracting {
             pen.rect(pen.bounds, Palette.card.now.opacity(0.6))
-            pen.badges(["正在抽取"], w: t, color: Palette.accent)
+            pen.badges([String(localized: "正在抽取")], w: t, color: Palette.accent)
         } else if card.partial != nil {
-            pen.badges(["残缺"], w: t, bottom: true, color: Palette.warning)
+            pen.badges([String(localized: "残缺")], w: t, bottom: true, color: Palette.warning)
         } else if card.understanding == .generating {
-            pen.badges(["正在理解"], w: t, bottom: true)
+            pen.badges([String(localized: "正在理解")], w: t, bottom: true)
         }
     }
 

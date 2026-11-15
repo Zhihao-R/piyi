@@ -33,7 +33,7 @@ public struct ToolOutput: Sendable {
 
 /// 模型填的参数不是约定的格式
 struct BadArguments: LocalizedError {
-    var errorDescription: String? { "参数格式不对" }
+    var errorDescription: String? { String(localized: "参数格式不对") }
 }
 
 /// 找卡：参数直接是搜索条件，构造查询调 Searcher.find。不让搜索再理解一遍这句话：讨论里的模型已经理解过了，再理解要多等约 3 秒。
@@ -45,7 +45,7 @@ public struct FindCards: Tool {
 
     public init(searcher: Searcher) { self.searcher = searcher }
 
-    public let title = "找卡"
+    public let title = String(localized: "找卡")
     public let nature = ToolNature.reading
 
     public var spec: ToolSpec {
@@ -95,7 +95,7 @@ public struct PickRandomCards: Tool {
 
     public init(searcher: Searcher) { self.searcher = searcher }
 
-    public let title = "随机抽卡"
+    public let title = String(localized: "随机抽卡")
     public let nature = ToolNature.reading
 
     public var spec: ToolSpec {
@@ -127,6 +127,6 @@ public struct PickRandomCards: Tool {
         let picked = Array(pool.shuffled().prefix(count))
         let text = picked.isEmpty ? "没有符合条件的卡。"
             : "随机抽到 \(picked.count) 张。用户还没引用它们，不能当出处；提到时写卡名：\n" + picked.map { "c\($0.id) \($0.brief)" }.joined(separator: "\n")
-        return ToolOutput(text: text, detail: "\(picked.count) 张", shown: picked.isEmpty ? nil : .cards(picked.map(\.id)))
+        return ToolOutput(text: text, detail: String(localized: "\(picked.count) 张"), shown: picked.isEmpty ? nil : .cards(picked.map(\.id)))
     }
 }

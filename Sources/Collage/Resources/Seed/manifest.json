@@ -39,7 +39,10 @@
   "x": 3270,
   "y": 854,
   "width": 200,
-  "height": 260
+  "height": 260,
+  "en": {
+   "file": "the-book-of-tea-on-the-vacuum.md"
+  }
  },
  {
   "kind": "file",
@@ -58,7 +61,11 @@
   "x": 2690,
   "y": 1124,
   "width": 220,
-  "height": 110
+  "height": 110,
+  "en": {
+   "text": "Empty space isn’t empty. It lets the picture breathe.",
+   "source": "A note to self"
+  }
  },
  {
   "kind": "image",
@@ -153,7 +160,11 @@
   "x": 3860,
   "y": 154,
   "width": 248,
-  "height": 140
+  "height": 140,
+  "en": {
+   "text": "Art does not reproduce the visible; it makes visible.",
+   "source": "Paul Klee · Creative Confession, 1920"
+  }
  },
  {
   "kind": "image",
@@ -280,7 +291,11 @@
   "x": 1280,
   "y": 1474,
   "width": 200,
-  "height": 100
+  "height": 100,
+  "en": {
+   "text": "I walk to where the stream runs out, and sit to watch the clouds rise.",
+   "source": "Wang Wei · My Retreat at Mount Zhongnan"
+  }
  },
  {
   "kind": "image",
@@ -394,11 +409,14 @@
   "x": 1960,
   "y": 1304,
   "width": 220,
-  "height": 286
+  "height": 286,
+  "en": {
+   "file": "about-collage.md"
+  }
  },
  {
   "kind": "file",
-  "file": "拼贴-维基百科长截图.jpg",
+  "file": "wikipedia-collage-long-screenshot.jpg",
   "createdAt": 1791452807,
   "x": 2140,
   "y": 1264,
@@ -412,7 +430,10 @@
   "x": 2260,
   "y": 1314,
   "width": 200,
-  "height": 284
+  "height": 284,
+  "en": {
+   "file": "color-notes-green-inside-gray.pdf"
+  }
  },
  {
   "kind": "file",
@@ -421,7 +442,10 @@
   "x": 2430,
   "y": 1364,
   "width": 170,
-  "height": 221
+  "height": 221,
+  "en": {
+   "file": "Interaction Principles for a Card Canvas.docx"
+  }
  },
  {
   "kind": "quote",
@@ -432,7 +456,11 @@
   "y": 1604,
   "width": 220,
   "rotation": -3.0,
-  "height": 286
+  "height": 286,
+  "en": {
+   "text": "I spent the afternoon cutting up old magazines from the bookshelf. The most interesting part wasn’t the pictures I cut out but the scraps left on the table: half a headline, a corner of sky, a cropped-off finger. On their own they’re nothing; together they read like an unfinished poem. A collection is probably the same. What matters most is often not any single item but the bit of extra meaning that appears when a few happen to sit side by side. Next time I tidy up, I won’t rush to delete. I’ll spread them out first.",
+   "source": "A note to self"
+  }
  },
  {
   "kind": "file",
@@ -461,7 +489,11 @@
   "x": 2530,
   "y": 1604,
   "width": 200,
-  "height": 123
+  "height": 123,
+  "en": {
+   "text": "This weekend: Morandi’s still lifes. Look for the green inside the grays.",
+   "source": "A note to self"
+  }
  },
  {
   "kind": "quote",
@@ -481,7 +513,11 @@
   "x": 2140,
   "y": 1974,
   "width": 210,
-  "height": 105
+  "height": 105,
+  "en": {
+   "text": "Before you looked at this flower, it and your mind had both returned to stillness.",
+   "source": "Wang Yangming · Instructions for Practical Living"
+  }
  },
  {
   "kind": "quote",
@@ -491,7 +527,11 @@
   "x": 2380,
   "y": 2034,
   "width": 200,
-  "height": 100
+  "height": 100,
+  "en": {
+   "text": "My life has a limit, but knowing has none.",
+   "source": "Zhuangzi · Nourishing the Lord of Life"
+  }
  },
  {
   "kind": "image",
@@ -585,7 +625,11 @@
   "x": 4940,
   "y": 1512,
   "width": 220,
-  "height": 135
+  "height": 135,
+  "en": {
+   "text": "Color is the key, the eye is the hammer, the soul is the piano with many strings.",
+   "source": "Wassily Kandinsky · On the Spiritual in Art, 1911"
+  }
  },
  {
   "kind": "quote",

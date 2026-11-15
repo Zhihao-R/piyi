@@ -8,19 +8,19 @@ enum OnboardingStep: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .keys: "填云端服务方的密钥"
-        case .model: "下载本机模型"
-        case .browser: "装上浏览器扩展"
-        case .phone: "从手机收集"
+        case .keys: String(localized: "填云端服务方的密钥")
+        case .model: String(localized: "下载本机模型")
+        case .browser: String(localized: "装上浏览器扩展")
+        case .phone: String(localized: "从手机收集")
         }
     }
 
     var detail: String {
         switch self {
-        case .keys: "用来给卡片起标题、写描述和标签。不填也能收集，卡片会停在「等待密钥」，填上后自动补上。"
-        case .model: "用来在本机算向量，搜索要用它。只需下载一次。"
-        case .browser: "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，拼贴也交给它在后台打开。"
-        case .phone: "在 iPhone 上分享到「收集拼贴」，内容经 iCloud 云盘存入资料库。"
+        case .keys: String(localized: "用来给卡片起标题、写描述和标签。不填也能收集，卡片会停在「等待密钥」，填上后自动补上。")
+        case .model: String(localized: "用来在本机算向量，搜索要用它。只需下载一次。")
+        case .browser: String(localized: "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，拼贴也交给它在后台打开。")
+        case .phone: String(localized: "在 iPhone 上分享到「收集拼贴」，内容经 iCloud 云盘存入资料库。")
         }
     }
 }

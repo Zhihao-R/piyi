@@ -71,7 +71,7 @@ extension CanvasView {
         if commit, var p = items[c.id]?.placement {
             p.crop = c.normalized
             p.frame = c.crop
-            self.commit([p], as: "裁剪")
+            self.commit([p], as: String(localized: "裁剪"))
         }
         updateOverlay()
         delegate?.canvasStateChanged(self)
@@ -85,7 +85,7 @@ extension CanvasView {
             p.frame = Cropper.fullFrame(p)
             p.crop = nil
             return p
-        }, as: "恢复原图")
+        }, as: String(localized: "恢复原图"))
     }
 
     // MARK: 拖裁剪框

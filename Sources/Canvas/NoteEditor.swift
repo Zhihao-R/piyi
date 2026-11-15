@@ -181,7 +181,7 @@ extension CanvasView {
         guard let id = editor.placement else {
             guard !text.isEmpty, let board else { editor.dismiss(); return nil }
             return Task {
-                await createNote(text, frame: editor.world, on: board, as: "添加文字")
+                await createNote(text, frame: editor.world, on: board, as: String(localized: "添加文字"))
                 // 画布读回新卡、开始画了再淡出，中间不空一下
                 editor.dismiss()
             }
@@ -190,11 +190,11 @@ extension CanvasView {
         live[id]?.isHidden = false
         guard items[id] != nil, let old = editor.original else { return nil }
         // 写空了：这张卡进废纸篓，放了它的每个画板上都拿掉
-        if text.isEmpty { return apply(.trashed([old.card]), as: "删除文字") }
+        if text.isEmpty { return apply(.trashed([old.card]), as: String(localized: "删除文字")) }
         guard text != old.text else { return nil }
         let new = Note(card: old.card, text: text, tint: old.tint)
         show([new])
-        return apply(.written(old: [old], new: [new]), as: "编辑文字")
+        return apply(.written(old: [old], new: [new]), as: String(localized: "编辑文字"))
     }
 
     /// 把一段字写成文字卡，放在眼前的空处（讨论的回答收成文字卡）。和亲手写的走同一条路，⌘Z 撤回

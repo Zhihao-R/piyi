@@ -314,7 +314,7 @@ extension CanvasView: NSDraggingSource {
         switch gesture {
         case .move(let m) where !m.current.isEmpty:
             overlay.setGuides([])
-            commit(Array(snapped(m).values), as: "移动")
+            commit(Array(snapped(m).values), as: String(localized: "移动"))
             gesture = .none
             delegate?.canvasStateChanged(self)
         case .move(let m):
@@ -323,10 +323,10 @@ extension CanvasView: NSDraggingSource {
         case .marquee:
             overlay.setMarquee(nil)
         case .resize(let r):
-            commit(Array(r.placements(at: worldPoint(point(event)), minWidth: Grid.unit * 2).values), as: "缩放")
+            commit(Array(r.placements(at: worldPoint(point(event)), minWidth: Grid.unit * 2).values), as: String(localized: "缩放"))
         case .rotate(let r):
             if r.origins.count > 1 { groupRotation = r.current.rotation }
-            commit(Array(r.placements.values), as: "旋转")
+            commit(Array(r.placements.values), as: String(localized: "旋转"))
         case .crop:
             break
         case .none, .pan:
@@ -389,7 +389,7 @@ extension CanvasView: NSDraggingSource {
             return p
         }
         animate(placements)
-        commit(placements, as: "整理成行")
+        commit(placements, as: String(localized: "整理成行"))
     }
 
     /// 卡片换位置的动画：按设计数值里的「换位置」弹簧

@@ -56,8 +56,8 @@ final class SearchModel {
 
     /// 灵感按钮为什么用不了；nil 表示能用
     var inspirationBlocked: String? {
-        if !model.online { return "离线时用不了灵感：要模型来说出卡片之间的联系" }
-        if !model.keysReady { return model.keyRejected ? "密钥被拒绝了，换一把才能用灵感" : "填上密钥才能用灵感" }
+        if !model.online { return String(localized: "离线时用不了灵感：要模型来说出卡片之间的联系") }
+        if !model.keysReady { return model.keyRejected ? String(localized: "密钥被拒绝了，换一把才能用灵感") : String(localized: "填上密钥才能用灵感") }
         return nil
     }
 
@@ -158,12 +158,13 @@ final class SearchModel {
             case .draw:
                 guard let reading = await searcher.draw(q, online: online) else { return notFound(mine) }
                 guard request == mine else { return }
-                await show(reading.cards, as: .draw, text: reading.text ?? (modelReady ? "这次没写出解读，再抽一张试试" : nil))
+                await show(reading.cards, as: .draw, text: reading.text ?? (modelReady ? String(localized: "这次没写出解读，再抽一张试试") : nil))
             case .ask:
                 panel = Panel(kind: .ask, text: nil)
                 let reading = await searcher.ask(q, online: online)
                 guard request == mine else { return }
-                await show(reading.cards, as: .ask, text: reading.text ?? "没能写出回答：\(modelReady ? "模型没有回应" : "要联网、填上密钥才能回答")。下面是找到的卡")
+                let reason = modelReady ? String(localized: "模型没有回应") : String(localized: "要联网、填上密钥才能回答")
+            await show(reading.cards, as: .ask, text: reading.text ?? String(localized: "没能写出回答：\(reason)。下面是找到的卡"))
             }
         }
     }
@@ -264,7 +265,7 @@ final class SearchModel {
         guard request == mine else { return }
         panel = nil
         model.canvas?.spotlight(nil)
-        model.notify("没找到相关的卡")
+        model.notify(String(localized: "没找到相关的卡"))
     }
 
     /// 提问的回答下面「接着聊」：问答原样带进一段新讨论，依据的卡放上桌
@@ -281,9 +282,9 @@ final class SearchModel {
             do {
                 let kept = try await canvas.keepVisitors(cards)
                 model.record(.placed, kept, board: board)
-                if !kept.isEmpty { model.notify("已放进当前画板 \(kept.count) 张") }
+                if !kept.isEmpty { model.notify(String(localized: "已放进当前画板 \(kept.count) 张")) }
             } catch {
-                model.notify("没放进去：\(error.localizedDescription)")
+                model.notify(String(localized: "没放进去：\(error.localizedDescription)"))
             }
             visitorsChanged()
         }

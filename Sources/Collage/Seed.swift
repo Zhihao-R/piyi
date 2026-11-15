@@ -18,7 +18,16 @@ enum Seed {
         var width: Double?
         var height: Double?
         var rotation: Double?
+        /// 界面不是中文时换上的英文版：引文、随手记、中文文件
+        var en: Variant?
     }
+
+    private struct Variant: Decodable {
+        var text: String?
+        var source: String?
+        var file: String?
+    }
+
 
     /// 一张示例卡在画板上的位置
     struct Spot: Sendable {
@@ -46,7 +55,17 @@ enum Seed {
     /// 新装用户的示例：和你拖进来的东西走同一条收集流程，各自带着在示例画板上的位置
     static func sources() -> [(source: Source, spot: Spot?)] {
         guard let dir = directory else { return [] }
-        return items.compactMap { item in source(item, in: dir).map { ($0, spot(item)) } }
+        return items.compactMap { original in
+            var item = original
+            if !interfaceIsChinese, let en = item.en {
+                item.text = en.text ?? item.text
+                item.source = en.source ?? item.source
+                item.file = en.file ?? item.file
+                // 换了文字的卡按英文的长短重新算高度
+                if en.text != nil { item.height = nil }
+            }
+            return source(item, in: dir).map { ($0, spot(item)) }
+        }
     }
 
     private static func spot(_ item: Item) -> Spot? {

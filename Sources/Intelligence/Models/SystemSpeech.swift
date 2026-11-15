@@ -5,10 +5,11 @@ import Library
 /// 转录：系统自带的 SpeechAnalyzer（macOS 26 起），在本机跑。
 /// 中文模型由系统下载和更新，不往 App 里加文件；模型在系统进程里跑，不占 App 的内存。约 20 倍速，十分钟的视频半分钟转完
 public struct SystemSpeech: Transcription {
-    public let name = "系统语音识别"
+    public let name = String(localized: "系统语音识别")
     /// 中文模型没装时，第一次转录由系统下载
     public let isReady = true
-    static let locale = Locale(identifier: "zh_CN")
+    /// 按界面语言选中文或英文的识别模型
+    static var locale: Locale { Locale(identifier: Writing.isChinese ? "zh_CN" : "en_US") }
 
     public init() {}
 

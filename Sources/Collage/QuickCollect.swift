@@ -36,12 +36,12 @@ final class QuickCollect: NSObject {
         self.look = look
         self.tell = tell
         look()
-        if hotKey == nil { tell("⌃⌥C 被别的 App 占用了，按它收不了东西") }
+        if hotKey == nil { tell(String(localized: "⌃⌥C 被别的 App 占用了，按它收不了东西")) }
     }
 
     /// 「服务」菜单里的「收进拼贴」：名字和 Info.plist 里 NSServices 的 NSMessage 对应
     @objc func collect(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
-        take(Collector.sources(in: pasteboard), empty: "选中的内容收不了")
+        take(Collector.sources(in: pasteboard), empty: String(localized: "选中的内容收不了"))
     }
 
     /// 快捷键收的是剪贴板，不一定是刚复制的：密码管理器标了隐藏、临时的不收，上次收过之后没再复制过的不收
@@ -49,12 +49,12 @@ final class QuickCollect: NSObject {
         let clipboard = NSPasteboard.general
         let types = Set(clipboard.types ?? [])
         if !types.isDisjoint(with: [.init("org.nspasteboard.ConcealedType"), .init("org.nspasteboard.TransientType")]) {
-            return say("剪贴板里是密码之类的内容，没收")
+            return say(String(localized: "剪贴板里是密码之类的内容，没收"))
         }
-        guard clipboard.changeCount != lastTaken else { return say("剪贴板没有新东西") }
+        guard clipboard.changeCount != lastTaken else { return say(String(localized: "剪贴板没有新东西")) }
         let sources = Collector.sources(in: clipboard)
         if !sources.isEmpty { lastTaken = clipboard.changeCount }
-        take(sources, empty: "剪贴板里没有能收的东西")
+        take(sources, empty: String(localized: "剪贴板里没有能收的东西"))
     }
 
     /// 先存进收件箱；等收集查过重（heard）才说「收下了」
@@ -68,7 +68,7 @@ final class QuickCollect: NSObject {
                 look?()
             } catch {
                 pending.remove(id)
-                say("没收下：\(error.localizedDescription)")
+                say(String(localized: "没收下：\(error.localizedDescription)"))
             }
         }
     }
