@@ -30,6 +30,20 @@
 			<string>%lld 张</string>
 		</dict>
 	</dict>
+	<key>%lld 张卡</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@n0@</string>
+		<key>n0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 张卡</string>
+		</dict>
+	</dict>
 	<key>%lld 张已经不在资料库里</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

@@ -20,8 +20,6 @@ public actor Inspirer {
     private var recentCards: [Int64] = []
     /// 轮到第几种联系
     private var turn = 0
-    /// 问了几次、几次没挑出来、几次写了但核对不上：检查集据此报丢弃率
-    private(set) var tally = (asked: 0, empty: 0, refuted: 0)
 
     struct Key: Hashable { var scope: Scope; var topic: String }
 
@@ -36,7 +34,7 @@ public actor Inspirer {
     /// 每一轮想要的张数，轮着来；凑不出就少挑
     static let sizes = [3, 2, 4, 3, 5]
     /// 抽到的几张里找不出联系、或者写了但核对不上时，换一批、换一种联系再试，最多几次。
-    /// 核对会拦掉一多半（InspireCheck 实测六成左右），试 5 次还凑不出一组的不到一成
+    /// 核对会拦掉一多半（实测六成左右），试 5 次还凑不出一组的不到一成
     static let attempts = 5
     /// 现写一组最多等多久（秒）：到了就不再换一批重试，告诉你没找出来，不让人干等
     static let patience = 25.0
@@ -129,11 +127,10 @@ public actor Inspirer {
             // 两个周期（4 和 5）错开，每种联系都轮得到各种张数
             let (angle, wanted) = (Angle.allCases[turn % Angle.allCases.count], Self.sizes[turn % Self.sizes.count])
             turn += 1
-            tally.asked += 1
             guard let reply = try await explain(offered, angle: angle, wanted: wanted, topic: key.topic, until: deadline),
-                  let picked = Self.chosen(reply.cards, from: offered) else { tally.empty += 1; continue }
+                  let picked = Self.chosen(reply.cards, from: offered) else { continue }
             // 写得具体了，编出来的也具体（「两幅画里都有马」）：对着挑中的这几张再核对一遍，对不上的不给人看
-            guard await holds(reply.text, for: picked.compactMap { id in offered.first { $0.id == id } }, until: deadline) else { tally.refuted += 1; continue }
+            guard await holds(reply.text, for: picked.compactMap { id in offered.first { $0.id == id } }, until: deadline) else { continue }
             // 挑中的记下：后台备的下一组避开它们；没挑中的还能再出现
             recentCards = Array((picked + recentCards).prefix(24))
             return Inspiration(cards: picked, text: reply.text)
@@ -150,7 +147,7 @@ public actor Inspirer {
 
     /// 挑一组：两两之间的相似度都落在全库的高段，尽量混合不同类型。
     /// 联系要是真的，所以挑意思相近的；意外感来自类型和出处不同（一张画和一段话讲的是同一件事），不来自意思离得远。
-    /// 原先取 25%～70% 分位的中段，那里的卡多数其实没有关系，模型只能硬编（InspireCheck：19 次里 11 次核对不上）。
+    /// 原先取 25%～70% 分位的中段，那里的卡多数其实没有关系，模型只能硬编（实测 19 次里 11 次核对不上）。
     /// 现在取 80%～97% 分位：最顶上的 3% 多是同一批东西（同一个画家、同一篇文章的几张图），没有新意
     /// 抽给模型挑的张数最多 offered 张。以当前范围里的卡为起点，范围里不够时其余从全部卡片里配
     static func pick(from pool: [SearchCard], home: Set<Int64>, avoiding recent: Set<Int64>) -> [SearchCard]? {

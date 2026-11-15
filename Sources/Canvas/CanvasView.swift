@@ -294,12 +294,6 @@ public final class CanvasView: NSView {
     /// 和一块区域相交的摆放
     public func placements(in rect: CGRect) -> Set<Int64> { index.ids(in: rect) }
 
-    /// 可见的卡都已按当前倍率画好（停手重画已完成）
-    public var isSharp: Bool { renderScale == camera.scale && Painter.pending == 0 }
-
-    /// 画了几次位图：做了的、做完才发现卡已经走了的、因为取消提前跳过的
-    public static var paintCounts: (painted: Int, wasted: Int, skipped: Int) { (Painter.painted, Painter.wasted, Painter.skipped) }
-
     // MARK: 镜头
 
     /// 视图还没有尺寸时（刚放进窗口）先记着，等第一次布局再取景
@@ -574,24 +568,6 @@ public final class CanvasView: NSView {
             l.place(p)
             raise(l, id)
         }
-    }
-
-    // MARK: 拖动一张卡（性能基准）
-
-    /// 拖着一张卡偏离原位（屏幕点）；nil 表示松手，回到原位。性能基准用它模拟拖动：
-    /// 和真拖动走同一段代码（找邻居、吸附、对齐线），只是不写数据库
-    public func drag(_ id: Int64?, by offset: CGSize) {
-        if case .move(let m) = gesture, m.primary != id {
-            for (old, p) in m.origins { live[old]?.place(p) }
-            overlay.setGuides([])
-            gesture = .none
-        }
-        guard let id, let item = items[id] else { return }
-        if case .move = gesture {} else { gesture = .move(Gesture.Move(primary: id, start: .zero, origins: [id: item.placement], top: topZ)) }
-        guard case .move(var m) = gesture else { return }
-        m.current = moved(m, to: CGPoint(x: offset.width, y: offset.height))
-        for (id, p) in m.current { live[id]?.place(p) }
-        gesture = .move(m)
     }
 }
 

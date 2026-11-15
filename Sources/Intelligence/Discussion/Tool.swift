@@ -127,6 +127,6 @@ public struct PickRandomCards: Tool {
         let picked = Array(pool.shuffled().prefix(count))
         let text = picked.isEmpty ? "没有符合条件的卡。"
             : "随机抽到 \(picked.count) 张。用户还没引用它们，不能当出处；提到时写卡名：\n" + picked.map { "c\($0.id) \($0.brief)" }.joined(separator: "\n")
-        return ToolOutput(text: text, detail: String(localized: "\(picked.count) 张"), shown: picked.isEmpty ? nil : .cards(picked.map(\.id)))
+        return ToolOutput(text: text, detail: String(localized: "\(picked.count) 张卡"), shown: picked.isEmpty ? nil : .cards(picked.map(\.id)))
     }
 }

@@ -46,5 +46,8 @@
   },
   "readerLine2": {
     "message": "闲下来几分钟后它会自己关掉"
+  },
+  "imageUnavailable": {
+    "message": "这张图取不到"
   }
 }

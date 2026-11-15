@@ -163,7 +163,7 @@ final class SearchModel {
                 panel = Panel(kind: .ask, text: nil)
                 let reading = await searcher.ask(q, online: online)
                 guard request == mine else { return }
-                let reason = modelReady ? String(localized: "模型没有回应") : String(localized: "要联网、填上密钥才能回答")
+            let reason = modelReady ? String(localized: "模型没有回应") : String(localized: "要联网、填上密钥才能回答")
             await show(reading.cards, as: .ask, text: reading.text ?? String(localized: "没能写出回答：\(reason)。下面是找到的卡"))
             }
         }

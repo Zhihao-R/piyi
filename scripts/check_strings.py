@@ -29,8 +29,20 @@ with tempfile.TemporaryDirectory() as out:
             for e in entries:
                 found.setdefault(e["key"], f"{source}:{e['location']['startingLine']}")
 
-translated = {unescape(k) for k in strings_keys(f"{EN}/Localizable.strings")} | set(plistlib.load(open(f"{EN}/Localizable.stringsdict", "rb")))
+# 存在数据里当标识用的中文名（格式、平台），显示时才翻（displayed），编译器提取不到：从抽取器里按写法找
+label = re.compile(r'(?:\.format = |platform: |site: )"([^"]*[\u4e00-\u9fff][^"]*)"')
+for path in glob.glob(os.path.join(ROOT, "Sources/Library/Extract/*.swift")):
+    for n, line in enumerate(open(path, encoding="utf-8"), 1):
+        for name in label.findall(line):
+            found.setdefault(name, f"{os.path.relpath(path, ROOT)}:{n}")
+
+plurals = set(plistlib.load(open(f"{EN}/Localizable.stringsdict", "rb")))
+translated = {unescape(k) for k in strings_keys(f"{EN}/Localizable.strings")} | plurals
 missing = {k: where for k, where in found.items() if k not in translated}
+# 带数量的句子中文也要有一份，否则中文界面会退回英文
+chinese = set(plistlib.load(open(os.path.join(ROOT, "Localization/zh-Hans.lproj/Localizable.stringsdict"), "rb")))
+for key in sorted(plurals - chinese):
+    missing[key] = "zh-Hans.lproj/Localizable.stringsdict 里缺这一句"
 for key, where in sorted(missing.items(), key=lambda kv: kv[1]):
     print(f"{where}: {key}")
 print(f"共 {len(found)} 句，没翻译的 {len(missing)} 句")

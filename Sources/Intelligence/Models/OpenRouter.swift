@@ -54,7 +54,7 @@ public final class OpenRouter: Generation, Keyed {
             // 平时关掉思考：省时间，也免得额度全花在思考上；判断把握不够时才让它想
             "reasoning": ["enabled": careful],
             // 同一个模型有几十家服务商，默认按价格挑，常落到慢的那几家；按最近的响应速度挑，一次判断从 3 秒左右降到 1.7 秒左右。
-            // 后台理解卡片也这样挑（有意的：自用阶段，单价最多贵一倍，一张卡仍不到一分钱）
+            // 后台理解卡片也这样挑（有意的：单价最多贵一倍，一张卡仍不到一分钱）
             "provider": ["sort": "latency"],
         ])
         guard let choices = response["choices"] as? [[String: Any]],

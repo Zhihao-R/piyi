@@ -126,11 +126,11 @@ public final class DiscussionKernel: Sendable {
     /// 停下了照样抛出去
     func execute(_ call: ToolCall, desk: Set<Int64>) async throws -> ToolResult {
         guard let tool = tools.first(where: { $0.spec.name == call.name }), tool.nature == .reading else {
-            return ToolResult(call: call.id, label: String(localized: "\(call.name)没成功"), text: String(localized: "工具失败：没有这个工具"), failed: true)
+            return ToolResult(call: call.id, label: String(localized: "\(call.name)没成功"), text: "工具失败：没有这个工具", failed: true)
         }
         do {
             let output = try await tool.run(call.arguments, desk: desk)
-            return ToolResult(call: call.id, label: "\(tool.title)：\(output.detail)", text: String(output.text.prefix(Self.resultLimit)),
+            return ToolResult(call: call.id, label: String(localized: "\(tool.title)：\(output.detail)"), text: String(output.text.prefix(Self.resultLimit)),
                               items: output.items, shown: output.shown, cost: output.cost)
         } catch is CancellationError {
             throw CancellationError()

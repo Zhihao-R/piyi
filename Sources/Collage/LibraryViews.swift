@@ -34,8 +34,8 @@ enum LibraryView: String, CaseIterable, Codable, Sendable {
         let title = switch ago {
         case 0: String(localized: "今天")
         case 1: String(localized: "昨天")
-        default: day.formatted(sameYear ? .dateTime.month(.defaultDigits).day().weekday(.abbreviated).locale(Self.chinese)
-                                        : .dateTime.year().month(.defaultDigits).day().locale(Self.chinese))
+        default: day.formatted(sameYear ? .dateTime.month(.defaultDigits).day().weekday(.abbreviated)
+                                        : .dateTime.year().month(.defaultDigits).day())
         }
         return Grouping.Group(title: title, rank: -day.timeIntervalSince1970)
     }
@@ -65,5 +65,4 @@ enum LibraryView: String, CaseIterable, Codable, Sendable {
         "behance.net": "Behance", "github.com": "GitHub", "douban.com": String(localized: "豆瓣"), "sspai.com": String(localized: "少数派"),
     ]
 
-    private static let chinese = Locale(identifier: "zh_CN")
 }

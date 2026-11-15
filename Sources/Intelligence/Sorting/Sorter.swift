@@ -193,7 +193,7 @@ public actor Sorter {
     }
 
     /// 每个候选画板一道题：画板名、规则、画板里和新卡最像的几张卡。
-    /// 问「属于这个画板的主题吗」比问「应该放进去吗」更合 Jev 的路子：同样不放错，该放的放进了从 36% 升到 47%（SortCheck）
+    /// 问「属于这个画板的主题吗」比问「应该放进去吗」更合判断模型的路子：在真实资料库上测，同样不放错，该放的放进了从 36% 升到 47%
     static func question(_ board: Board, examples: [SearchCard]) -> Question {
         var text = "用户的画板「\(board.name)」收同一类主题的卡片。这张新卡片属于这个画板的主题吗？"
         if let rule = board.rule { text += "\n这个画板收：\(rule)" }

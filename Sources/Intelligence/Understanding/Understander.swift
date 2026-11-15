@@ -3,7 +3,7 @@ import Library
 
 /// 理解队列：把卡片从「只有原始内容」变成「能被搜到、看一眼就懂」。
 /// 颜色在本机统计，标题、描述、标签、总结交给生成，向量在本机算。
-/// 要不要做全看「依据」（rebuild-plan 第三节）：卡片内容的依据和上次理解时不同就重新生成，
+/// 要不要做全看「依据」（Card.contentBasis，卡片内容的摘要）：卡片内容的依据和上次理解时不同就重新生成，
 /// 算向量的那段文字或向量模型变了就重算向量。所以退出时没做完的，下次打开自然接着做
 public actor Understander {
     let store: Store
@@ -129,7 +129,7 @@ public actor Understander {
     }
 
     /// 让模型写一张卡的标题、描述、标签；长内容的要点另问一次、读全文。
-    /// 要点没写出来就整张算失败、重试时两样一起重做：不为「只差要点」另记一种状态。检查集直接调它
+    /// 要点没写出来就整张算失败、重试时两样一起重做：不为「只差要点」另记一种状态
     func write(_ card: Card) async throws -> Generated {
         let images = await Prompt.images(for: card, store: store)
         var written = try await gateway.generate(Prompt.understanding(card, images: images.count), images: images, as: Prompt.Reply.self).generated

@@ -6,7 +6,7 @@ swift build -c release --product Collage
 swift build -c release --product CollageRelay
 (cd Extension && { [[ -d node_modules ]] || npm ci --silent } && npm run build --silent)
 BIN=$(swift build -c release --show-bin-path)
-# 默认打到 build/拼贴.app；截图自查时用 APP=别处 打一份，不动正在用的那个
+# 默认打到 build/拼贴.app；设 APP=<路径> 打到别处，不动正在用的那个
 APP="${APP:-build/拼贴.app}"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"

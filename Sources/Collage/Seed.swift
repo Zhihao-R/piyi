@@ -18,9 +18,9 @@ enum Seed {
         var width: Double?
         var height: Double?
         var rotation: Double?
-        /// 界面不是中文时换上的英文版：引文、随手记、中文文件
-        var en: Variant?
-        /// 事先生成好的理解结果，按界面语言（zh、en）各一份：新用户打开示例画板不用调模型
+        /// 别的界面语言换上的版本，按语言代码（en）：引文、随手记、中文文件
+        var variants: [String: Variant]?
+        /// 事先生成好的理解结果，按语言代码（zh、en）各一份：新用户打开示例画板不用调模型
         var understood: [String: Understood]?
     }
 
@@ -73,14 +73,14 @@ enum Seed {
         guard let dir = directory else { return [] }
         return items.compactMap { original in
             var item = original
-            if !interfaceIsChinese, let en = item.en {
-                item.text = en.text ?? item.text
-                item.source = en.source ?? item.source
-                item.file = en.file ?? item.file
-                // 换了文字的卡按英文的长短重新算高度
-                if en.text != nil { item.height = nil }
+            if let variant = item.variants?[interfaceLanguage] {
+                item.text = variant.text ?? item.text
+                item.source = variant.source ?? item.source
+                item.file = variant.file ?? item.file
+                // 换了文字的卡按译文的长短重新算高度
+                if variant.text != nil { item.height = nil }
             }
-            let understood = item.understood?[interfaceIsChinese ? "zh" : "en"].map {
+            let understood = item.understood?[interfaceLanguage].map {
                 Generated(title: $0.title, caption: $0.caption, detail: $0.detail, tags: $0.tags, summary: $0.summary, anchors: $0.anchors)
             }
             return source(item, in: dir).map { ($0, Preset(spot: spot(item), understood: understood)) }

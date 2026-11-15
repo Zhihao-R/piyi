@@ -301,7 +301,7 @@ private struct AnswerBody: View {
     /// 悬停浮出：存下的原话，和出处（卡名、时间点）
     static func tip(_ c: Citation, title: (Int64) -> String?) -> String {
         let source = [c.card.flatMap(title), c.seconds.map { Transcript.stamp(Double($0)) }].compactMap { $0 }.joined(separator: " · ")
-        return "「\(c.quote)」" + (source.isEmpty ? "" : "\n\(source)")
+        return quoted(c.quote) + (source.isEmpty ? "" : "\n\(source)")
     }
 }
 

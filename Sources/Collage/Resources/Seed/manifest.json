@@ -194,9 +194,6 @@
   "y": 854,
   "width": 200,
   "height": 260,
-  "en": {
-   "file": "the-book-of-tea-on-the-vacuum.md"
-  },
   "understood": {
    "zh": {
     "title": "茶之书论虚空",
@@ -231,6 +228,11 @@
      "philosophy",
      "public domain"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "file": "the-book-of-tea-on-the-vacuum.md"
    }
   }
  },
@@ -288,10 +290,6 @@
   "y": 1124,
   "width": 220,
   "height": 110,
-  "en": {
-   "text": "Empty space isn’t empty. It lets the picture breathe.",
-   "source": "A note to self"
-  },
   "understood": {
    "zh": {
     "title": "留白的呼吸感",
@@ -322,6 +320,12 @@
      "typography",
      "art theory"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "Empty space isn’t empty. It lets the picture breathe.",
+    "source": "A note to self"
    }
   }
  },
@@ -670,10 +674,6 @@
   "y": 154,
   "width": 248,
   "height": 140,
-  "en": {
-   "text": "Art does not reproduce the visible; it makes visible.",
-   "source": "Paul Klee · Creative Confession, 1920"
-  },
   "understood": {
    "zh": {
     "title": "克利论艺术本质",
@@ -706,6 +706,12 @@
      "Bauhaus",
      "aesthetics"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "Art does not reproduce the visible; it makes visible.",
+    "source": "Paul Klee · Creative Credo, 1920"
    }
   }
  },
@@ -1192,10 +1198,6 @@
   "y": 1474,
   "width": 200,
   "height": 100,
-  "en": {
-   "text": "I walk to where the stream runs out, and sit to watch the clouds rise.",
-   "source": "Wang Wei · My Retreat at Mount Zhongnan"
-  },
   "understood": {
    "zh": {
     "title": "终南别业名句",
@@ -1228,6 +1230,12 @@
      "classical literature",
      "solitude"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "I walk to where the stream runs out, and sit to watch the clouds rise.",
+    "source": "Wang Wei · My Retreat at Mount Zhongnan"
    }
   }
  },
@@ -1883,9 +1891,6 @@
   "y": 1304,
   "width": 220,
   "height": 286,
-  "en": {
-   "file": "about-collage.md"
-  },
   "understood": {
    "zh": {
     "title": "关于拼贴",
@@ -1942,6 +1947,11 @@
      }
     ]
    }
+  },
+  "variants": {
+   "en": {
+    "file": "about-collage.md"
+   }
   }
  },
  {
@@ -1995,9 +2005,6 @@
   "y": 1314,
   "width": 200,
   "height": 284,
-  "en": {
-   "file": "color-notes-green-inside-gray.pdf"
-  },
   "understood": {
    "zh": {
     "title": "颜色笔记：灰调里的绿",
@@ -2034,6 +2041,11 @@
     ],
     "summary": "· Morandi's seemingly gray bottles each lean toward a hue—yellowish, pinkish, or greenish gray—which makes them feel alive rather than like a faded photo.\n· Pure #808080 looks dead in interfaces, while a gray nudged 2–3% toward the brand color feels intentionally chosen.\n· Saturated green reads as cheap on screen, so for interfaces the advice is to halve saturation, use green for large background areas, and pair it with warm gray text.\n· A palette works like a still life: what matters is not five pretty colors but five colors that bring out each other.\n· The same gray-green may need to be darker and warmer on screen than on paper, since paper absorbs light while screens emit it—worth testing by viewing a print and a screen side by side for a week."
    }
+  },
+  "variants": {
+   "en": {
+    "file": "color-notes-green-inside-gray.pdf"
+   }
   }
  },
  {
@@ -2044,9 +2056,6 @@
   "y": 1364,
   "width": 170,
   "height": 221,
-  "en": {
-   "file": "Interaction Principles for a Card Canvas.docx"
-  },
   "understood": {
    "zh": {
     "title": "卡片画布交互原则",
@@ -2082,6 +2091,11 @@
      "user experience"
     ]
    }
+  },
+  "variants": {
+   "en": {
+    "file": "Interaction Principles for a Card Canvas.docx"
+   }
   }
  },
  {
@@ -2094,10 +2108,6 @@
   "width": 220,
   "rotation": -3.0,
   "height": 286,
-  "en": {
-   "text": "I spent the afternoon cutting up old magazines from the bookshelf. The most interesting part wasn’t the pictures I cut out but the scraps left on the table: half a headline, a corner of sky, a cropped-off finger. On their own they’re nothing; together they read like an unfinished poem. A collection is probably the same. What matters most is often not any single item but the bit of extra meaning that appears when a few happen to sit side by side. Next time I tidy up, I won’t rush to delete. I’ll spread them out first.",
-   "source": "A note to self"
-  },
   "understood": {
    "zh": {
     "title": "剪贴边角料的诗意",
@@ -2132,6 +2142,12 @@
      "curation",
      "ephemera"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "I spent the afternoon cutting up old magazines from the bookshelf. The most interesting part wasn’t the pictures I cut out but the scraps left on the table: half a headline, a corner of sky, a cropped-off finger. On their own they’re nothing; together they read like an unfinished poem. A collection is probably the same. What matters most is often not any single item but the bit of extra meaning that appears when a few happen to sit side by side. Next time I tidy up, I won’t rush to delete. I’ll spread them out first.",
+    "source": "A note to self"
    }
   }
  },
@@ -2232,10 +2248,6 @@
   "y": 1604,
   "width": 200,
   "height": 123,
-  "en": {
-   "text": "This weekend: Morandi’s still lifes. Look for the green inside the grays.",
-   "source": "A note to self"
-  },
   "understood": {
    "zh": {
     "title": "莫兰迪静物观展记",
@@ -2267,6 +2279,12 @@
      "self-note",
      "weekend"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "This weekend: Morandi’s still lifes. Look for the green inside the grays.",
+    "source": "A note to self"
    }
   }
  },
@@ -2322,10 +2340,6 @@
   "y": 1974,
   "width": 210,
   "height": 105,
-  "en": {
-   "text": "Before you looked at this flower, it and your mind had both returned to stillness.",
-   "source": "Wang Yangming · Instructions for Practical Living"
-  },
   "understood": {
    "zh": {
     "title": "王阳明论心与花",
@@ -2359,6 +2373,12 @@
      "metaphysics"
     ]
    }
+  },
+  "variants": {
+   "en": {
+    "text": "Before you looked at this flower, it and your mind had both returned to stillness.",
+    "source": "Wang Yangming · Instructions for Practical Living"
+   }
   }
  },
  {
@@ -2370,10 +2390,6 @@
   "y": 2034,
   "width": 200,
   "height": 100,
-  "en": {
-   "text": "My life has a limit, but knowing has none.",
-   "source": "Zhuangzi · Nourishing the Lord of Life"
-  },
   "understood": {
    "zh": {
     "title": "吾生也有涯",
@@ -2405,6 +2421,12 @@
      "Chinese literature",
      "wisdom"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "My life has a limit, but knowing has none.",
+    "source": "Zhuangzi · Nourishing the Lord of Life"
    }
   }
  },
@@ -2750,10 +2772,6 @@
   "y": 1512,
   "width": 220,
   "height": 135,
-  "en": {
-   "text": "Color is the key, the eye is the hammer, the soul is the piano with many strings.",
-   "source": "Wassily Kandinsky · On the Spiritual in Art, 1911"
-  },
   "understood": {
    "zh": {
     "title": "论艺术里的精神",
@@ -2786,6 +2804,12 @@
      "painting",
      "modernism"
     ]
+   }
+  },
+  "variants": {
+   "en": {
+    "text": "Color is the key, the eye is the hammer, the soul is the piano with many strings.",
+    "source": "Wassily Kandinsky · On the Spiritual in Art, 1911"
    }
   }
  },

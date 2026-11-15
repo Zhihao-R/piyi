@@ -84,7 +84,7 @@ extension CanvasView {
             let s = shelves[i], top = s.origin.y + Layout.shelfTitle
             guard top > visible.minY, s.origin.y < visible.maxY else { return nil }
             let at = screenPoint(CGPoint(x: s.origin.x, y: top))
-            return (i, s.title, String(localized: "\(s.members.count) 张") + (i == hotShelf ? String(localized: "　选中这一组") : ""), CGPoint(x: at.x, y: at.y - 8))
+            return (i, s.title, String(localized: "\(s.members.count) 张卡") + (i == hotShelf ? String(localized: "　选中这一组") : ""), CGPoint(x: at.x, y: at.y - 8))
         }, dark: isDark)
     }
 

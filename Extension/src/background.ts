@@ -108,7 +108,7 @@ let lastRule = 0
 async function image(src: string, from: string): Promise<Partial<Message>> {
   const bytes = await imageBytes(src, from).catch(() => null)
   if (bytes) return { image: bytes }
-  if (!/^https?:/.test(src)) throw new Error('这张图取不到')  // 页面临时生成的图（blob:）离开页面就没有了
+  if (!/^https?:/.test(src)) throw new Error(t('imageUnavailable'))  // 页面临时生成的图（blob:）离开页面就没有了
   return { imageURL: src }
 }
 

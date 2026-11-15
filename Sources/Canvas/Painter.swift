@@ -7,16 +7,8 @@ import Library
 /// 请求跟随调用方的 Task：卡片离开视野时取消，还没开始的就直接跳过。
 @MainActor
 enum Painter {
-    /// 还没交付的请求数；做了的绘制次数，其中做完才发现卡已经走了的（白做），因为取消提前跳过的。性能基准用
-    static var pending = 0
-    static var painted = 0, wasted = 0, skipped = 0
-
     static func bitmap(for item: BoardItem, scale: CGFloat, files: FileStore) async -> CGImage? {
-        pending += 1
-        defer { pending -= 1 }
-        let image = await paint(item, scale: scale, files: files)
-        if image == nil, Task.isCancelled { skipped += 1 } else { painted += 1; if Task.isCancelled { wasted += 1 } }
-        return image
+        await paint(item, scale: scale, files: files)
     }
 
     /// 在后台线程上画，不占主线程；优先级跟随调用方（视野内的卡用 userInitiated）

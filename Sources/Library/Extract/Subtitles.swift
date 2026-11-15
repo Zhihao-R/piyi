@@ -21,12 +21,12 @@ extension WebExtractor {
         return cues
     }
 
-    /// 挑一条：原声语言的人工字幕 → 原声的自动字幕 → 中文字幕 → 随便一条。
+    /// 挑一条：原声语言的人工字幕 → 原声的自动字幕 → 界面语言的字幕 → 随便一条。
     /// 要视频里实际说的话：别的语言的人工字幕多半是翻译。原声是哪种语言看自动字幕（平台按声音识别的，排在第一条的是原声）；
-    /// 没有自动字幕就认不出原声，按你常用的中文挑
+    /// 没有自动字幕就认不出原声，按界面语言挑
     static func pick(_ tracks: [Track]) -> Track? {
         guard let spoken = tracks.first(where: \.automatic) else {
-            return tracks.first { base($0.language) == "zh" } ?? tracks.first
+            return tracks.first { base($0.language) == interfaceLanguage } ?? tracks.first
         }
         return tracks.first { !$0.automatic && base($0.language) == base(spoken.language) } ?? spoken
     }
@@ -46,7 +46,7 @@ extension WebExtractor {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("com.google.android.apps.youtube.vr.oculus/1.62.27 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
                          forHTTPHeaderField: "User-Agent")
-        let client: [String: Any] = ["clientName": "ANDROID_VR", "clientVersion": "1.62.27", "deviceModel": "Quest 3", "androidSdkVersion": 32, "hl": "zh-CN"]
+        let client: [String: Any] = ["clientName": "ANDROID_VR", "clientVersion": "1.62.27", "deviceModel": "Quest 3", "androidSdkVersion": 32, "hl": interfaceLanguage]
         request.httpBody = try JSONSerialization.data(withJSONObject: ["context": ["client": client], "videoId": id])
         let player = try JSONSerialization.jsonObject(with: try await send(request).0) as? [String: Any]
         let captions = (player?["captions"] as? [String: Any])?["playerCaptionsTracklistRenderer"] as? [String: Any]

@@ -1,6 +1,6 @@
 # 示例画板的几个脚本共用：读写示例清单，把资料库里的一张卡认回清单里的那一项。
 # 卡按它收进来时的来路认：图片和网址按网址，引文按原文，文件按文件名（文档按标题），音频、视频、动图、长截图按种类。
-# 中文版和英文版（清单项里的 en）都认。
+# 原版和各语言的版本（清单项里的 variants）都认。
 import json, os, re, sqlite3
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../Sources/Collage/Resources/Seed")
@@ -31,7 +31,8 @@ def _bare(text):
     return re.sub(r"[\s\-·：:]", "", text or "").lower()
 
 def _versions(it):
-    return [it] + ([{**it, **it["en"]}] if "en" in it else [])
+    """原版和各语言的版本（清单项里的 variants）"""
+    return [it] + [{**it, **v} for v in it.get("variants", {}).values()]
 
 def match(row, items):
     """这张卡对应清单里的哪一项"""

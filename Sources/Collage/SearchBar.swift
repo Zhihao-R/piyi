@@ -269,7 +269,22 @@ extension Kind {
 }
 
 extension ColorName {
-    var label: String { aliases[0] }
+    var label: String {
+        switch self {
+        case .red: String(localized: "红色")
+        case .orange: String(localized: "橙色")
+        case .yellow: String(localized: "黄色")
+        case .green: String(localized: "绿色")
+        case .cyan: String(localized: "青色")
+        case .blue: String(localized: "蓝色")
+        case .purple: String(localized: "紫色")
+        case .pink: String(localized: "粉色")
+        case .brown: String(localized: "棕色")
+        case .black: String(localized: "黑色")
+        case .white: String(localized: "白色")
+        case .gray: String(localized: "灰色")
+        }
+    }
 
     /// 按钮上的色块
     var swatch: Color { Palette.swatches[rawValue]!.color }

@@ -5,14 +5,20 @@
 要求：macOS 26 以上，Xcode 26（带 Swift 6 工具链），Node.js（编译浏览器扩展）。
 
 ```sh
-./scripts/build_app.sh   # 正式版，生成 build/拼贴.app
-swift run Collage        # 调试版
-swift test               # 自动测试
+./scripts/build_app.sh             # 正式版，生成 build/拼贴.app
+swift build && swift run Collage   # 调试版（先 build，扩展的中转程序才会一起编译出来）
+swift test                         # 自动测试
 ```
 
-调试版要先 `swift build`（不只是 `swift run Collage`），扩展的中转程序才会编译出来。
-
 资料库在 `~/Library/Application Support/Collage/`。启动时设环境变量 `COLLAGE_ROOT=<目录>` 可以换一个资料库目录，试「新装用户第一次打开」时用。
+
+## 用到的模型
+
+- **生成和判断**：经 [OpenRouter](https://openrouter.ai) 调云端模型，密钥由用户在设置里填。写标题、描述、要点、灵感、回答用通用的大模型；判断（登录页还是正文、一句话想做什么、卡该不该分进某个画板）用一个专做判断、直接给出各选项概率的模型（`Intelligence/Models/Jev.swift`），比让通用模型写答案快一倍。
+- **搜索向量**：Qwen3-Embedding-0.6B，用 llama.cpp 在本机跑，用户在设置里下载。
+- **转录**：系统自带的语音识别，在本机跑；中文、英文两个模型同时听，留把握大的那份。
+
+所有模型调用只走 `Intelligence/Models/Gateway.swift` 一个出口。
 
 ## 代码分块
 
@@ -45,7 +51,6 @@ swift test               # 自动测试
 
 - **画布上不给每张卡配真控件。** 卡片平时是一张画好的图层，只有正在编辑文字的那一张临时盖一个文本框；悬停、选中只改那一张的边框。
 - **主线程只做界面。** 解码图片、画卡片位图、读写数据库、算向量、调模型都在后台。视野内马上要显示的用 `.userInitiated`，算向量、调模型、生成缩略图用 `.utility`。
-- **所有模型调用只走模型接入一个出口**（`Intelligence/Models/Gateway.swift`）。
 - **测试写在逻辑容易错、又不靠肉眼判断的地方**：数据库操作、查重、网格吸附、查询解析、抽取器的输出。用 Swift Testing。
 
 ## 界面语言
@@ -74,6 +79,7 @@ python3 scripts/check_strings.py
 ```sh
 OPENROUTER_API_KEY=… swift test --filter RealCloud   # 用真实云端理解一张图，确认请求格式没坏
 SUBTITLE_CHECK=1 swift test --filter SubtitleCheck    # 取一条 YouTube 视频的字幕，平台改版时它先失败
+SPEECH_CHECK=1 swift test --filter SpeechLanguage     # 用系统朗读做一段中文、一段英文，看转录是不是跟音频的语言走
 ```
 
 ## 示例画板

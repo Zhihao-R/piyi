@@ -46,5 +46,8 @@
   },
   "readerLine2": {
     "message": "It closes itself after a few idle minutes"
+  },
+  "imageUnavailable": {
+    "message": "This image can’t be collected"
   }
 }
