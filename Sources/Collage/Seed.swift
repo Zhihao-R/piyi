@@ -20,6 +20,17 @@ enum Seed {
         var rotation: Double?
         /// 界面不是中文时换上的英文版：引文、随手记、中文文件
         var en: Variant?
+        /// 事先生成好的理解结果，按界面语言（zh、en）各一份：新用户打开示例画板不用调模型
+        var understood: [String: Understood]?
+    }
+
+    private struct Understood: Decodable {
+        var title: String
+        var caption: String
+        var detail: String?
+        var tags: [String]
+        var summary: String?
+        var anchors: [SummaryAnchor?]?
     }
 
     private struct Variant: Decodable {
@@ -28,6 +39,11 @@ enum Seed {
         var file: String?
     }
 
+    /// 一张示例卡事先定好的东西：摆在哪、理解成什么样
+    struct Preset: Sendable {
+        var spot: Spot?
+        var understood: Generated?
+    }
 
     /// 一张示例卡在画板上的位置
     struct Spot: Sendable {
@@ -52,8 +68,8 @@ enum Seed {
         return (try? JSONDecoder().decode([Item].self, from: data)) ?? []
     }
 
-    /// 新装用户的示例：和你拖进来的东西走同一条收集流程，各自带着在示例画板上的位置
-    static func sources() -> [(source: Source, spot: Spot?)] {
+    /// 新装用户的示例：和你拖进来的东西走同一条收集流程，各自带着事先定好的位置和理解结果
+    static func sources() -> [(source: Source, preset: Preset)] {
         guard let dir = directory else { return [] }
         return items.compactMap { original in
             var item = original
@@ -64,7 +80,10 @@ enum Seed {
                 // 换了文字的卡按英文的长短重新算高度
                 if en.text != nil { item.height = nil }
             }
-            return source(item, in: dir).map { ($0, spot(item)) }
+            let understood = item.understood?[interfaceIsChinese ? "zh" : "en"].map {
+                Generated(title: $0.title, caption: $0.caption, detail: $0.detail, tags: $0.tags, summary: $0.summary, anchors: $0.anchors)
+            }
+            return source(item, in: dir).map { ($0, Preset(spot: spot(item), understood: understood)) }
         }
     }
 

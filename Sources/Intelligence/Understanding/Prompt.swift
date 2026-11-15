@@ -115,7 +115,7 @@ enum Prompt {
     /// 总结存成一行一条，「· 」开头。前面可以有一行说明：视频、音频没转出文字也没有平台字幕时，正文只是简介；全文太长时只读了前一部分
     static func summary(_ points: [String]?, for card: Card, whole: Bool = true) -> String? {
         guard let points, !points.isEmpty, needsSummary(card) else { return nil }
-        let note = (card.kind == .video || card.kind == .audio) && card.transcript == nil ? "仅根据简介\n" : whole ? "" : "只读了前一部分\n"
+        let note = (card.kind == .video || card.kind == .audio) && card.transcript == nil ? String(localized: "仅根据简介") + "\n" : whole ? "" : String(localized: "只读了前一部分") + "\n"
         return note + points.map { "· " + $0 }.joined(separator: "\n")
     }
 

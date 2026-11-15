@@ -211,7 +211,7 @@ final class AppModel {
         try await refreshBoards()
         try await canvas?.show(.board(sample))
         let seed = Seed.sources()
-        collector.collect(seed.map(\.source), into: sample, at: .zero, spots: seed.map(\.spot)) { [weak self] _ in
+        collector.collect(seed.map(\.source), into: sample, at: .zero, presets: seed.map(\.preset)) { [weak self] _ in
             Task { try? await store.markSorted(on: sample) }
             // 打开画板时示例卡还没收进来，镜头是按空画板取的景：收完了、镜头也没被挪开过，就滑到全景
             if let canvas = self?.canvas, canvas.board == sample, canvas.isAtPanorama { canvas.fitAll(animated: true) }

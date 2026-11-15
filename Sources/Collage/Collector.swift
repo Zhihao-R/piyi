@@ -30,26 +30,27 @@ final class Collector {
     /// 收进 board 这个画板，nil 表示只进资料库；point 是落点（世界坐标），nil 表示当前视野中央。
     /// done 报这一批的内容是不是都存进了资料库：收件箱据此决定删不删原件。
     /// heard 在每一样是新的还是收过的都清楚之后调用，入口这时才说「收下了」；给了它，这里就不另外提示「已经收过」
-    /// spots：和 sources 一一对应的指定位置（示例画板用），没指定的自动排
-    func collect(_ sources: [Source], into board: Int64?, at point: CGPoint? = nil, spots: [Seed.Spot?] = [],
+    /// presets：和 sources 一一对应、事先定好的位置和理解结果（示例画板用）；没指定位置的自动排
+    func collect(_ sources: [Source], into board: Int64?, at point: CGPoint? = nil, presets: [Seed.Preset] = [],
                  then done: @escaping (Bool) -> Void = { _ in }, heard: (@MainActor (Receipt) -> Void)? = nil) {
         guard let canvas = model.canvas, !sources.isEmpty else { return done(sources.isEmpty) }
         let origin = point ?? canvas.visibleCenter
-        Task { await run(sources, into: board, at: origin, spots: spots, heard: heard, then: done) }
+        Task { await run(sources, into: board, at: origin, presets: presets, heard: heard, then: done) }
     }
 
-    private func run(_ sources: [Source], into board: Int64?, at origin: CGPoint, spots: [Seed.Spot?],
+    private func run(_ sources: [Source], into board: Int64?, at origin: CGPoint, presets: [Seed.Preset],
                      heard: (@MainActor (Receipt) -> Void)?, then done: (Bool) -> Void) async {
         var saved = false
         defer { done(saved) }
         guard let store = model.store, let canvas = model.canvas else { return }
+        let preset: @Sendable (Int) -> Seed.Preset = { presets.indices.contains($0) ? presets[$0] : Seed.Preset() }
         do {
             // 1～3
             let occupied = canvas.board == board ? canvas.occupied : []
             let outcomes = try await Intake(store: store, extractor: extractor).collect(sources, on: board) { sources in
                 let sizes = sources.map { CardSize.initial(kind: $0.kind, coverAspect: nil, text: nil, hasBody: false) }
                 return zip(Layout.arranged(sizes, from: origin, avoiding: occupied), sizes.indices).map { frame, i in
-                    Self.frame(of: spots.indices.contains(i) ? spots[i] : nil, size: frame.size, origin: origin) ?? frame
+                    Self.frame(of: preset(i).spot, size: frame.size, origin: origin) ?? frame
                 }
             } report: { @MainActor [weak self] event in
                 guard let self else { return }
@@ -63,16 +64,22 @@ final class Collector {
             }
             saved = Intake.saved(outcomes)
 
+            // 事先生成好的理解结果直接写进去，按卡片现在的内容记上依据：理解时就不再调模型
+            for (i, outcome) in outcomes.enumerated() {
+                guard case .created(let id, _) = outcome, let understood = preset(i).understood, let card = try await store.card(id) else { continue }
+                try await store.saveUnderstanding(id, basis: card.contentBasis, generated: understood, colors: nil)
+            }
+
             // 4. 最终尺寸，一批排成整齐的几行，一次写入
-            let filled = outcomes.enumerated().compactMap { i, outcome -> (id: Int64, size: CGSize, transcribes: Bool, spot: Seed.Spot?)? in
+            let filled = outcomes.enumerated().compactMap { i, outcome -> (id: Int64, size: CGSize, transcribes: Bool, spot: Seed.Spot?, understood: Generated?)? in
                 guard case .created(let id, let m) = outcome else { return nil }
                 let aspect = m.images.first.flatMap(Self.aspect)
                 return (id, CardSize.initial(kind: m.kind, coverAspect: aspect, text: m.text, hasBody: !(m.body ?? "").isEmpty),
-                        Self.transcribes(m.kind, hasFile: m.original != nil), spots.indices.contains(i) ? spots[i] : nil)
+                        Self.transcribes(m.kind, hasFile: m.original != nil), preset(i).spot, preset(i).understood)
             }
             // 已经收过、这次放进本画板的：有指定位置的也照着摆，比例按它已有的封面算
             let reused = outcomes.enumerated().compactMap { i, outcome -> (id: Int64, size: CGSize, spot: Seed.Spot)? in
-                guard case .existing(let card, _, true) = outcome, spots.indices.contains(i), let spot = spots[i] else { return nil }
+                guard case .existing(let card, _, true) = outcome, let spot = preset(i).spot else { return nil }
                 let aspect = card.cover.flatMap { CardSize.coverAspect($0, files: store.files) }
                 return (card.id!, CardSize.initial(kind: card.kind, coverAspect: aspect, text: card.text, hasBody: !(card.body ?? "").isEmpty), spot)
             }
@@ -99,7 +106,7 @@ final class Collector {
             }
 
             // 5. 补全正文
-            completeBodies(filled.map { ($0.id, $0.transcribes) })
+            completeBodies(filled.map { ($0.id, $0.transcribes, $0.understood) })
         } catch {
             model.notify(String(localized: "收集没完成：\(error.localizedDescription)"))
             heard?(Receipt(failed: sources.count))
@@ -174,13 +181,17 @@ final class Collector {
 
     /// 补全正文：在后台、较低的优先级识别图中文字、转录、取平台字幕，每张补完就进入理解队列。
     /// 要在本机转录的排到最后：长视频转录要几分钟，别让同一批的图片、平台视频陪着等
-    private func completeBodies(_ cards: [(id: Int64, transcribes: Bool)]) {
+    /// understood：事先生成好的理解结果。补完正文（图中文字、转录）卡片内容就变了，按新内容重新记上依据，免得再调模型
+    private func completeBodies(_ cards: [(id: Int64, transcribes: Bool, understood: Generated?)]) {
         guard let store = model.store else { return }
         let (extractor, understander) = (extractor, model.understander)
         let ordered = cards.filter { !$0.transcribes } + cards.filter(\.transcribes)
         Task.detached(priority: .utility) {
             for card in ordered {
                 try? await extractor.completeBody(of: card.id, in: store)
+                if let understood = card.understood, let now = try? await store.card(card.id) {
+                    try? await store.saveUnderstanding(card.id, basis: now.contentBasis, generated: understood, colors: nil)
+                }
                 understander?.kick()
             }
         }
@@ -190,7 +201,7 @@ final class Collector {
     func completeUnfinishedBodies() {
         Task {
             let cards = (try? await model.store?.bodiesToComplete()) ?? []
-            completeBodies(cards.map { ($0.id!, Self.transcribes($0.kind, hasFile: $0.original != nil)) })
+            completeBodies(cards.map { ($0.id!, Self.transcribes($0.kind, hasFile: $0.original != nil), nil) })
         }
     }
 
@@ -216,7 +227,7 @@ final class Collector {
             let m = await extractor.material(for: source ?? .url(url))
             _ = try? await store.fill(id, with: m)
             model.reload()
-            completeBodies([(id, Self.transcribes(m.kind, hasFile: m.original != nil))])
+            completeBodies([(id, Self.transcribes(m.kind, hasFile: m.original != nil), nil)])
         }
     }
 

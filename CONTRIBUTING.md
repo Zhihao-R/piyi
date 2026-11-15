@@ -84,4 +84,15 @@ SUBTITLE_CHECK=1 swift test --filter SubtitleCheck    # 取一条 YouTube 视频
 python3 scripts/seed_export.py "画板名"
 ```
 
-把位置写回清单。素材的许可见 `THIRD_PARTY_NOTICES.md`，新加的素材必须能随 App 自由分发。
+把位置写回清单。
+
+示例卡的标题、描述、标签、要点也是事先生成好、随 App 发的，新用户不用填密钥就能看到完整的卡。换了素材后重新生成：用一份全新的资料库、带着密钥，分别以中文和英文界面打开打包好的 App，等示例卡都理解完，再把两份结果写回清单：
+
+```sh
+COLLAGE_ROOT=/tmp/seed-zh OPENROUTER_API_KEY=… build/拼贴.app/Contents/MacOS/Collage -AppleLanguages "(zh-Hans)"
+COLLAGE_ROOT=/tmp/seed-en OPENROUTER_API_KEY=… build/拼贴.app/Contents/MacOS/Collage -AppleLanguages "(en)"
+python3 scripts/seed_understood.py /tmp/seed-zh/library.sqlite zh
+python3 scripts/seed_understood.py /tmp/seed-en/library.sqlite en
+```
+
+素材的许可见 `THIRD_PARTY_NOTICES.md`，新加的素材必须能随 App 自由分发。

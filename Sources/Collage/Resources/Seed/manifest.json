@@ -6,7 +6,89 @@
   "x": 2010,
   "y": 854,
   "width": 170,
-  "height": 257
+  "height": 257,
+  "understood": {
+   "zh": {
+    "title": "死亡之岛 勃克林",
+    "caption": "瑞士象征主义画家勃克林的《死亡之岛》，描绘暗水孤岛与白衣人乘船抵达的幽暗场景。",
+    "detail": "维基百科条目，介绍瑞士象征主义画家阿诺德·勃克林代表作《死亡之岛》（Die Toteninsel）。画面为荒凉岩石小岛，四周暗水环绕，一艘小船正驶向水门，船尾有划桨者，船头立着全身白衣的人，前方有白色饰物常被解读为棺木。岛上密布高大深色柏树，岩壁上有墓门与窗。勃克林1880至1886年间创作多版本，分藏巴塞尔、纽约、柏林、莱比锡，第六版由儿子完成，藏圣彼得堡冬宫。标题由画商弗里茨·古利特1883年所定，常被联系到希腊神话中摆渡亡灵卡戎。",
+    "tags": [
+     "死亡之岛",
+     "勃克林",
+     "象征主义",
+     "油画",
+     "孤岛",
+     "柏树",
+     "葬礼",
+     "暗色调",
+     "维基百科",
+     "希腊神话"
+    ],
+    "summary": "· 《死亡之岛》是瑞士象征主义画家阿诺德·勃克林最著名的作品，他在1880至1886年间创作了多个版本，现分别展出于巴塞尔、纽约、柏林和莱比锡，第六版（1901年）藏于圣彼得堡冬宫博物馆。\n· 所有版本都描绘一片黑暗水面上荒凉的岩石小岛，一艘小船正抵达水门，船尾有桨手，船头站着全身白衣的人物，前方有白色花饰物体通常被解读为棺材，岛上密布高大的柏树，岩壁上似有墓门和窗户。\n· 勃克林本人未公开解释画作含义，但形容其为“一幅梦境画：它必须产生如此的寂静，以至于人会被敲门声所震慑”；标题由画商弗里茨·古利特于1883年所加，并非勃克林指定。\n· 画作灵感部分来自佛罗伦萨的英国公墓，勃克林的幼女玛丽亚葬于该处，且他14个孩子中有8个早夭；岩石小岛的原型可能是科孚岛附近的庞蒂科尼西岛，也可能结合了西西里岛附近的斯特龙博利基奥岛。\n· 第三版（1883年）右岩壁墓室带有勃克林首字母“A.B.”，1933年被阿道夫·希特勒购得，先后悬挂于上萨尔茨山贝格霍夫和柏林新帝国总理府，现藏于柏林老国家美术馆。",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Böcklin produced several different versions of the painting between 1880 and 1886, which today are exhibited in Basel, New York City, Berlin, and Leipzig. A sixth version, begun in autumn 1900 with the help of Böcklin's son Carlo Böcklin [de] and finished by Carlo in 1901, is part of the Hermitage Museum's collection in Saint Petersburg."
+     },
+     {
+      "part": "p",
+      "quote": "All versions of Island of the Dead depict a desolate and rocky islet seen across an expanse of dark water. A small rowing boat is just arriving at a water gate and seawall on shore.[2] An oarsman maneuvers the boat from the stern. In the bow, facing the gate, is a standing figure clad entirely in white. Just ahead of the figure is a white, festooned object commonly interpreted as a coffin. The tiny islet is dominated by a dense grove of tall, dark cypress trees—associated by long-standing tradition with cemeteries and mourning—which is closely hemmed in by precipitous cliffs. Furthering the funerary theme are what appear to be sepulchral portals and windows on the rock faces."
+     },
+     {
+      "part": "p",
+      "quote": "Böcklin himself provided no public explanation as to the meaning of the painting, though he did describe it as \"a dream picture: it must produce such a stillness that one would be awed by a knock on the door\".[3][4] The title, which was conferred upon it by the art dealer Fritz Gurlitt in 1883, was not specified by Böcklin, though it does derive from a phrase in an 1880 letter he sent to the painting's original commissioner.[5] Not knowing the history of the early versions of the painting (see §Versions), many observers have interpreted the oarsman as representing the boatman Charon, who ferried souls to the underworld in Greek mythology. The water would then be either the River Styx or the River Acheron, and his white-clad passenger a recently deceased soul transiting to the afterlife."
+     },
+     {
+      "part": "p",
+      "quote": "Island of the Dead evokes, in part, the English Cemetery in Florence, Italy, where the first three versions were painted. The cemetery was close to Böcklin's studio and was also where his infant daughter Maria was buried. (In all, Böcklin lost 8 of his 14 children.)"
+     },
+     {
+      "part": "p",
+      "quote": "The third version was painted in 1883 for Böcklin's dealer Fritz Gurlitt. Beginning with this version, one of the burial chambers in the rocks on the right bears Böcklin's initials, \"A.B.\" In 1933, this version was put up for sale, and noted Böcklin admirer Adolf Hitler acquired it. He hung it first at the Berghof in Obersalzberg and then, after 1940, in the New Reich Chancellery in Berlin. It is now at the Alte Nationalgalerie, Berlin."
+     }
+    ]
+   },
+   "en": {
+    "title": "Isle of the Dead Painting",
+    "caption": "Arnold Böcklin's symbolist painting of a rocky islet with cypress trees and a rowing boat carrying a white-clad figure.",
+    "detail": "Wikipedia article on Arnold Böcklin's Isle of the Dead, a symbolist painting created in multiple versions between 1880 and 1901. Depicts a desolate rocky islet with dark cypress trees, sepulchral portals, and a small rowing boat arriving at a water gate. A standing figure in white faces a festooned coffin-like object, often interpreted as Charon ferrying a soul. Includes versions in Basel, New York, Berlin, Leipzig, and Saint Petersburg.",
+    "tags": [
+     "symbolism",
+     "painting",
+     "Arnold Böcklin",
+     "Isle of the Dead",
+     "cypress trees",
+     "dark water",
+     "funeral",
+     "Charon",
+     "symbolist art",
+     "19th century"
+    ],
+    "summary": "· Arnold Böcklin painted six versions of Island of the Dead between 1880 and 1901, with the first five completed between 1880 and 1886 and the sixth finished by his son Carlo in 1901.\n· The painting depicts a rocky islet with dark cypress trees, a boat arriving at a water gate, an oarsman, and a white-clad figure beside a coffin-like object.\n· Böcklin called it a \"dream picture\" meant to produce such stillness that one would be awed by a knock on the door, and he provided no public explanation of its meaning.\n· The third version, painted in 1883, was acquired by Adolf Hitler in 1933 and hung first at the Berghof and later in the New Reich Chancellery; it is now in Berlin's Alte Nationalgalerie.\n· The painting inspired works across media, including Rachmaninoff's 1909 symphonic poem Isle of the Dead, which was inspired by a black-and-white print.",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Böcklin produced several different versions of the painting between 1880 and 1886, which today are exhibited in Basel, New York City, Berlin, and Leipzig. A sixth version, begun in autumn 1900 with the help of Böcklin's son Carlo Böcklin [de] and finished by Carlo in 1901, is part of the Hermitage Museum's collection in Saint Petersburg."
+     },
+     {
+      "part": "p",
+      "quote": "All versions of Island of the Dead depict a desolate and rocky islet seen across an expanse of dark water. A small rowing boat is just arriving at a water gate and seawall on shore.[2] An oarsman maneuvers the boat from the stern. In the bow, facing the gate, is a standing figure clad entirely in white. Just ahead of the figure is a white, festooned object commonly interpreted as a coffin. The tiny islet is dominated by a dense grove of tall, dark cypress trees—associated by long-standing tradition with cemeteries and mourning—which is closely hemmed in by precipitous cliffs. Furthering the funerary theme are what appear to be sepulchral portals and windows on the rock faces."
+     },
+     {
+      "part": "p",
+      "quote": "Böcklin himself provided no public explanation as to the meaning of the painting, though he did describe it as \"a dream picture: it must produce such a stillness that one would be awed by a knock on the door\".[3][4] The title, which was conferred upon it by the art dealer Fritz Gurlitt in 1883, was not specified by Böcklin, though it does derive from a phrase in an 1880 letter he sent to the painting's original commissioner.[5] Not knowing the history of the early versions of the painting (see §Versions), many observers have interpreted the oarsman as representing the boatman Charon, who ferried souls to the underworld in Greek mythology. The water would then be either the River Styx or the River Acheron, and his white-clad passenger a recently deceased soul transiting to the afterlife."
+     },
+     {
+      "part": "p",
+      "quote": "The third version was painted in 1883 for Böcklin's dealer Fritz Gurlitt. Beginning with this version, one of the burial chambers in the rocks on the right bears Böcklin's initials, \"A.B.\" In 1933, this version was put up for sale, and noted Böcklin admirer Adolf Hitler acquired it. He hung it first at the Berghof in Obersalzberg and then, after 1940, in the New Reich Chancellery in Berlin. It is now at the Alte Nationalgalerie, Berlin."
+     },
+     {
+      "part": "p",
+      "quote": "Sergei Rachmaninoff composed a symphonic poem Isle of the Dead, Op. 29 (1909), inspired by a black-and-white print of the painting. He said that had he seen the colour original, he probably would not have written the music.[18]"
+     }
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -18,7 +100,43 @@
   "x": 1190,
   "y": 454,
   "width": 900,
-  "height": 558
+  "height": 558,
+  "understood": {
+   "zh": {
+    "title": "死亡之岛",
+    "caption": "暮色中孤岛岩壁与柏树环绕，小舟载白衣人驶向幽暗港湾，氛围神秘阴郁。",
+    "detail": "画面为阿诺德·勃克林1880年油画《死亡之岛》。深蓝近黑的海面与天空下，中央高耸的深色柏树丛被红褐色岩石环抱，岩壁上可见白色方形建筑与矩形墓门。前景一艘小舟上，白衣人背对观者伫立，船夫划桨驶向岛屿。构图对称，色彩以暗蓝、红褐与白色为主，笔触细腻，营造出静谧、哀伤与神秘的气息。",
+    "tags": [
+     "死亡之岛",
+     "勃克林",
+     "象征主义",
+     "油画",
+     "柏树",
+     "孤岛",
+     "小舟",
+     "黄昏",
+     "神秘",
+     "阴郁"
+    ]
+   },
+   "en": {
+    "title": "Island of the Dead",
+    "caption": "Arnold Böcklin's Symbolist painting of a dark, rocky island with cypress trees and a boat.",
+    "detail": "Arnold Böcklin's Island of the Dead (1880) depicts a small rowboat carrying a white-shrouded figure and a rower across dark water toward a rocky island. Tall dark cypress trees rise from the center, surrounded by steep cliffs with classical white tombs cut into the rock. The scene is set under a deep blue-black sky, creating a somber, mysterious, and melancholic atmosphere typical of Symbolism.",
+    "tags": [
+     "Symbolism",
+     "painting",
+     "island",
+     "cypress",
+     "death",
+     "mystery",
+     "melancholy",
+     "Böcklin",
+     "dark",
+     "19th century"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -30,7 +148,43 @@
   "x": 2690,
   "y": 624,
   "width": 540,
-  "height": 480
+  "height": 480,
+  "understood": {
+   "zh": {
+    "title": "阳光下的斯特兰德街内景",
+    "caption": "哈默修伊1906年室内画，灰调中女子立于窗边，光影静谧",
+    "detail": "画面为维尔赫姆·哈默修伊1906年油画《斯特兰德街，阳光》。室内灰白墙面与地板，左侧女子穿深色长裙立于铺白布桌旁。中央大窗透入阳光，在地面投下清晰窗格光影。右侧灰色镶板门紧闭。构图极简，色调为灰、白、米黄等低饱和色，笔触细腻平滑。右下角有签名。",
+    "tags": [
+     "哈默修伊",
+     "室内画",
+     "阳光",
+     "窗影",
+     "灰调",
+     "女子",
+     "极简",
+     "静谧",
+     "北欧",
+     "油画"
+    ]
+   },
+   "en": {
+    "title": "Strandgade Sunshine Interior",
+    "caption": "A muted interior with a standing woman, sunlight casting window shadows across a bare floor.",
+    "detail": "Painting depicts a quiet interior with a woman in dark dress standing beside a white-clothed table. A tall window lets in pale sunlight, projecting bright grid patterns on the wooden floor. A closed paneled door on the right. Dominated by grey, white, and brown tones, with soft light and sparse composition. Signed Hammershøi.",
+    "tags": [
+     "interior",
+     "woman",
+     "window",
+     "sunlight",
+     "shadow",
+     "muted",
+     "grey",
+     "Danish",
+     "painting",
+     "domestic"
+    ]
+   }
+  }
  },
  {
   "kind": "file",
@@ -42,6 +196,42 @@
   "height": 260,
   "en": {
    "file": "the-book-of-tea-on-the-vacuum.md"
+  },
+  "understood": {
+   "zh": {
+    "title": "茶之书论虚空",
+    "caption": "冈仓天心《茶之书》论虚空与暗示的节选与中译。",
+    "detail": "文档为冈仓天心《茶之书》（1906）第三章「道与禅」的节选，含英文原文与中文翻译。内容借老子「虚」的比喻说明屋子之实在于墙围出的空、水罐之用于盛水的空，进而论艺术中「暗示」的价值：留白让观者补完意义。文中引用《道德经》意象，讨论虚空、容纳、动与审美共鸣。",
+    "tags": [
+     "茶之书",
+     "冈仓天心",
+     "虚空",
+     "道家",
+     "禅",
+     "老子",
+     "留白",
+     "暗示",
+     "艺术美学",
+     "节选"
+    ]
+   },
+   "en": {
+    "title": "The Book of Tea on Vacuum",
+    "caption": "A public domain excerpt from Okakura Kakuzō's The Book of Tea, exploring Taoist and Zen ideas of vacuum.",
+    "detail": "An excerpt from Okakura Kakuzō's The Book of Tea (1906), Chapter III, 'Taoism and Zennism,' discussing the concept of the Vacuum. It cites Laozi's metaphor: a room's reality lies in empty space, a pitcher's usefulness in its emptiness. Vacuum is all-potent because all-containing, enabling motion. In art, the value of suggestion lets the beholder complete the idea, making a masterpiece irresistible. Public domain text from Project Gutenberg eBook #769.",
+    "tags": [
+     "teaism",
+     "Okakura Kakuzo",
+     "Taoism",
+     "Zen",
+     "vacuum",
+     "emptiness",
+     "art",
+     "aesthetics",
+     "philosophy",
+     "public domain"
+    ]
+   }
   }
  },
  {
@@ -51,7 +241,43 @@
   "x": 3270,
   "y": 654,
   "width": 170,
-  "height": 136
+  "height": 136,
+  "understood": {
+   "zh": {
+    "title": "裸体歌舞第一首",
+    "caption": "萨蒂《裸体歌舞》第一首钢琴曲，宁静舒缓，氛围朦胧。",
+    "detail": "法国作曲家埃里克·萨蒂的钢琴曲《裸体歌舞》第一首（Gymnopédie No.1），MP3 音频，时长约 3 分 3 秒。乐曲为 3/4 拍，速度缓慢，旋律简洁柔和，和声带有朦胧、空灵的色彩，整体氛围安静、忧郁而冥想，常用于放松与静思场景。",
+    "tags": [
+     "萨蒂",
+     "裸体歌舞",
+     "钢琴曲",
+     "古典音乐",
+     "纯音乐",
+     "宁静",
+     "舒缓",
+     "朦胧",
+     "冥想",
+     "忧郁"
+    ]
+   },
+   "en": {
+    "title": "Gymnopedie No. 1 Audio",
+    "caption": "A soft piano recording of Erik Satie's Gymnopedie No. 1, calm and minimalist.",
+    "detail": "An audio file of Erik Satie's Gymnopedie No. 1, a solo piano piece lasting about three minutes. The music is slow, sparse, and gentle, with a quiet, contemplative mood. The file is an MP3 named gymnopedie-1.mp3. No lyrics or vocals are present; the focus is on the flowing, minimalist piano melody and soft harmonic textures.",
+    "tags": [
+     "classical",
+     "piano",
+     "Satie",
+     "Gymnopedie",
+     "instrumental",
+     "calm",
+     "minimalist",
+     "ambient",
+     "slow",
+     "MP3"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -65,6 +291,38 @@
   "en": {
    "text": "Empty space isn’t empty. It lets the picture breathe.",
    "source": "A note to self"
+  },
+  "understood": {
+   "zh": {
+    "title": "留白的呼吸感",
+    "caption": "一句关于留白与画面呼吸感的设计感悟",
+    "detail": "这是一条随手记文字，核心观点是“留白不是空，是让画面呼吸”。讨论的是留白这一视觉与设计概念，强调空白并非空洞无物，而是为画面提供呼吸空间、增强节奏与张力。涉及的关键概念包括留白、负空间、呼吸感、构图与视觉平衡，属于设计或美学思考类短句。",
+    "tags": [
+     "留白",
+     "设计",
+     "构图",
+     "呼吸感",
+     "负空间",
+     "美学",
+     "视觉",
+     "短句"
+    ]
+   },
+   "en": {
+    "title": "Empty Space Lets Pictures Breathe",
+    "caption": "A short note observing that empty space is not empty; it lets a picture breathe.",
+    "detail": "A brief text note titled 'A note to self' stating: 'Empty space isn’t empty. It lets the picture breathe.' The text discusses negative space and composition, framing blank areas as an active, breathing element in visual design rather than mere absence.",
+    "tags": [
+     "negative space",
+     "composition",
+     "design",
+     "minimalism",
+     "visual breathing",
+     "note to self",
+     "typography",
+     "art theory"
+    ]
+   }
   }
  },
  {
@@ -77,7 +335,43 @@
   "x": 3860,
   "y": 344,
   "width": 200,
-  "height": 303
+  "height": 303,
+  "understood": {
+   "zh": {
+    "title": "克里姆特少女素描",
+    "caption": "克里姆特1918年铅笔素描，描绘一位闭目少女的半身像，线条柔和。",
+    "detail": "古斯塔夫·克里姆特1918年创作的铅笔素描，描绘一位年轻女子半身像。女子头部微倾，双眼闭合，表情宁静，长发编成两条辫子垂于胸前。画面以流畅、敏感的线条勾勒轮廓，线条略带波浪感，体现克里姆特晚期素描风格。纸张呈浅米黄色，画面右下角有艺术家签名及日期。构图简洁，仅表现头部、颈部与肩部，背景留白。",
+    "tags": [
+     "克里姆特",
+     "素描",
+     "少女",
+     "半身像",
+     "铅笔",
+     "线条",
+     "闭目",
+     "宁静",
+     "维也纳分离派",
+     "速写"
+    ]
+   },
+   "en": {
+    "title": "Half-Figure of a Young Woman",
+    "caption": "A graphite sketch by Gustav Klimt depicting a young woman's head and shoulders with braided hair and closed eyes.",
+    "detail": "Graphite drawing on cream paper showing a half-figure of a young woman. Her head tilts to the left, eyes closed, with long braided hair falling over her shoulders. Loose, flowing lines define the face, hair, and upper torso. A rectangular stamp with the word 'NACHLASS' is visible in the lower right area. The composition is intimate and serene, characteristic of Klimt's study drawings.",
+    "tags": [
+     "Gustav Klimt",
+     "drawing",
+     "sketch",
+     "graphite",
+     "portrait",
+     "woman",
+     "braids",
+     "closed eyes",
+     "Austrian",
+     "early 20th century"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -89,7 +383,43 @@
   "x": 3730,
   "y": 694,
   "width": 150,
-  "height": 231
+  "height": 231,
+  "understood": {
+   "zh": {
+    "title": "席勒儿童肖像画",
+    "caption": "埃贡·席勒1916年绘儿童肖像，线条凌厉，色彩鲜艳，情绪内敛。",
+    "detail": "画面描绘一名侧身站立的幼童，浅金色卷发，脸颊泛红，身穿橙色上衣和带条纹图案的宽松衣物。人物身体略微前倾，姿态生动。画面采用铅笔与不透明水彩绘制，线条粗犷且富有表现力，色彩以橙、黄、绿、灰为主，背景为浅米色纸张。右下角有艺术家签名及年份“EGON SCHIELE 1916”。构图简洁，突出人物形态与色彩对比。",
+    "tags": [
+     "席勒",
+     "儿童肖像",
+     "表现主义",
+     "水彩",
+     "铅笔",
+     "橙色",
+     "线条",
+     "人物",
+     "1916年",
+     "奥地利"
+    ]
+   },
+   "en": {
+    "title": "Portrait of Anton Peschka Jr.",
+    "caption": "Egon Schiele's 1916 portrait drawing of a child in colorful patterned clothing with expressive lines.",
+    "detail": "A portrait drawing by Egon Schiele of Anton Peschka Jr., dated 1916. A young boy with blond hair is shown in profile facing left. He wears a bright orange jacket with white cuffs and a layered, abstract garment with beige, yellow, and green patterns. The figure is rendered in graphite and gouache on paper, with expressive contour lines and patches of color. A signature and date are visible at the lower right.",
+    "tags": [
+     "Egon Schiele",
+     "portrait",
+     "child",
+     "1916",
+     "drawing",
+     "expressionism",
+     "orange",
+     "gouache",
+     "graphite",
+     "figure"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -101,7 +431,42 @@
   "x": 4390,
   "y": 364,
   "width": 448,
-  "height": 621
+  "height": 621,
+  "understood": {
+   "zh": {
+    "title": "居特斯洛肖像线稿",
+    "caption": "埃贡·席勒1918年创作的男子肖像线描，线条紧张锐利，氛围严肃。",
+    "detail": "画面为埃贡·席勒1918年创作的巴黎·冯·居特斯洛肖像线描稿。绘于米色纸上，用褐色线条勾勒一名年轻男子正面半身像。人物卷发，浓眉，双眼大而圆，目光直视观者，鼻梁挺直，嘴唇紧闭，颈部线条清晰，衣领处有简单轮廓。肩部以下留白，构图居中，线条迅疾、尖锐，带有表现主义素描的紧张感。",
+    "tags": [
+     "埃贡·席勒",
+     "表现主义",
+     "线描",
+     "肖像画",
+     "素描",
+     "褐色",
+     "男子",
+     "严肃",
+     "维也纳"
+    ]
+   },
+   "en": {
+    "title": "Portrait of Paris von Gütersloh",
+    "caption": "Egon Schiele's 1918 line drawing portrait of Paris von Gütersloh, rendered in dark ink on a pale background.",
+    "detail": "A sparse, linear portrait drawing by Egon Schiele depicting the head and shoulders of Paris von Gütersloh. The figure faces forward with a direct, intense gaze, featuring wavy hair and a high-collared shirt. Executed in dark brown or black ink on a cream-colored paper ground, the composition uses minimal, expressive contour lines with no background details, emphasizing psychological intensity and the sitter's gaunt features.",
+    "tags": [
+     "Egon Schiele",
+     "portrait",
+     "line drawing",
+     "Expressionism",
+     "ink",
+     "Paris von Gütersloh",
+     "1918",
+     "Austrian art",
+     "minimalist",
+     "monochrome"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -113,7 +478,43 @@
   "x": 4690,
   "y": 214,
   "width": 190,
-  "height": 323
+  "height": 323,
+  "understood": {
+   "zh": {
+    "title": "红发绿眼的女人",
+    "caption": "蒙克1901年石版画，红发裸女直视观者，氛围压抑魅惑",
+    "detail": "挪威艺术家爱德华·蒙克的石版画作品，画面为正面半身裸女像。人物拥有浓密蓬松的红棕色长发，垂落至腰际，遮住部分身体；眼睛呈淡绿色，直视前方，面容苍白平静。胸部与腹部裸露，线条用红棕色和淡黄色勾勒，整体设色温暖而略带病态。构图居中，四周有手绘边框。右下角有艺术家签名。作品探讨女性、欲望、罪恶与焦虑等主题，属象征主义风格。",
+    "tags": [
+     "蒙克",
+     "石版画",
+     "象征主义",
+     "红发",
+     "绿眼",
+     "裸女",
+     "挪威",
+     "表现主义",
+     "焦虑",
+     "情欲"
+    ]
+   },
+   "en": {
+    "title": "Woman with Red Hair and Green Eyes",
+    "caption": "Edvard Munch lithograph of a nude woman with long red hair and green eyes, in a warm, Symbolist style.",
+    "detail": "A frontal half-length portrait of a nude woman with voluminous, wavy red hair framing her face and torso. Her green eyes gaze directly at the viewer. The figure is rendered in warm reddish-brown and yellow tones against a pale background, enclosed within a drawn rectangular border. The lithographic texture is visible, with expressive line work emphasizing the hair and facial features. The composition is centered and symmetrical. The work is titled 'The Sin' and dates to 1901.",
+    "tags": [
+     "Edvard Munch",
+     "Symbolism",
+     "lithograph",
+     "nude",
+     "red hair",
+     "green eyes",
+     "portrait",
+     "Expressionism",
+     "warm tones",
+     "The Sin"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -126,7 +527,43 @@
   "y": 796,
   "width": 230,
   "rotation": -6.0,
-  "height": 305
+  "height": 305,
+  "understood": {
+   "zh": {
+    "title": "席勒蹲姿女子素描",
+    "caption": "埃贡·席勒1914年黑色线条素描，描绘一位蹲姿女子，风格表现主义，氛围内敛。",
+    "detail": "画面为埃贡·席勒1914年作品《Squatting Woman》，采用黑色线条绘制于浅色纸张上。主体是一位蹲姿女性，双臂高举过头，双手交叠于头顶，头部微微低垂，面部朝下侧视，表情沉静。她身穿褶皱明显的衣物，衣纹用简洁而有力的线条勾勒，腿部弯曲，脚部着深色鞋履。画面背景留白，纸张带有网格状纹理，构图紧凑，突出人物动态与线条表现力。风格为表现主义，线条粗犷且富有张力，色彩仅黑白灰，材质为纸上绘画。",
+    "tags": [
+     "埃贡·席勒",
+     "表现主义",
+     "素描",
+     "女子",
+     "蹲姿",
+     "线条",
+     "黑白",
+     "人物",
+     "1914年",
+     "纸上绘画"
+    ]
+   },
+   "en": {
+    "title": "Squatting Woman by Egon Schiele",
+    "caption": "Egon Schiele's 1914 drypoint of a crouching woman, rendered in stark linear style with tense emotion.",
+    "detail": "A black-and-white drypoint print by Egon Schiele depicting a crouching woman with her arms raised above her head, hands clutching dark hair. She wears draped clothing, her face turned in profile with a piercing gaze. The figure is defined by sharp, expressive contour lines against a plain background. The composition emphasizes angular pose and psychological intensity, characteristic of Schiele's 1914 graphic work.",
+    "tags": [
+     "Egon Schiele",
+     "drypoint",
+     "crouching woman",
+     "Expressionism",
+     "figurative art",
+     "black and white",
+     "line drawing",
+     "Austrian art",
+     "1914",
+     "portrait"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -138,7 +575,43 @@
   "x": 4490,
   "y": 1039,
   "width": 260,
-  "height": 188
+  "height": 188,
+  "understood": {
+   "zh": {
+    "title": "席勒素描少女",
+    "caption": "埃贡·席勒1918年黑色线条素描，描绘蜷卧少女，风格表现主义。",
+    "detail": "埃贡·席勒1918年纸本素描《Girl》。画面中一名少女侧卧，身体蜷曲，长发披散，面部朝向观者，眼神低垂。以黑色线条勾勒人体轮廓，笔触迅疾、瘦硬，带有表现主义特有的紧张感与脆弱情绪。构图留白较多，人物集中于画面中下部。材质为纸本炭笔或铅笔。",
+    "tags": [
+     "埃贡·席勒",
+     "表现主义",
+     "素描",
+     "少女",
+     "人体",
+     "线条",
+     "黑白",
+     "奥地利",
+     "1918",
+     "纸本"
+    ]
+   },
+   "en": {
+    "title": "Girl by Egon Schiele",
+    "caption": "A black chalk drawing by Egon Schiele of a young girl lying curled, with flowing hair and an expressive face.",
+    "detail": "Black chalk on cream paper drawing by Egon Schiele, 1918, titled Girl. A young girl lies curled on her side, head resting on her arm, with long wavy dark hair, large expressive eyes, and bare limbs. The figure is rendered with angular, nervous contour lines and minimal shading. Plain unadorned background; sparse composition emphasizing the body's pose.",
+    "tags": [
+     "Egon Schiele",
+     "drawing",
+     "girl",
+     "figure",
+     "black chalk",
+     "expressionism",
+     "Austrian",
+     "portrait",
+     "line art",
+     "nude"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -150,7 +623,43 @@
   "x": 4090,
   "y": 614,
   "width": 200,
-  "height": 232
+  "height": 232,
+  "understood": {
+   "zh": {
+    "title": "克利战神经典抽象画",
+    "caption": "保罗·克利1937年作品，黄底红边抽象人物面具风格。",
+    "detail": "画面以黄色肌理为底，红色粗纹边框。主体是线条勾勒的抽象人物面孔，双眼呈圆环状，长鼻，微张的嘴唇。下方有几何化的人体结构，手持红色菱形。右侧有柱状图案与黄色小人。底部铅笔手写文字：1937 KG Krieg 510。构图扁平，具有原始艺术与表现主义色彩。",
+    "tags": [
+     "保罗·克利",
+     "抽象画",
+     "表现主义",
+     "战神",
+     "面具",
+     "红黄配色",
+     "原始艺术",
+     "版画",
+     "几何人物",
+     "线条"
+    ]
+   },
+   "en": {
+    "title": "God of War by Paul Klee",
+    "caption": "Paul Klee's 1937 expressionist artwork features a stylized yellow face and angular figures in red and ochre tones.",
+    "detail": "The image displays Paul Klee's 1937 artwork 'God of War'. It features a central yellow rectangular field framed by a thick, textured red border. Inside, a stylized face with round eyes and a long nose sits above abstract, angular figures. On the right, a vertical yellow shape resembles a figure or object. The style is expressionist, using bold red, yellow, and brown lines. Handwritten text at the bottom reads '1937 K5 Krieg 810'.",
+    "tags": [
+     "Paul Klee",
+     "God of War",
+     "expressionism",
+     "abstract",
+     "yellow",
+     "red",
+     "painting",
+     "modern art",
+     "1937",
+     "figures"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -164,6 +673,40 @@
   "en": {
    "text": "Art does not reproduce the visible; it makes visible.",
    "source": "Paul Klee · Creative Confession, 1920"
+  },
+  "understood": {
+   "zh": {
+    "title": "克利论艺术本质",
+    "caption": "保罗·克利1920年名言：艺术不是复现可见之物，而是使之可见。",
+    "detail": "出自保罗·克利1920年《创造性的自白》的艺术随笔，核心命题为“艺术不是复现可见之物，而是使之可见”，讨论艺术创造与视觉可见性的关系，强调艺术家的主动创造而非被动模仿，是理解现代艺术观念的重要文本。",
+    "tags": [
+     "保罗·克利",
+     "艺术理论",
+     "现代艺术",
+     "名言",
+     "创造",
+     "可见性",
+     "绘画",
+     "艺术随笔"
+    ]
+   },
+   "en": {
+    "title": "Art Makes Visible",
+    "caption": "Paul Klee's 1920 aphorism stating art does not reproduce the visible but makes it visible.",
+    "detail": "A short textual quote from Paul Klee's Creative Confession, 1920. The statement reads: 'Art does not reproduce the visible; it makes visible.' It discusses the purpose of art, visibility, reproduction versus creation, and artistic perception. Key concepts include art theory, making visible, and the role of the artist. No images or layout elements.",
+    "tags": [
+     "art theory",
+     "Paul Klee",
+     "quote",
+     "aphorism",
+     "visibility",
+     "perception",
+     "modernism",
+     "creativity",
+     "Bauhaus",
+     "aesthetics"
+    ]
+   }
   }
  },
  {
@@ -176,7 +719,43 @@
   "x": 3820,
   "y": 854,
   "width": 250,
-  "height": 182
+  "height": 182,
+  "understood": {
+   "zh": {
+    "title": "庞贝伊西斯神庙遗迹",
+    "caption": "皮拉内西绘庞贝伊西斯神庙废墟，人物点缀其间，色调淡雅",
+    "detail": "画面描绘庞贝古城伊西斯神庙的废墟场景。中央是残破的石砌神庙结构，带有台阶、立柱和三角楣饰。前景有多组身着18世纪服饰的人物，有的在交谈，有的在搬运石块，还有狗和手推车。左侧有带浮雕的祭坛式建筑，背景是树木和天空。画面采用水彩淡彩技法，线条清晰，构图开阔，展现考古发掘现场的氛围。",
+    "tags": [
+     "庞贝",
+     "伊西斯神庙",
+     "皮拉内西",
+     "废墟",
+     "考古",
+     "水彩",
+     "18世纪",
+     "遗迹",
+     "人物",
+     "风景"
+    ]
+   },
+   "en": {
+    "title": "Temple of Isis at Pompeii",
+    "caption": "Piranesi's watercolor view of the ruined Temple of Isis at Pompeii with small figures.",
+    "detail": "Watercolor and ink drawing depicting the excavated ruins of the Temple of Isis in Pompeii. Central stepped altar and columned structures with pediments stand amid brick walls and scattered architectural fragments. Numerous small figures in 18th-century dress, including tourists and workers, populate the scene; some examine a wall painting at left, others converse or sketch. Trees, distant hills, and a pale sky form the background. Inscribed bottom left: 'O 1788 25'. Muted browns, grays, and pale blues, precise linear perspective.",
+    "tags": [
+     "Pompeii",
+     "Temple of Isis",
+     "Giovanni Battista Piranesi",
+     "ruins",
+     "watercolor",
+     "neoclassical",
+     "archaeology",
+     "18th century",
+     "landscape",
+     "figures"
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -185,7 +764,42 @@
   "x": 800,
   "y": 1384,
   "width": 270,
-  "height": 152
+  "height": 152,
+  "understood": {
+   "zh": {
+    "title": "大碗岛星期天重探",
+    "caption": "芝加哥艺术博物馆解读修拉名作《大碗岛星期天的下午》，画面模糊观者与画作。",
+    "detail": "视频由芝加哥艺术博物馆出品，围绕乔治·修拉的点彩画代表作《大碗岛星期天的下午——1884》展开。画面中展厅内有多名观众背对镜头观看墙上巨幅画作，画作描绘河畔草地上休憩的人群，色彩以黄绿蓝为主，展厅光线柔和。标题文字为 Reframing A Sunday on La Grande Jatte—1884。内容讨论该画的重新装裱、修复与观看方式，涉及点彩技法、构图与展览语境。",
+    "tags": [
+     "修拉",
+     "大碗岛星期天",
+     "点彩画",
+     "芝加哥艺术博物馆",
+     "印象派",
+     "名画解读",
+     "博物馆",
+     "艺术史",
+     "展厅"
+    ]
+   },
+   "en": {
+    "title": "Reframing La Grande Jatte",
+    "caption": "Museum visitors view Seurat's pointillist painting A Sunday on La Grande Jatte in a softly lit gallery.",
+    "detail": "A museum gallery with a large framed painting of A Sunday on La Grande Jatte—1884 by Georges Seurat hanging on a gray wall. Several blurred visitors stand on a wooden floor observing the artwork. White text overlay reads \"Reframing A Sunday on La Grande Jatte—1884.\" The scene is calm and educational, with soft lighting and muted gray, green, and brown tones.",
+    "tags": [
+     "Seurat",
+     "pointillism",
+     "La Grande Jatte",
+     "museum",
+     "Chicago",
+     "art",
+     "painting",
+     "gallery",
+     "impressionism",
+     "video"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -197,7 +811,43 @@
   "x": 160,
   "y": 1174,
   "width": 680,
-  "height": 458
+  "height": 458,
+  "understood": {
+   "zh": {
+    "title": "大碗岛星期天下午",
+    "caption": "修拉点彩画派描绘巴黎人在塞纳河畔大碗岛休憩的午后场景，宁静而秩序井然。",
+    "detail": "画面描绘巴黎人在塞纳河畔的大碗岛公园休憩的场景。前景有躺卧的男士、撑伞的女士、坐着的淑女和奔跑的狗。中景有站立的情侣、抱小孩的妇人、撑伞的人群。背景是波光粼粼的塞纳河、帆船和对岸的树木建筑。画中人物多为侧面或背影，姿态静止。采用点彩技法，以细小色点构成画面，色彩明亮和谐，边缘有手绘边框。",
+    "tags": [
+     "修拉",
+     "点彩派",
+     "大碗岛",
+     "塞纳河",
+     "巴黎",
+     "休闲",
+     "公园",
+     "午后",
+     "新印象派",
+     "宁静"
+    ]
+   },
+   "en": {
+    "title": "A Sunday on La Grande Jatte",
+    "caption": "Seurat's pointillist park scene of Parisians relaxing by the Seine on a sunny Sunday.",
+    "detail": "Pointillist painting showing numerous figures relaxing in a park beside the Seine. People sit and stand on green grass; women wear long dresses and hats, men in suits or shirtsleeves. A couple walks with a monkey on a leash; a dog sniffs near a reclining man. Sailboats and rowers on blue water, trees casting shade. Border of dots added later.",
+    "tags": [
+     "pointillism",
+     "Seurat",
+     "park",
+     "Seine",
+     "Sunday",
+     "leisure",
+     "19th century",
+     "French",
+     "figures",
+     "green"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -209,7 +859,43 @@
   "x": 570,
   "y": 1644,
   "width": 260,
-  "height": 155
+  "height": 155,
+  "understood": {
+   "zh": {
+    "title": "惠斯勒海岸浴者",
+    "caption": "灰调海景中散布浴者与帆船，静谧朦胧。",
+    "detail": "画面为詹姆斯·麦克尼尔·惠斯勒1884–85年油画《海岸浴者》。灰蓝海面与浅灰天空构成横向构图，远处一艘白色帆船。前景沙滩上有数位浴者、散步者及深色人物剪影，部分人物立于水边。整体色调低饱和，笔触简练，带有印象派与色调主义特征，氛围宁静、疏离。",
+    "tags": [
+     "惠斯勒",
+     "海岸",
+     "浴者",
+     "海景",
+     "帆船",
+     "印象派",
+     "色调主义",
+     "灰蓝",
+     "静谧",
+     "油画"
+    ]
+   },
+   "en": {
+    "title": "Coast Scene with Bathers",
+    "caption": "A muted seascape painting showing a beach with bathers and a distant sailboat under a hazy sky.",
+    "detail": "A horizontal seascape painting by James McNeill Whistler. The upper half is a pale blue-gray sky meeting a darker blue sea, with a single white sailboat near the center. The foreground shows a sandy beach with numerous small, loosely painted figures: bathers near the water, people walking, and groups sitting or standing. The style is impressionistic with thin, washy paint and muted tones of gray, blue, and beige. No text appears. The mood is calm and atmospheric.",
+    "tags": [
+     "seascape",
+     "beach",
+     "bathers",
+     "sailboat",
+     "impressionism",
+     "Whistler",
+     "muted",
+     "marine",
+     "19th century",
+     "painting"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -221,7 +907,41 @@
   "x": 820,
   "y": 1104,
   "width": 200,
-  "height": 261
+  "height": 261,
+  "understood": {
+   "zh": {
+    "title": "巴黎音乐会",
+    "caption": "修拉素描作品，描绘音乐厅中的人物剪影与朦胧光影，风格暗沉静谧。",
+    "detail": "画面描绘巴黎音乐会场景，前景为深色人物剪影，戴帽者与人群轮廓隐没于暗部。中景一位站立女性身着长裙，身处柔和光晕中。背景布满纸张粗糙纹理，以黑色色粉或炭笔涂抹出光影层次，构图呈纵向，氛围朦胧。",
+    "tags": [
+     "修拉",
+     "素描",
+     "巴黎音乐会",
+     "人物剪影",
+     "暗色调",
+     "印象派",
+     "音乐厅",
+     "色粉画"
+    ]
+   },
+   "en": {
+    "title": "At the Concert Parisien",
+    "caption": "A dark monochrome drawing of silhouetted figures at a Parisian concert, with a glowing central performer.",
+    "detail": "A dark monochrome sketch depicting a scene at the Concert Parisien. In the foreground and edges, heavy silhouettes of audience members, including a prominent figure with a hat on the right, frame the composition. The center features a brightly lit, blurred figure on stage, likely a performer, creating a strong contrast against the shadowy surroundings. The artwork uses a textured, grainy medium like charcoal or conté crayon on textured paper, resulting in soft, atmospheric lighting and a moody, impressionistic feel. No text is present in the image.",
+    "tags": [
+     "Georges Seurat",
+     "Concert Parisien",
+     "nocturne",
+     "silhouette",
+     "monochrome",
+     "charcoal drawing",
+     "impressionism",
+     "theater",
+     "Parisian nightlife",
+     "atmosphere"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -233,7 +953,43 @@
   "x": 1040,
   "y": 1164,
   "width": 210,
-  "height": 309
+  "height": 309,
+  "understood": {
+   "zh": {
+    "title": "江户名所月见岬",
+    "caption": "歌川广重浮世绘，描绘临海茶室望月与江上帆影的静谧夜景",
+    "detail": "浮世绘版画，画面为临海建筑内部视角，地面铺绿色榻榻米，前景有松树与茶具。中景为木质栏杆围合的露台，眺望平静海湾，海面散布帆船与浮标，天空中一轮满月，远方飞雁成行。右上角题签写有“月 名所 岬”，左下角有“广重画”落款。色彩以蓝、绿、灰为主，构图开阔，氛围清幽。",
+    "tags": [
+     "浮世绘",
+     "歌川广重",
+     "江户名所",
+     "月见",
+     "海景",
+     "茶室",
+     "帆船",
+     "满月",
+     "绿色",
+     "静谧"
+    ]
+   },
+   "en": {
+    "title": "Moon Viewing at Shinagawa",
+    "caption": "Hiroshige woodblock print of a moonlit bay viewed from a tatami room.",
+    "detail": "Ukiyo-e print by Utagawa Hiroshige from One Hundred Famous Views of Edo, 1857. View from an elevated tatami room with green mats, low railing, and scattered dishes. A full moon hangs over Edo Bay with boats and sails; geese fly in formation. Red cartouches read 名所江戸百景 and 月の岬; signature 廣重画. Calm, blue and green palette.",
+    "tags": [
+     "ukiyo-e",
+     "Hiroshige",
+     "Edo",
+     "moon",
+     "bay",
+     "tatami",
+     "woodblock",
+     "landscape",
+     "night",
+     "blue"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -245,7 +1001,43 @@
   "x": 1230,
   "y": 1104,
   "width": 240,
-  "height": 186
+  "height": 186,
+  "understood": {
+   "zh": {
+    "title": "惠斯勒扇面仕女双面画",
+    "caption": "惠斯勒绘持扇和服女子与背面立姿女子速写，色彩雅致。",
+    "detail": "正面为一位穿蓝底花纹和服的日本女子侧身站立，手持一把展开的折扇，扇面有红蓝相间图案。背景为金色调，有花枝、灯笼和屏风状元素，地面有流水和织物纹样。背面为同一张纸上的铅笔速写，画一位戴头巾的女子低头提起长裙，衣褶线条流畅，右下角有签名和日期。画作采用色粉或水彩与金箔结合，构图呈竖长方形，纸本有棕色底色。",
+    "tags": [
+     "惠斯勒",
+     "日本主义",
+     "和服女子",
+     "折扇",
+     "双面画",
+     "色粉画",
+     "金箔",
+     "速写",
+     "19世纪",
+     "人物"
+    ]
+   },
+   "en": {
+    "title": "Whistler Japanese Woman Fan Study",
+    "caption": "Two-sided Whistler study: a woman in kimono with fan, verso a standing figure sketch.",
+    "detail": "Recto: a woman in patterned blue kimono and headwrap stands in profile holding an open fan with red and blue ribs; gold-toned background with floral and geometric motifs, orange fan shapes, and a small dog at lower left. Verso: faint graphite sketch of a standing woman lifting her dress, head turned left, on brown paper. Inscriptions and collector marks visible at lower right. Chalk and pastel on brown paper.",
+    "tags": [
+     "James McNeill Whistler",
+     "japonisme",
+     "kimono",
+     "fan",
+     "standing woman",
+     "two-sided drawing",
+     "pastel",
+     "graphite",
+     "gold ground",
+     "Victorian art"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -257,7 +1049,43 @@
   "x": 1050,
   "y": 1474,
   "width": 270,
-  "height": 173
+  "height": 173,
+  "understood": {
+   "zh": {
+    "title": "三岛朝雾",
+    "caption": "歌川广重《东海道五十三次》之三岛，晨雾中旅人牵马前行，画面清冷朦胧",
+    "detail": "浮世绘版画，描绘《东海道五十三次》中的三岛宿场。画面笼罩在清晨薄雾中，远处可见鸟居、石灯笼与松树。前景有骑马的旅人、牵马人和乘坐轿子的人，人物头戴斗笠、身穿蓝染服饰。构图疏密有致，以淡墨和蓝灰渲染雾气，右上角题有“东海道五十三次之内 三岛”及落款。",
+    "tags": [
+     "浮世绘",
+     "歌川广重",
+     "东海道五十三次",
+     "三岛",
+     "朝雾",
+     "旅人",
+     "鸟居",
+     "江户时代",
+     "蓝灰色调",
+     "风景版画"
+    ]
+   },
+   "en": {
+    "title": "Mishima Morning Mist Hiroshige",
+    "caption": "Hiroshige woodblock print of travelers in morning mist at Mishima, muted colors and serene atmosphere.",
+    "detail": "Japanese ukiyo-e woodblock print by Utagawa Hiroshige from the Hoeido Tokaido series, c. 1833/34. Depicts travelers, a horse, and a palanquin moving through a misty village at Mishima. Figures wear straw hats and blue coats. A torii gate, stone lanterns, and tall pines emerge from gray mist. Japanese text at top reads Tokaido Gojusan Tsugi and Mishima. Composition uses gradient bokashi sky, muted blues, grays, and greens, evoking quiet morning travel.",
+    "tags": [
+     "ukiyo-e",
+     "Hiroshige",
+     "Tokaido",
+     "Mishima",
+     "woodblock print",
+     "morning mist",
+     "travelers",
+     "torii gate",
+     "Edo period",
+     "landscape"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -269,7 +1097,43 @@
   "x": 1300,
   "y": 1304,
   "width": 180,
-  "height": 131
+  "height": 131,
+  "understood": {
+   "zh": {
+    "title": "广重东海道荒井",
+    "caption": "歌川广重《东海道五十三次》之荒井，描绘海滨驿站行旅与松林帆影。",
+    "detail": "浮世绘版画，画面为东海道荒井驿站的海滨场景。左侧有松林、石垣小屋与栅栏，前景数名旅人抬着驾笼前行，右侧停泊一艘帆船，远处海面与岛屿若隐若现。天空泛淡红与蓝灰，水面平静。图中有文字：右上角题“荒井”及“东海道五十三次”，上方有狂歌数首，左侧落款“广重画”。",
+    "tags": [
+     "浮世绘",
+     "歌川广重",
+     "东海道",
+     "荒井",
+     "风景画",
+     "江户时代",
+     "旅人",
+     "海滨",
+     "松树",
+     "帆船"
+    ]
+   },
+   "en": {
+    "title": "Arai Station, Tokaido Woodblock Print",
+    "caption": "Hiroshige woodblock print of Arai station on the Tokaido, with travelers, pine trees, and boats.",
+    "detail": "Japanese ukiyo-e woodblock print by Utagawa Hiroshige depicting Arai, a station on the Tokaido road. Scene shows travelers and porters carrying a palanquin along a sandy shore, pine trees, a small hut, and boats with sails on calm water. Calligraphic text includes the station name Arai and kyoka poems. Composition uses muted blues, greens, and tans with fine line work and gradient sky.",
+    "tags": [
+     "ukiyo-e",
+     "Hiroshige",
+     "Tokaido",
+     "Arai",
+     "woodblock print",
+     "landscape",
+     "travelers",
+     "pine trees",
+     "boats",
+     "Edo period"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -281,7 +1145,43 @@
   "x": 840,
   "y": 1564,
   "width": 210,
-  "height": 170
+  "height": 170,
+  "understood": {
+   "zh": {
+    "title": "酒馆里的喧闹人群",
+    "caption": "费利克斯·瓦洛东油画，描绘拥挤酒馆中饮酒交谈的男人们，色调暗沉，氛围嘈杂。",
+    "detail": "后印象派风格油画，画面挤满戴帽或秃顶的男性，多穿深色外套、蓝色工装或白围裙。前景有举杯老者、背对观众的蓝衣人，中景酒保在吧台后忙碌，背景架上排列彩色酒瓶。左下角有签名 F. VALLOTTON。人物表情生动，笔触粗犷，构图密集，展现 19 世纪末巴黎酒馆的市井气息。",
+    "tags": [
+     "油画",
+     "酒馆",
+     "人群",
+     "费利克斯·瓦洛东",
+     "后印象派",
+     "饮酒",
+     "喧闹",
+     "暗色调",
+     "巴黎",
+     "男性"
+    ]
+   },
+   "en": {
+    "title": "The Bistro by Vallotton",
+    "caption": "A crowded Parisian bistro scene painted by Félix Vallotton with animated drinkers and waiters.",
+    "detail": "Painting depicts a dense, animated crowd inside a Parisian bistro. Men in dark suits, caps, and blue smocks gather around a bar; some hold glasses and bottles, a waiter leans forward, and faces show varied expressions. Background shelves hold bottles. The composition is tightly packed with muted browns, blacks, blues, and hints of red, painted in Vallotton's flat, slightly caricatural style. Signature 'F. VALLOTTON' visible lower left.",
+    "tags": [
+     "Félix Vallotton",
+     "The Bistro",
+     "painting",
+     "Parisian",
+     "crowd",
+     "bar",
+     "drinkers",
+     "muted",
+     "caricature",
+     "Nabis"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -295,6 +1195,40 @@
   "en": {
    "text": "I walk to where the stream runs out, and sit to watch the clouds rise.",
    "source": "Wang Wei · My Retreat at Mount Zhongnan"
+  },
+  "understood": {
+   "zh": {
+    "title": "终南别业名句",
+    "caption": "王维《终南别业》中两句名诗，写随遇而安的闲适禅意。",
+    "detail": "出自唐代王维《终南别业》，正文为“行到水穷处，坐看云起时”。诗句写诗人漫步至水流尽头，便坐下静观云气升腾，表现随遇而安、超然物外的闲适心境与禅意，是山水田园诗的代表名句。",
+    "tags": [
+     "王维",
+     "终南别业",
+     "唐诗",
+     "山水田园",
+     "名句",
+     "禅意",
+     "闲适",
+     "古典诗词"
+    ]
+   },
+   "en": {
+    "title": "Wang Wei Zhongnan Retreat Poem",
+    "caption": "A couplet from Wang Wei's poem describing walking by a stream and watching clouds rise.",
+    "detail": "This is a short text excerpt from Wang Wei's poem 'My Retreat at Mount Zhongnan.' The quoted lines are: 'I walk to where the stream runs out, and sit to watch the clouds rise.' The content describes a solitary walk to the end of a stream and sitting to observe clouds ascending, reflecting a tranquil nature scene and a contemplative, reclusive mood. The topic centers on Chinese classical poetry, nature, retirement, and Zen-like stillness.",
+    "tags": [
+     "Wang Wei",
+     "Chinese poetry",
+     "Tang dynasty",
+     "nature",
+     "retreat",
+     "stream",
+     "clouds",
+     "tranquility",
+     "classical literature",
+     "solitude"
+    ]
+   }
   }
  },
  {
@@ -307,7 +1241,43 @@
   "x": 80,
   "y": 1584,
   "width": 220,
-  "height": 139
+  "height": 139,
+  "understood": {
+   "zh": {
+    "title": "阿尼埃尔浴场习作",
+    "caption": "修拉描绘河畔工人与对岸工厂的油画习作，笔触粗犷。",
+    "detail": "画面右侧一名穿深蓝上衣的男子坐在草地上，背对观者，面向塞纳河。前景是绿色草坡，中景为蓝绿色河水，远景可见桥梁、红顶工厂建筑、树木和淡蓝色天空。油画材质，笔触明显，带有印象派色彩。图中无文字。",
+    "tags": [
+     "修拉",
+     "油画",
+     "习作",
+     "塞纳河",
+     "工人",
+     "河畔",
+     "印象派",
+     "风景",
+     "蓝绿",
+     "工业背景"
+    ]
+   },
+   "en": {
+    "title": "Study for Bathers at Asnières",
+    "caption": "A seated figure in blue rests by a riverbank in a loose oil sketch with soft blue and green tones.",
+    "detail": "An oil study by Georges Seurat showing a seated male figure in a dark blue jacket and white trousers on a grassy bank, facing a wide blue river. Across the water, a bridge and factory buildings with chimneys sit on the horizon under a pale, cloudy sky. Tall green trees frame the left and right edges. Visible brushstrokes create a textured, atmospheric composition.",
+    "tags": [
+     "Georges Seurat",
+     "Bathers at Asnières",
+     "oil sketch",
+     "study",
+     "riverbank",
+     "seated figure",
+     "industrial landscape",
+     "blue",
+     "green",
+     "impressionist"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -319,7 +1289,43 @@
   "x": 0,
   "y": 1819,
   "width": 430,
-  "height": 267
+  "height": 267,
+  "understood": {
+   "zh": {
+    "title": "阿尼埃尔浴场习作",
+    "caption": "修拉绘塞纳河畔浴场，印象派笔触，蓝绿明快。",
+    "detail": "画面描绘塞纳河畔阿尼埃尔的夏日浴场场景。前景草地上有穿深色衣物的男子背对观众坐着，旁边散落着衣物、帽子和鞋子；中景一位半裸青年坐在岸边，河中有人在游泳，远处有帆船和对岸工厂烟囱。天空呈淡蓝色，漂浮着云朵。笔触松散，是修拉为《阿尼埃尔浴场》所作的色彩习作，右下角有签名。",
+    "tags": [
+     "修拉",
+     "印象派",
+     "浴场",
+     "塞纳河",
+     "风景",
+     "油画",
+     "蓝绿",
+     "夏日",
+     "人物",
+     "习作"
+    ]
+   },
+   "en": {
+    "title": "Study for Bathers at Asnières",
+    "caption": "Impressionist study of men and boys relaxing and bathing along the Seine riverbank under a hazy sky.",
+    "detail": "Oil study depicting bathers on the grassy bank of the Seine at Asnières. A shirtless youth sits facing right in the foreground beside scattered clothes and a straw hat; another reclines on the left; figures wade and swim in the blue water, one wearing a red hat. Across the river, factories with smoking chimneys and a bridge appear under a cloudy sky. Loose brushwork, pastel tones. Signed Seurat.",
+    "tags": [
+     "Seurat",
+     "Impressionism",
+     "bathers",
+     "Seine",
+     "Asnières",
+     "riverbank",
+     "industrial",
+     "oil sketch",
+     "blue",
+     "leisure"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -331,7 +1337,41 @@
   "x": 2730,
   "y": 0,
   "width": 520,
-  "height": 334
+  "height": 334,
+  "understood": {
+   "zh": {
+    "title": "山巅圣母像",
+    "caption": "卡斯帕·大卫·弗里德里希1804年绘制的山巅圣母像水墨风景画，色调灰淡空灵。",
+    "detail": "画面中央一座岩石山峰顶端立有圣母雕像，身披长袍，立于圆柱基座上。山体周围环绕深色针叶树与松林，前景有嶙峋岩块，背景为层层淡墨远山与空旷天空。右上角有手写日期与签名文字，整体为棕灰色调的水墨素描，构图以圣母像为视觉中心，呈金字塔式布局，氛围静谧肃穆。",
+    "tags": [
+     "卡斯帕·大卫·弗里德里希",
+     "圣母像",
+     "山水",
+     "水墨",
+     "棕灰",
+     "静谧",
+     "浪漫主义",
+     "风景画"
+    ]
+   },
+   "en": {
+    "title": "Madonna Statue in Mountain Landscape",
+    "caption": "A grayscale Romantic drawing of a Madonna statue atop a rocky peak, surrounded by pine trees and misty mountains.",
+    "detail": "Monochrome ink and graphite drawing on paper. A solitary Madonna statue stands on a central rocky summit. Tall pine trees cluster around the base and slope downward. Layered mountain ridges recede into a pale, hazy background. Faint handwritten inscriptions appear in the upper corners. The composition is vertical and centered, emphasizing the statue's elevated position. Delicate shading and fine line work create a serene, atmospheric mood typical of Romantic landscape art.",
+    "tags": [
+     "Caspar David Friedrich",
+     "Romanticism",
+     "landscape",
+     "Madonna",
+     "statue",
+     "mountains",
+     "pine trees",
+     "monochrome",
+     "drawing",
+     "haze"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -343,7 +1383,43 @@
   "x": 2930,
   "y": 434,
   "width": 150,
-  "height": 118
+  "height": 118,
+  "understood": {
+   "zh": {
+    "title": "罗马风景",
+    "caption": "阿诺德·勃克林描绘的罗马乡村风景油画，色调沉静，充满古典浪漫氛围。",
+    "detail": "画作描绘罗马郊野风景：左侧山丘上矗立一座中世纪城堡废墟，右侧有几棵高大的树木。前景有数位穿着传统服饰的人物在溪边和草地上活动。画面中部可见明显的垂直拼接缝。天空云层厚重，光线柔和。整体构图开阔，采用深绿、棕褐与灰蓝色调，具有19世纪浪漫主义风景画特征。",
+    "tags": [
+     "罗马风景",
+     "勃克林",
+     "油画",
+     "风景画",
+     "浪漫主义",
+     "城堡",
+     "树木",
+     "人物",
+     "古典",
+     "乡村"
+    ]
+   },
+   "en": {
+    "title": "Roman Landscape by Böcklin",
+    "caption": "A classical Roman landscape painting with rolling hills, a distant castle, and figures in traditional dress under a cloudy sky.",
+    "detail": "Oil painting depicting a verdant Roman countryside with a hilltop castle in the left background. Several figures in traditional clothing are scattered across the foreground and midground, including a woman in white seated near a tree and others resting by a stream. The composition features a large tree on the right, rolling hills, and a cloudy sky. Visible vertical seams and a brown border indicate the canvas structure.",
+    "tags": [
+     "landscape",
+     "painting",
+     "Arnold Böcklin",
+     "Roman",
+     "castle",
+     "figures",
+     "oil",
+     "19th century",
+     "nature",
+     "cloudy sky"
+    ]
+   }
+  }
  },
  {
   "kind": "link",
@@ -355,7 +1431,42 @@
   "x": 2740,
   "y": 1644,
   "width": 180,
-  "height": 181
+  "height": 181,
+  "understood": {
+   "zh": {
+    "title": "侘寂美学",
+    "caption": "维基百科介绍日本侘寂美学的网页，配图为龙安寺石庭。",
+    "detail": "网页主题为日本美学概念“侘寂”（Wabi-sabi），阐述其接受短暂与不完美、崇尚自然朴素的核心思想。配图是京都龙安寺枯山水石庭，画面为白色砾石耙纹庭院，点缀深色岩石与苔藓，背景是木制土墙和常绿树木，构图宁静克制。",
+    "tags": [
+     "侘寂",
+     "日本美学",
+     "枯山水",
+     "龙安寺",
+     "禅意",
+     "朴素",
+     "无常",
+     "庭院",
+     "维基百科"
+    ]
+   },
+   "en": {
+    "title": "Wabi-Sabi Aesthetic",
+    "caption": "Wikipedia article explaining the Japanese worldview of wabi-sabi, illustrated by a serene dry rock garden.",
+    "detail": "A Wikipedia page about wabi-sabi, a Japanese aesthetic and worldview centered on accepting transience and imperfection. The image shows a traditional karesansui dry garden with raked white gravel, a few dark rocks set in moss, a wooden roofed wall, and evergreen trees under a clear sky. Text on the page covers its history, Zen Buddhist origins, and concepts such as sabi, wabi, and rustic simplicity.",
+    "tags": [
+     "wabi-sabi",
+     "japanese aesthetics",
+     "zen buddhism",
+     "impermanence",
+     "imperfection",
+     "rock garden",
+     "karesansui",
+     "minimalism",
+     "nature",
+     "philosophy"
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -364,7 +1475,43 @@
   "x": 2130,
   "y": 1814,
   "width": 250,
-  "height": 157
+  "height": 157,
+  "understood": {
+   "zh": {
+    "title": "哈默休伊的沉默之诗",
+    "caption": "解读丹麦画家哈默休伊的生平与静谧室内画作，氛围沉静内敛。",
+    "detail": "该视频为艺术科普类，围绕丹麦画家维尔海姆·哈默休伊展开，介绍其生平、艺术生涯与代表作品。画面包含哈默休伊的自画像、其标志性的室内画作（如背对观者的黑衣女子、青花瓷罐、灰调墙面与门框），以及视频章节文字“哈默休伊 沉默之诗”“做一个靠谱的成年人”“正片”“生涯作品”。整体色调以灰、白、黑、棕等低饱和冷色为主，构图简洁空旷，传递出孤独、静谧、疏离的诗意氛围。",
+    "tags": [
+     "哈默休伊",
+     "艺术史",
+     "丹麦画家",
+     "室内画",
+     "沉默之诗",
+     "冷色调",
+     "静谧",
+     "孤独",
+     "艺术科普",
+     "油画"
+    ]
+   },
+   "en": {
+    "title": "Hammershoi: The Poetry of Silence",
+    "caption": "A video exploring Danish painter Vilhelm Hammershoi's quiet, muted interior paintings and his mysterious solitary figures.",
+    "detail": "The video examines the life and art of Danish painter Vilhelm Hammershoi, referencing documentaries and Wikipedia. Frames show a self-portrait of a man with a mustache in dark clothing, and an interior scene with a woman in a black dress facing away, standing near a table with a porcelain tureen. Muted grey, brown, and white tones dominate. The text on screen reads '哈默休伊' and '沉默之诗'.",
+    "tags": [
+     "Vilhelm Hammershoi",
+     "Danish art",
+     "silence",
+     "interior painting",
+     "muted tones",
+     "solitude",
+     "art documentary",
+     "self-portrait",
+     "grey palette",
+     "melancholy"
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -373,7 +1520,89 @@
   "x": 2390,
   "y": 1774,
   "width": 160,
-  "height": 248
+  "height": 248,
+  "understood": {
+   "zh": {
+    "title": "哈默修伊维基百科",
+    "caption": "丹麦画家哈默修伊的维基百科页面，介绍其生平与室内画风格",
+    "detail": "维基百科条目，介绍丹麦画家 Vilhelm Hammershøi（1864-1916）。页面包含其1895年自画像和1904年《室内与背对年轻女子》等作品图片。正文讲述他生于哥本哈根，师从 Peder Severin Krøyer，1885年首次参展。他以诗意的低调肖像和室内画闻名，常以妻子 Ida 为模特，多描绘背对观众的人物。文中引用了里尔克对其艺术的评价，并提及他在伦敦的创作经历。",
+    "tags": [
+     "哈默修伊",
+     "丹麦画家",
+     "维基百科",
+     "室内画",
+     "肖像画",
+     "象征主义",
+     "哥本哈根",
+     "背对人物",
+     "里尔克",
+     "灰调"
+    ],
+    "summary": "· Vilhelm Hammershøi（1864-1916）是丹麦画家，以诗意、柔和的肖像和室内画著称，Rainer Maria Rilke 曾评论其作品宽广而缓慢，关乎艺术中重要与本质之物。\n· Hammershøi 生于哥本哈根，八岁起学素描，先后师从 Niels Christian Kierkegaard、Holger Grønvold、Vilhelm Kyhn，后进入丹麦皇家美术学院，1883至1885年在 Peder Severin Krøyer 指导下学习，1885年以《Portrait of a Young Girl》在夏洛滕堡春季展首次亮相，1891年与 Ida Ilsted 结婚。\n· 他主要在哥本哈根创作，最著名的是室内画，多绘于 Strandgade 30（1898-1909年与妻子同住）和 Strandgade 25（1913-1916年同住），妻子常出现在室内画中且多从背后描绘，仿佛沉浸于观者无法分享的事物中。\n· 其画作色调柔和，避免明亮色彩，只用灰色、低饱和的黄绿等暗色；人物背对观者营造轻微紧张与神秘感，哥本哈根和伦敦的建筑外景及风景画则空无一人。\n· 2012年6月，其《Ida Reading a Letter》在伦敦苏富比以1,721,250英镑（约15,747,499丹麦克朗）拍出，创丹麦艺术品拍卖纪录；2018年12月，盖蒂博物馆以5,037,500美元购得《Interior with an Easel, Bredgade 25》（1912）。",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Vilhelm Hammershøi (pronunciationⓘ), often anglicised as Vilhelm Hammershoi (15 May 1864 – 13 February 1916), was a Danish painter. He is known for his poetic, subdued portraits and interiors.[1] In 1905, Rainer Maria Rilke wrote of the artist, \"Hammershøi is not one of those about whom one can speak quickly. His work is wide-ranging and slow, and at whatever moment one comprehends it, it will always provide an opportunity to talk about what is important and essential in art\".[2]"
+     },
+     {
+      "part": "p",
+      "quote": "Vilhelm Hammershøi was born in 1864 in Copenhagen, Denmark. He was the son of a merchant, Christian Hammershøi, and his wealthy wife, Frederikke (née Rentzmann), and had a younger brother, Svend Hammershøi, who was a ceramist and painter.[3] Hammershøi studied drawing from the age of eight with Niels Christian Kierkegaard and Holger Grønvold, as well as painting with Vilhelm Kyhn, before embarking on studies with Frederik Vermehren and others at the Royal Danish Academy of Fine Arts. From 1883 to 1885, he studied with Peder Severin Krøyer at the Independent Study Schools (Kunstnernes Frie Studieskoler), then debuted in the Charlottenborg Spring Exhibition in 1885 with Portrait of a Young Girl (showing his sister, Anna). Pierre-Auguste Renoir is reported to have admired this painting. Hammershøi married Ida Ilsted in 1891.[4]"
+     },
+     {
+      "part": "p",
+      "quote": "Hammershøi's wife often appears in his interiors, and like many of his figures, is usually depicted from behind \"as if absorbed in something that the viewer cannot share\".[5] Ida is also the model in many similar works by her brother, Peter Ilsted. Hammershøi and Peter were lifelong friends, business partners, and colleagues. The Metropolitan Museum of Art held an exhibition of their collective works in 2001."
+     },
+     {
+      "part": "p",
+      "quote": "Hammershøi's paintings are best described as muted in tone. He refrained from employing bright colours (except in his very early academic works), opting always for a limited palette consisting of greys, as well as desaturated yellows, greens, and other dark hues. His tableaux of figures turned away from the viewer project an air of slight tension and mystery, while his exteriors of grand buildings in Copenhagen and in London (he painted two exteriors of the British Museum between 1905 and 1906) are devoid of people, a quality they share with his landscapes."
+     },
+     {
+      "part": "p",
+      "quote": "In June 2012, Hammershøi's Ida Reading a Letter was auctioned by Sotheby's in London for £1,721,250 or DKK 15,747,499, a record for any Danish work of art. Two other paintings by Hammershøi were also sold the same day at Sotheby's for unusually high prices: Interior with Two Candles was auctioned for DKK 10,110,000 and Ida in Interior for DKK 6,120,000.[10][11]"
+     }
+    ]
+   },
+   "en": {
+    "title": "Vilhelm Hammershøi Biography",
+    "caption": "Wikipedia page about Danish painter Vilhelm Hammershøi, known for poetic, subdued interiors and portraits.",
+    "detail": "Wikipedia article on Danish painter Vilhelm Hammershøi (1864–1916), covering his life, training at the Royal Danish Academy, marriage to Ida Ilsted, and his poetic, muted interiors and portraits painted in Copenhagen. Includes a self-portrait image showing a man with dark hair and mustache in a brown jacket against a pale background.",
+    "tags": [
+     "Vilhelm Hammershøi",
+     "Danish painter",
+     "biography",
+     "interiors",
+     "portraits",
+     "symbolism",
+     "muted palette",
+     "Copenhagen",
+     "art history",
+     "Wikipedia"
+    ],
+    "summary": "· Vilhelm Hammershøi (1864–1916) was a Danish painter celebrated for poetic, subdued portraits and interiors, and Rainer Maria Rilke wrote in 1905 that his work 'is wide-ranging and slow.'\n· Hammershøi painted mostly in Copenhagen at Strandgade 30 and Strandgade 25, favored a muted palette of greys and desaturated yellows and greens, and often depicted his wife Ida from behind.\n· His early simple works won critical acclaim, but after a trip to Paris his work became overly detailed and, per critic Souren Melikian, 'the magic was lost,' though his reputation has since revived.\n· In June 2012 Sotheby's sold Ida Reading a Letter for £1,721,250 (DKK 15,747,499), a record for any Danish artwork, and in December 2018 the Getty Museum bought Interior with an Easel, Bredgade 25 for $5,037,500.\n· Major retrospectives were held at the Musée d'Orsay, the Guggenheim, and the Royal Academy's 2008 'The Poetry of Silence,' and in 2005 Michael Palin presented a BBC documentary on Hammershøi, concluding 'The rest is silence.'",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Vilhelm Hammershøi (pronunciationⓘ), often anglicised as Vilhelm Hammershoi (15 May 1864 – 13 February 1916), was a Danish painter. He is known for his poetic, subdued portraits and interiors.[1] In 1905, Rainer Maria Rilke wrote of the artist, \"Hammershøi is not one of those about whom one can speak quickly. His work is wide-ranging and slow, and at whatever moment one comprehends it, it will always provide an opportunity to talk about what is important and essential in art\".[2]"
+     },
+     {
+      "part": "p",
+      "quote": "Hammershøi's wife often appears in his interiors, and like many of his figures, is usually depicted from behind \"as if absorbed in something that the viewer cannot share\".[5] Ida is also the model in many similar works by her brother, Peter Ilsted. Hammershøi and Peter were lifelong friends, business partners, and colleagues. The Metropolitan Museum of Art held an exhibition of their collective works in 2001."
+     },
+     {
+      "part": "p",
+      "quote": "Hammershøi's early works, with their simplicity and recording of the \"banality of everyday life\", enjoyed critical acclaim. He was sought out by artists and literary figures of the time, among them Emil Nolde and Rainer Maria Rilke, who both remarked on his retiring manner and reluctance to talk.[1] After a trip to Paris, his work became overly detailed. According to art critic Souren Melikian, his \"painterly skill remained but the magic was lost.\"[1]"
+     },
+     {
+      "part": "p",
+      "quote": "In June 2012, Hammershøi's Ida Reading a Letter was auctioned by Sotheby's in London for £1,721,250 or DKK 15,747,499, a record for any Danish work of art. Two other paintings by Hammershøi were also sold the same day at Sotheby's for unusually high prices: Interior with Two Candles was auctioned for DKK 10,110,000 and Ida in Interior for DKK 6,120,000.[10][11]"
+     },
+     {
+      "part": "p",
+      "quote": "In 2005, Hammershøi's life and oeuvre was featured in a BBC television documentary, Michael Palin and the Mystery of Hammershoi, with the British comedian and writer Michael Palin. In the programme, Palin, fascinated by Hammershøi, whose pictures he conceived as having a distinct enigmatic coolness and distance about them, sets out to unlock the mysteries and find out about the background of Hammershøi. Palin, wanting to know of his inspirations and the reason for these mystical pictures, started his search in Hayward Gallery in London, goes to Amsterdam and finally to Copenhagen.[8] At the end of his journey, Palin commented: \"There's a tendency now to want to know our artists, to expect them to reveal everything before we can properly judge their work. I think the key to understanding Hammersøi is that he deliberately didn't want us to know him. He was an artist. He made paintings. The rest is silence\".[9]"
+     }
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -382,7 +1611,89 @@
   "x": 2560,
   "y": 1744,
   "width": 160,
-  "height": 248
+  "height": 248,
+  "understood": {
+   "zh": {
+    "title": "形而上绘画",
+    "caption": "意大利形而上绘画流派介绍，含基里科与卡拉作品及理念",
+    "detail": "维基百科条目，介绍1910年由乔治·德·基里科和卡洛·卡拉发起的形而上绘画运动。文中提及《令人不安的缪斯》《爱之歌》《秋日午后之谜》等作品，描述空旷广场、拱廊、无面人偶、长影等意象，以及阿波利奈尔1913年首次使用“形而上”一词。附图为此风格油画，画面有无头人偶、几何体、雕像和厂房，色彩以橙黄、青绿为主。",
+    "tags": [
+     "形而上绘画",
+     "基里科",
+     "卡拉",
+     "意大利艺术",
+     "现代主义",
+     "梦幻",
+     "神秘",
+     "人偶",
+     "广场",
+     "油画"
+    ],
+    "summary": "· 形而上学绘画（pittura metafisica）是由意大利艺术家乔治·德·基里科和卡洛·卡拉发展起来的绘画风格，运动始于1910年德·基里科，1917年正式确立学派及原则。\n· 德·基里科1910年前后的《秋日午后的谜》被认为是第一件形而上学作品，灵感来自他在佛罗伦萨圣十字广场经历的一次\"启示\"，此后他发展出荒凉广场、斜光拱廊、渺小人物或无特征裁缝人偶等令人不安的图像。\n· 1913年阿波利奈尔首次用\"形而上学\"一词描述德·基里科的画作；1917年2月卡拉在费拉拉与德·基里科相遇，两人在军医院合作数月，卡拉以静止取代其早期未来主义的动感。\n· 1917年12月米兰展览后，评论家开始称卡拉为形而上学绘画的发明者，令德·基里科恼怒，卡拉在1919年出版的《形而上学绘画》中未予澄清，两人关系终结，到1919年两人都基本放弃该风格转向新古典主义。\n· 采用该风格的其他画家包括乔治·莫兰迪（约1917—1920年）、菲利波·德·皮西斯和马里奥·西罗尼；1920年代及以后其遗产影响了费利切·卡索拉蒂、马克斯·恩斯特等人，德国1921和1924年的展览启发了格罗茨和施莱默的人偶图像，马格利特、达利等超现实主义者也大量借用其形式与主题元素。",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Metaphysical painting (Italian: pittura metafisica) or metaphysical art was a style of painting developed by the Italian artists Giorgio de Chirico and Carlo Carrà. The movement began in 1910 with de Chirico, whose dreamlike works with sharp contrasts of light and shadow often had a vaguely threatening, mysterious quality, \"painting that which cannot be seen\".[1] De Chirico, his younger brother Alberto Savinio, and Carrà formally established the school and its principles in 1917."
+     },
+     {
+      "part": "p",
+      "quote": "Giorgio de Chirico, unlike many artists of his generation, found little to admire in the works of Cézanne and other French modernists, but was inspired by the paintings of the Swiss Symbolist Arnold Böcklin and the work of German artists such as Max Klinger.[2] His painting The Enigma of an Autumn Afternoon (c. 1910) is considered his first Metaphysical work; it was inspired by what de Chirico called a \"revelation\" that he experienced in Piazza Santa Croce in Florence.[3] In subsequent works he developed disquieting images of deserted squares, often bordered by steeply receding arcades shown in a raking light. Tiny figures in the distance cast long shadows, or in place of figures there are featureless dressmakers' mannequins. The effect produces a sense of dislocation in time and space.[4]"
+     },
+     {
+      "part": "p",
+      "quote": "In 1913, Guillaume Apollinaire made the first use of the term \"metaphysical\" to describe de Chirico's paintings.[5]"
+     },
+     {
+      "part": "p",
+      "quote": "In February 1917, the Futurist painter Carlo Carrà met de Chirico in Ferrara, where they were both stationed during World War I. Carrà developed a variant of the Metaphysical style in which the dynamism of his earlier work was replaced by immobility, and the two artists worked together for several months in 1917 at a military hospital in Ferrara.[6] According to art historian Jennifer Mundy, \"Carrà adopted de Chirico's imagery of mannequins set in claustrophobic spaces, but his works lacked de Chirico's sense of irony and enigma, and he always retained a correct perspective\".[6] After an exhibition of Carrà's work in Milan in December 1917, critics began to write of Carrà as the inventor of Metaphysical painting, to de Chirico's chagrin.[6] Carrà did little to dispel this idea in Pittura Metafisica, a book he published in 1919, and the relationship between the two artists ended.[5] By 1919, both artists had largely abandoned the style in favor of Neoclassicism."
+     },
+     {
+      "part": "p",
+      "quote": "Other painters who adopted the style included Giorgio Morandi around 1917–1920,[7] Filippo de Pisis, and Mario Sironi.[5] In the 1920s and later, the legacy of Metaphysical painting influenced the work of Felice Casorati, Max Ernst, and others.[5] Exhibitions of Metaphysical art in Germany in 1921 and 1924 inspired the use of mannequin imagery in works by George Grosz and Oskar Schlemmer.[5] Many paintings by René Magritte, Salvador Dalí, and other Surrealists make use of formal and thematic elements derived from Metaphysical painting.[5]"
+     }
+    ]
+   },
+   "en": {
+    "title": "Metaphysical Painting Overview",
+    "caption": "A Wikipedia article about Metaphysical painting, an Italian art movement founded by de Chirico and Carrà.",
+    "detail": "This is a Wikipedia page about Metaphysical painting (pittura metafisica), an Italian art style started by Giorgio de Chirico and Carlo Carrà around 1910. It discusses dreamlike deserted squares, mannequins, sharp shadows, and the movement's formal establishment in 1917. The page includes text, headings, and two painting reproductions: The Disquieting Muses (1947) and The Song of Love (1914). Key concepts include enigma, dislocation, and influence from Symbolism.",
+    "tags": [
+     "Metaphysical painting",
+     "Giorgio de Chirico",
+     "Carlo Carrà",
+     "Italian art",
+     "Surrealism",
+     "mannequins",
+     "pittura metafisica",
+     "art movement",
+     "1910s",
+     "Wikipedia"
+    ],
+    "summary": "· Metaphysical painting was developed by Giorgio de Chirico and Carlo Carrà, beginning in 1910 with de Chirico and formally established as a school in 1917.\n· De Chirico's Metaphysical works featured deserted squares, steeply receding arcades, long shadows, and featureless mannequins, producing a sense of dislocation in time and space.\n· Guillaume Apollinaire first used the term \"metaphysical\" to describe de Chirico's paintings in 1913.\n· Carlo Carrà met de Chirico in Ferrara in February 1917, developed a variant of the style replacing dynamism with immobility, and after a December 1917 Milan exhibition was credited by critics as the inventor of Metaphysical painting, ending their relationship; by 1919 both had largely abandoned the style for Neoclassicism.\n· Other adopters included Giorgio Morandi around 1917–1920, Filippo de Pisis, and Mario Sironi, while the style later influenced Felice Casorati, Max Ernst, George Grosz, Oskar Schlemmer, and Surrealists such as René Magritte and Salvador Dalí.",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Metaphysical painting (Italian: pittura metafisica) or metaphysical art was a style of painting developed by the Italian artists Giorgio de Chirico and Carlo Carrà. The movement began in 1910 with de Chirico, whose dreamlike works with sharp contrasts of light and shadow often had a vaguely threatening, mysterious quality, \"painting that which cannot be seen\".[1] De Chirico, his younger brother Alberto Savinio, and Carrà formally established the school and its principles in 1917."
+     },
+     {
+      "part": "p",
+      "quote": "Giorgio de Chirico, unlike many artists of his generation, found little to admire in the works of Cézanne and other French modernists, but was inspired by the paintings of the Swiss Symbolist Arnold Böcklin and the work of German artists such as Max Klinger.[2] His painting The Enigma of an Autumn Afternoon (c. 1910) is considered his first Metaphysical work; it was inspired by what de Chirico called a \"revelation\" that he experienced in Piazza Santa Croce in Florence.[3] In subsequent works he developed disquieting images of deserted squares, often bordered by steeply receding arcades shown in a raking light. Tiny figures in the distance cast long shadows, or in place of figures there are featureless dressmakers' mannequins. The effect produces a sense of dislocation in time and space.[4]"
+     },
+     {
+      "part": "p",
+      "quote": "In 1913, Guillaume Apollinaire made the first use of the term \"metaphysical\" to describe de Chirico's paintings.[5]"
+     },
+     {
+      "part": "p",
+      "quote": "In February 1917, the Futurist painter Carlo Carrà met de Chirico in Ferrara, where they were both stationed during World War I. Carrà developed a variant of the Metaphysical style in which the dynamism of his earlier work was replaced by immobility, and the two artists worked together for several months in 1917 at a military hospital in Ferrara.[6] According to art historian Jennifer Mundy, \"Carrà adopted de Chirico's imagery of mannequins set in claustrophobic spaces, but his works lacked de Chirico's sense of irony and enigma, and he always retained a correct perspective\".[6] After an exhibition of Carrà's work in Milan in December 1917, critics began to write of Carrà as the inventor of Metaphysical painting, to de Chirico's chagrin.[6] Carrà did little to dispel this idea in Pittura Metafisica, a book he published in 1919, and the relationship between the two artists ended.[5] By 1919, both artists had largely abandoned the style in favor of Neoclassicism."
+     },
+     {
+      "part": "p",
+      "quote": "Other painters who adopted the style included Giorgio Morandi around 1917–1920,[7] Filippo de Pisis, and Mario Sironi.[5] In the 1920s and later, the legacy of Metaphysical painting influenced the work of Felice Casorati, Max Ernst, and others.[5] Exhibitions of Metaphysical art in Germany in 1921 and 1924 inspired the use of mannequin imagery in works by George Grosz and Oskar Schlemmer.[5] Many paintings by René Magritte, Salvador Dalí, and other Surrealists make use of formal and thematic elements derived from Metaphysical painting.[5]"
+     }
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -391,7 +1702,89 @@
   "x": 2740,
   "y": 1844,
   "width": 170,
-  "height": 106
+  "height": 106,
+  "understood": {
+   "zh": {
+    "title": "日本美学核心概念",
+    "caption": "斯坦福哲学百科介绍日本美学传统中的物哀、侘寂、幽玄等核心概念",
+    "detail": "斯坦福哲学百科全书条目，作者Adam Loughnane。文章梳理日本美学传统中的关键概念：物哀、侘、寂、幽玄、粋、切。指出日本古典哲学视现实为无常流变，艺术传统反映并庆祝这种无常，而非导向虚无。美学与儒家修身实践紧密相连，艺术常被称为“道”，如茶道。涉及道元、吉田兼好等思想家。",
+    "tags": [
+     "日本美学",
+     "物哀",
+     "侘寂",
+     "幽玄",
+     "无常",
+     "哲学",
+     "艺术",
+     "禅宗",
+     "儒家",
+     "传统文化"
+    ],
+    "summary": "· 日本美学传统早于19世纪作为学科建立，核心概念包括物哀、侘、寂、幽玄、粋、切。\n· 物哀指因事物短暂而产生的哀感，最常被引用的当代例子是日本人每年赏樱，樱花一周内凋落而引发惆怅。\n· 侘茶由千利休集大成，通过约60厘米见方的躙口、禁用武士刀、采用本地乐烧陶器等设计，在茶室中消解社会等级。\n· 寂指经岁月形成的锈色、铜绿与孤寂感，京都银阁寺虽从未覆银，却因古旧斑驳成为寂的典范，与金阁寺形成对比。\n· 幽玄在能剧中由世阿弥视为最高艺术原则，雪舟1495年《泼墨山水》以留白和未完成感邀请观者自行补全画面。",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Although the Japanese have been producing great art and writing about it for many centuries, including a rich tradition of poetics going back a millennium, the philosophical discipline in Japan corresponding to Western “aesthetics” did not get underway until the nineteenth century. A good way to survey the broader field is to examine the most important aesthetic ideas that have arisen in the course of the tradition, all of them before aesthetics was formally established as a discipline: namely, mono no aware (the pathos of things), wabi (subdued, austere beauty), sabi (rustic patina), yūgen (mysterious profundity), iki (refined style), and kire (cutting). (This last term is pronounced as two evenly accented syllables, kee-reh. The macrons over some vowels signify a vowel sound of double length. When a person name is used, the order is the conventional Japanese one: family name, then given name.)"
+     },
+     {
+      "part": "p",
+      "quote": "The most frequently cited example of mono no aware in contemporary Japan is the traditional love of cherry blossoms, as manifested by the huge crowds of people that go out every year to view (and picnic under) the cherry trees. The blossoms of the Japanese cherry trees are intrinsically no more beautiful than those of, say, the pear or the apple tree: they are more highly valued because of their transience, since they usually begin to fall within a week of their first appearing. It is precisely the evanescence of their beauty that evokes the wistful feeling of mono no aware in the viewer."
+     },
+     {
+      "part": "p",
+      "quote": "Among the numerous architectural innovations Rikyū deployed, the most egalitarian were several features of the tearoom, which rendered it physically impossible for tea guests to express their social position or power. The nijiriguchi (躙口), roughly translated as “crawl in space” was the only entry way for guests (previous instances of the sukiya had another larger entryway for nobility and aristocracy). The tiny aperture measuring only around 60cm x 60cm (2ft x 2ft) achieved two equalizing aims of Wabicha (Sōshitsu Sen 182–183). Firstly, samurai were prevented from entering with their two Katana swords, which normally were the most visible signs of their position atop the social hierarchy. (Rikyū introduced a sword rack (katanakake 刀掛け) next to the nijiriguchi under the tea hut’s eaves.) Further, the size of the opening meant that wealthy aristocrats and courtiers could not make it through the small opening with their oversized top hats. Thus, once inside Rikyū’s tiny sukiya, no appearance endured of the markings normally employed to exhibit and maintain the rigid social hierarchy. Even conversation or figures of speech invoking social status, references to employment, objects exhibiting one’s wealth, or associations legitimating one’s power were all strictly prohibited."
+     },
+     {
+      "part": "p",
+      "quote": "A more exalted exemplification of sabi is the exquisite Silver Pavilion at Ginkakuji in Kyoto. Even though the tea ceremony is said to have originated here, in a small sabi-saturated teahouse, the exterior of the pavilion was originally going to be covered in silver foil, in emulation of the Golden Pavilion (14th century) at Kinkakuji. Without ever having enjoyed a coating of silver, the Silver Pavilion is the epitome of sabi and one of the most graceful structures ever built. The contrast with the larger, and flashier Golden Pavilion, whose coating of gold leaf lends it a quite different (and distinctly un-sabi) kind of beauty, is instructive."
+     },
+     {
+      "part": "p",
+      "quote": "The mysterious grace of his most celebrated landscape painting derives as much from the space that is left un-touched, the invisible and absent (often referred to as the “dragon’s veins” of a painting) as from what is painted and visible. The work appears incomplete, still in the act of formation, and the dramatic negative spaces created by the mists allow the various forms to dissolve and blend into one another, but more decisively, according to the yūgen dynamic, this negativity invites the viewer into the painting to actively complete it. As artists employing yūgen principles in other genres have shown, the incompleteness and allusiveness of the artwork summons the viewer into the scene. In Ghilardi’s words, “the onlooker must merge in the image, completing the empty spaces, making it a lively element of nature itself, ‘between’ visible and invisible” (Ghilardi, 2015, 99)."
+     }
+    ]
+   },
+   "en": {
+    "title": "Japanese Aesthetics Overview",
+    "caption": "A Stanford Encyclopedia entry surveying key Japanese aesthetic concepts like mono no aware, wabi, sabi, yūgen, iki, and kire.",
+    "detail": "Stanford Encyclopedia of Philosophy entry by Adam Loughnane on Japanese Aesthetics. Discusses how Japanese philosophical aesthetics emerged in the nineteenth century, then surveys pre-disciplinary aesthetic ideas: mono no aware (pathos of things), wabi (austere beauty), sabi (rustic patina), yūgen (mysterious profundity), iki (refined style), and kire (cutting). Covers Buddhist impermanence (mujō), Dōgen, Yoshida Kenkō's Tsurezuregusa, and Confucian self-cultivation.",
+    "tags": [
+     "japanese aesthetics",
+     "philosophy",
+     "mono no aware",
+     "wabi",
+     "sabi",
+     "yugen",
+     "iki",
+     "impermanence",
+     "buddhism",
+     "stanford encyclopedia"
+    ],
+    "summary": "· Japanese aesthetics as a formal philosophical discipline only began in the nineteenth century, but key aesthetic ideas like mono no aware, wabi, sabi, yūgen, iki, and kire arose earlier in the tradition.\n· Classical Japanese philosophy views reality as constant change or impermanence, and the arts traditionally celebrate rather than lament this flux, as seen in mono no aware.\n· Wabi denotes simple, austere beauty, exemplified in the tea ceremony of Sen no Rikyū, whose Wabicha promoted egalitarianism by eliminating signs of social rank and favoring local, rustic utensils.\n· Sabi refers to rustic patina and aged beauty, celebrated by Tanizaki and embodied in the Silver Pavilion at Ginkakuji, which lacks silver leaf yet epitomizes sabi.\n· Yūgen is mysterious profundity achieved through allusiveness and imagination, central to Nō drama and Sesshū's splashed-ink landscape, where empty space invites viewer completion.",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Although the Japanese have been producing great art and writing about it for many centuries, including a rich tradition of poetics going back a millennium, the philosophical discipline in Japan corresponding to Western “aesthetics” did not get underway until the nineteenth century. A good way to survey the broader field is to examine the most important aesthetic ideas that have arisen in the course of the tradition, all of them before aesthetics was formally established as a discipline: namely, mono no aware (the pathos of things), wabi (subdued, austere beauty), sabi (rustic patina), yūgen (mysterious profundity), iki (refined style), and kire (cutting). (This last term is pronounced as two evenly accented syllables, kee-reh. The macrons over some vowels signify a vowel sound of double length. When a person name is used, the order is the conventional Japanese one: family name, then given name.)"
+     },
+     {
+      "part": "p",
+      "quote": "Two preliminary observations about the Japanese cultural tradition are relevant to the arts. First, classical Japanese philosophy understands reality as constant change, or (to use a Buddhist expression) impermanence. The world of flux that presents itself to our senses is the only reality: there is no conception of some stable “Platonic” realm above or behind it. The arts in Japan have traditionally reflected this fundamental impermanence—sometimes lamenting but more often celebrating it. The idea of mujō (impermanence) is perhaps most forcefully expressed in the writings and sayings of the thirteenth-century Zen master Dōgen, who is arguably Japan’s profoundest philosopher, but there is a fine expression of it by a later Buddhist priest, Yoshida Kenkō, whose Essays in Idleness (Tsurezuregusa, 1332) sparkles with aesthetic insights:"
+     },
+     {
+      "part": "p",
+      "quote": "Wabi means that even in straitened circumstances no thought of hardship arises. Even amid insufficiency, one is moved by no feeling of want. Even when faced with failure, one does not brood over injustice. If you find being in straitened circumstances to be confining, if you lament insufficiency as privation, if you complain that things have been ill-disposed—this is not wabi. (Hirota, 275)"
+     },
+     {
+      "part": "p",
+      "quote": "We do not dislike everything that shines, but we do prefer a pensive lustre to a shallow brilliance, a murky light that, whether in a stone or an artifact, bespeaks a sheen of antiquity. . . . We love things that bear the marks of grime, soot, and weather, and we love the colors and the sheen that call to mind the past that made them. (Tanizaki, 11–12)"
+     },
+     {
+      "part": "p",
+      "quote": "The mysterious grace of his most celebrated landscape painting derives as much from the space that is left un-touched, the invisible and absent (often referred to as the “dragon’s veins” of a painting) as from what is painted and visible. The work appears incomplete, still in the act of formation, and the dramatic negative spaces created by the mists allow the various forms to dissolve and blend into one another, but more decisively, according to the yūgen dynamic, this negativity invites the viewer into the painting to actively complete it. As artists employing yūgen principles in other genres have shown, the incompleteness and allusiveness of the artwork summons the viewer into the scene. In Ghilardi’s words, “the onlooker must merge in the image, completing the empty spaces, making it a lively element of nature itself, ‘between’ visible and invisible” (Ghilardi, 2015, 99)."
+     }
+    ]
+   }
+  }
  },
  {
   "kind": "url",
@@ -400,7 +1793,87 @@
   "x": 2730,
   "y": 2004,
   "width": 170,
-  "height": 106
+  "height": 106,
+  "understood": {
+   "zh": {
+    "title": "庄子哲学研究",
+    "caption": "斯坦福哲学百科介绍庄子生平、文本与哲学思想",
+    "detail": "斯坦福哲学百科词条，作者Chad Hansen。介绍庄子生活于公元前四世纪后半叶，与孟子同时代，涉及名家、墨家等语言学转向。讨论《庄子》文本演变，郭象将其从五十二章压缩至三十三章，分为内篇、外篇、杂篇。涵盖庄子对语言、实用主义和语义学的理论贡献。",
+    "tags": [
+     "庄子",
+     "道家",
+     "哲学",
+     "先秦",
+     "语言学",
+     "郭象",
+     "斯坦福百科",
+     "中国哲学"
+    ],
+    "summary": "只读了前一部分\n· 庄子活跃于公元前4世纪后半叶，与孟子大致同时，精通古典汉语语用学和语义学术语，并对古代中国语言理论做出贡献。\n· 郭象将52章《庄子》压缩为33章，分为内篇（1-7）、外篇（8-22）和杂篇（23-33），仅内篇可能源自庄子本人。\n· 现代学者将外篇和杂篇的影响分为四组：庄子学派、杨朱 egoism、原始主义者和折衷主义者。\n· 《庄子》内篇第二章从规范性自然主义得出相对主义和怀疑主义结论，拒绝儒家传统主义和墨子将天作为权威的尝试。\n· 庄子的怀疑主义是温和的积极怀疑主义，鼓励开放心态和从其他视角学习，而非放弃知识或行动。",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Zhuangzi flourished through the latter half of the fourth century BC, roughly contemporary with Mencius and with the “linguistic turn” in the classical period that included the later Mohists and the figures historians later labeled as the School of Names (名家 ming-jia). Zhuangzi demonstrates mastery of this Classical Chinese terminology of pragmatics and semantics and makes his own theoretical contributions to ancient Chinese theory of language. The traditionally recognized figures in this school included Gongsun Longzi along with Hui Shi—Zhuangzi’s close friend, perhaps mentor, his interlocutor, and occasionally his foil. Zhuangzi is followed in this mature phase of Classical linguistic thought by some chapters in the later Confucian text, The Xunzi. Though The Xunzi elsewhere targets Zhuangzi for criticism, his sections incorporating and developing this linguistic turn embellish the linguistic theory shared between the later Mohists and Zhuangzi."
+     },
+     {
+      "part": "p",
+      "quote": "Guo Xiang (d. 312 CE), a scholar working around 600 years later after the fall of the Han, edited and reduced what he saw as a haphazardly accumulated cluster of apocryphal and possibly authentic texts. He concluded that many were added after the time Zhuangzi lived. Guo reports compressing that prior collection of writings from fifty-two chapters to thirty-three. This is the extant text on which our knowledge is based. Guo divided the chapters he had chosen into three sections: the “Inner Chapters” (1–7), the “Outer Chapters” (8–22) and the “Miscellaneous Chapters” (23–33). He attributed only the first section to the period dating from Zhuangzi’s lifetime—hence possibly originating from Zhuangzi’s teachings. The second grouping may have included writings of a “School of Zhuangzi”. Modern scholarship assigns various sources of other influences found in both the second “outer” and final “miscellaneous” chapters. A.C. Graham, drawing on work of the Chinese theorist, Kuan Feng (Graham 1979), and followed with some variation by Liu Xiaogan (Liu 1994) and Harold Roth (Roth 1991, 2003), divides these influences into roughly four variously named groups:"
+     },
+     {
+      "part": "p",
+      "quote": "Guo Xiang (d. 312 CE), a scholar working around 600 years later after the fall of the Han, edited and reduced what he saw as a haphazardly accumulated cluster of apocryphal and possibly authentic texts. He concluded that many were added after the time Zhuangzi lived. Guo reports compressing that prior collection of writings from fifty-two chapters to thirty-three. This is the extant text on which our knowledge is based. Guo divided the chapters he had chosen into three sections: the “Inner Chapters” (1–7), the “Outer Chapters” (8–22) and the “Miscellaneous Chapters” (23–33). He attributed only the first section to the period dating from Zhuangzi’s lifetime—hence possibly originating from Zhuangzi’s teachings. The second grouping may have included writings of a “School of Zhuangzi”. Modern scholarship assigns various sources of other influences found in both the second “outer” and final “miscellaneous” chapters. A.C. Graham, drawing on work of the Chinese theorist, Kuan Feng (Graham 1979), and followed with some variation by Liu Xiaogan (Liu 1994) and Harold Roth (Roth 1991, 2003), divides these influences into roughly four variously named groups:"
+     },
+     {
+      "part": "p",
+      "quote": "The pivotal second chapter draws relativist and skeptical conclusions from its normative naturalism. It rejects the traditionalism of Confucianism and the implicit Gaia-hypothesis in Mozi’s attempt to recruit tiān (天 sky:nature) as an authority recommending utilitarian social daos. Nature provides us with many ways to behave, but does not judge or care which choices we make among those naturally possible. Shì-fēi (是非 this (way)/not-that) judgments are made by living creatures in nature, not by tiān itself. We can find guiding structures, dàos, in nature but not a favored or dictated dào of nature."
+     },
+     {
+      "part": "p",
+      "quote": "Zhuangzi’s skepticism is mild because it does not constitute a reason to abandon what we know nor to avoid acting when we know how. Appreciating other natural perspectives does remind us that our view, even if recently broadened, is still subject to further improvement. It should provoke curiosity, not paralysis. It does not rest on any theory of the probability of an error arising from this dào of knowing. It rests only on the existence of other natural ways of knowing. As such, it neither undermines what we have learned nor give us reason to stop practicing known behaviors . Appreciating that others reach their perspective as naturally as we do only removes our claim to special natural status for making judgments. We are equally situated in natural situations calling for guidance but differently endowed to know and act."
+     }
+    ]
+   },
+   "en": {
+    "title": "Stanford Encyclopedia Zhuangzi Entry",
+    "caption": "Stanford Encyclopedia of Philosophy entry on Zhuangzi covering his life, times, and text history.",
+    "detail": "Stanford Encyclopedia of Philosophy article by Chad Hansen on Zhuangzi. Covers Zhuangzi's life in the fourth century BC, his relation to Mencius, later Mohists, and the School of Names (ming-jia), and his contributions to Classical Chinese theories of language and pragmatics. Discusses textual history, including Guo Xiang's editing from fifty-two to thirty-three chapters and the division into Inner, Outer, and Miscellaneous Chapters.",
+    "tags": [
+     "Zhuangzi",
+     "Daoism",
+     "Chinese philosophy",
+     "Stanford Encyclopedia",
+     "Chad Hansen",
+     "classical Chinese",
+     "language theory",
+     "Guo Xiang",
+     "textual history",
+     "Ming-jia"
+    ],
+    "summary": "Only the first part was read\n· Zhuangzi flourished in the latter half of the 4th century BC, roughly contemporary with Mencius, and mastered Classical Chinese theories of language and pragmatics.\n· Guo Xiang around 312 CE edited the Zhuangzi from 52 chapters down to 33, dividing it into Inner, Outer, and Miscellaneous Chapters, attributing only the Inner Chapters to Zhuangzi's lifetime.\n· Modern scholars identify four distinct influence groups in the Outer and Miscellaneous Chapters: Zhuangzi's students, Yangist egoists, primitivists, and syncretists.\n· Zhuangzi's Inner Chapters treat language and social dàos as natural dàos of natural creatures, rejecting any transcendent or cosmic authority that dictates a single correct dào.\n· Zhuangzi's skepticism is broad but weak, denying final certainty while allowing degrees of knowledge, and his relativism is indexical rather than cultural.",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "Zhuangzi flourished through the latter half of the fourth century BC, roughly contemporary with Mencius and with the “linguistic turn” in the classical period that included the later Mohists and the figures historians later labeled as the School of Names (名家 ming-jia). Zhuangzi demonstrates mastery of this Classical Chinese terminology of pragmatics and semantics and makes his own theoretical contributions to ancient Chinese theory of language. The traditionally recognized figures in this school included Gongsun Longzi along with Hui Shi—Zhuangzi’s close friend, perhaps mentor, his interlocutor, and occasionally his foil. Zhuangzi is followed in this mature phase of Classical linguistic thought by some chapters in the later Confucian text, The Xunzi. Though The Xunzi elsewhere targets Zhuangzi for criticism, his sections incorporating and developing this linguistic turn embellish the linguistic theory shared between the later Mohists and Zhuangzi."
+     },
+     {
+      "part": "p",
+      "quote": "Guo Xiang (d. 312 CE), a scholar working around 600 years later after the fall of the Han, edited and reduced what he saw as a haphazardly accumulated cluster of apocryphal and possibly authentic texts. He concluded that many were added after the time Zhuangzi lived. Guo reports compressing that prior collection of writings from fifty-two chapters to thirty-three. This is the extant text on which our knowledge is based. Guo divided the chapters he had chosen into three sections: the “Inner Chapters” (1–7), the “Outer Chapters” (8–22) and the “Miscellaneous Chapters” (23–33). He attributed only the first section to the period dating from Zhuangzi’s lifetime—hence possibly originating from Zhuangzi’s teachings. The second grouping may have included writings of a “School of Zhuangzi”. Modern scholarship assigns various sources of other influences found in both the second “outer” and final “miscellaneous” chapters. A.C. Graham, drawing on work of the Chinese theorist, Kuan Feng (Graham 1979), and followed with some variation by Liu Xiaogan (Liu 1994) and Harold Roth (Roth 1991, 2003), divides these influences into roughly four variously named groups:"
+     },
+     {
+      "part": "p",
+      "quote": "Guo Xiang (d. 312 CE), a scholar working around 600 years later after the fall of the Han, edited and reduced what he saw as a haphazardly accumulated cluster of apocryphal and possibly authentic texts. He concluded that many were added after the time Zhuangzi lived. Guo reports compressing that prior collection of writings from fifty-two chapters to thirty-three. This is the extant text on which our knowledge is based. Guo divided the chapters he had chosen into three sections: the “Inner Chapters” (1–7), the “Outer Chapters” (8–22) and the “Miscellaneous Chapters” (23–33). He attributed only the first section to the period dating from Zhuangzi’s lifetime—hence possibly originating from Zhuangzi’s teachings. The second grouping may have included writings of a “School of Zhuangzi”. Modern scholarship assigns various sources of other influences found in both the second “outer” and final “miscellaneous” chapters. A.C. Graham, drawing on work of the Chinese theorist, Kuan Feng (Graham 1979), and followed with some variation by Liu Xiaogan (Liu 1994) and Harold Roth (Roth 1991, 2003), divides these influences into roughly four variously named groups:"
+     },
+     {
+      "part": "p",
+      "quote": "The pivotal second chapter draws relativist and skeptical conclusions from its normative naturalism. It rejects the traditionalism of Confucianism and the implicit Gaia-hypothesis in Mozi’s attempt to recruit tiān (天 sky:nature) as an authority recommending utilitarian social daos. Nature provides us with many ways to behave, but does not judge or care which choices we make among those naturally possible. Shì-fēi (是非 this (way)/not-that) judgments are made by living creatures in nature, not by tiān itself. We can find guiding structures, dàos, in nature but not a favored or dictated dào of nature."
+     },
+     {
+      "part": "p",
+      "quote": "A consequence is that Zhuangzi’s skepticism is broad but weak. Broad because it infects so many judgments, but weak in the epistemic sense of denying final certainty but allowing for varying degrees of knowledge. Donald Sturgeon (2015) has helped to clarify this feature of Zhuangzi’s epistemology. He credits the text’s non-ironic reference to greater and lesser knowing and calls Zhuangzi’s a “positive” skepticism. (Other proposed terms for substantive mild skepticism are constructive skepticism [Wong 2022], epistemic modesty [Hansen 2003], and fallibilism [Coutinho 2015].) The true skeptical thesis encourages gaining míng (insight, understanding) into other perspectives to improve our epistemic dé (virtuosity). It reminds us that we are equipped to find our way, given our various natures, around our bit of the natural structure. It does not equip us to fathom the whole, but curiosity, open-mindedness, and understanding (míng) another perspective helps us know more and better."
+     }
+    ]
+   }
+  }
  },
  {
   "kind": "file",
@@ -412,6 +1885,63 @@
   "height": 286,
   "en": {
    "file": "about-collage.md"
+  },
+  "understood": {
+   "zh": {
+    "title": "关于拼贴",
+    "caption": "从毕加索拼贴谈收藏的偶然并置，附三条实用规则。",
+    "detail": "文章从1912年毕加索《有藤椅的静物》讲起，说明拼贴的意义在于碎片之间的缝，并举例达达主义、构成主义、波普艺术的不同用法。随后将日常收藏比作拼贴，主张把浮世绘、赫拉克利特、包豪斯海报、留白笔记、工业设计纪录片和GIF等随机并置，产生新联系。最后给出三条规则：收时不整理、找时用描述而非文件夹名、每周随机翻一次。",
+    "tags": [
+     "拼贴",
+     "艺术史",
+     "收藏",
+     "毕加索",
+     "达达主义",
+     "波普艺术",
+     "并置",
+     "方法论"
+    ]
+   },
+   "en": {
+    "title": "About Collage and Collecting",
+    "caption": "An essay on collage history and how collecting saved fragments creates chance juxtapositions and new meaning.",
+    "detail": "A Markdown essay titled About Collage. It begins with Picasso's 1912 Still Life with Chair Caning as the origin of modern collage, explaining that collage's power lies in the seams between fragments rather than the fragments themselves, and noting how Dadaists, Constructivists, and Pop Art reused the technique for different ends. It then argues that collecting images, sentences, and links is itself a collage practice, giving examples like a ukiyo-e wave beside Heraclitus, a Bauhaus poster beside a note on empty space, and a 1958 industrial design film clip beside a GIF. It closes with three personal rules: don't organize while collecting, search by description not folder name, and browse at random weekly.",
+    "tags": [
+     "collage",
+     "collecting",
+     "art history",
+     "Picasso",
+     "Dadaism",
+     "Constructivism",
+     "Pop Art",
+     "curation",
+     "juxtaposition",
+     "creativity"
+    ],
+    "summary": "· Picasso's 1912 gluing of oilcloth with a chair-caning pattern into a painting, *Still Life with Chair Caning*, is generally considered the beginning of modern collage, shifting canvases from all-painted to holding pre-existing things.\n· Collage's power comes from the seams between fragments, not the fragments themselves, since juxtaposing items strips their original context and generates new meaning.\n· Dadaists used collage to mock, Constructivists to persuade, and Pop Art to retell consumer culture, while the technique stayed the same and only the cutter's intent changed.\n· Collecting scattered images, sentences, and links on one table is itself collage, and connections usually appear only after pieces sit side by side, so a good tool should allow chance juxtapositions.\n· The author's three personal rules are: don't organize while collecting, search by description rather than folder name, and browse randomly once a week so old items meet new ones.",
+    "anchors": [
+     {
+      "part": "p",
+      "quote": "In 1912, Picasso glued a piece of oilcloth printed with a chair-caning pattern into a painting. *Still Life with Chair Caning* is usually taken as the start of modern collage. Before it, everything on a canvas was \"painted\"; after it, a canvas could hold \"things that were already there.\""
+     },
+     {
+      "part": "p",
+      "quote": "The power of collage lies not in any single fragment but in the **seams** between them. Put a newspaper next to a scrap of wallpaper and each loses its original context; a new meaning grows out of the joint. The Dadaists used it to mock, the Constructivists to persuade, Pop Art to retell consumer culture. The technique barely changed. What changed was what the person cutting wanted to say."
+     },
+     {
+      "part": "p",
+      "quote": "The power of collage lies not in any single fragment but in the **seams** between them. Put a newspaper next to a scrap of wallpaper and each loses its original context; a new meaning grows out of the joint. The Dadaists used it to mock, the Constructivists to persuade, Pop Art to retell consumer culture. The technique barely changed. What changed was what the person cutting wanted to say."
+     },
+     {
+      "part": "p",
+      "quote": "The connections between them are rarely planned. You see them only after the pieces are side by side. So a good collecting tool shouldn't only \"save\" and \"find\". It should also make room for these **chance juxtapositions**."
+     },
+     {
+      "part": "p",
+      "quote": "1. Don't organize while collecting. Organizing kills connections before they form."
+     }
+    ]
+   }
   }
  },
  {
@@ -421,7 +1951,41 @@
   "x": 2140,
   "y": 1264,
   "width": 150,
-  "height": 255
+  "height": 255,
+  "understood": {
+   "zh": {
+    "title": "维基百科拼贴画条目",
+    "caption": "维基百科“拼贴画”词条长图，含定义、起源、艺术派别与外部链接。",
+    "detail": "该图为维基百科“拼贴画”条目的手机版长截图。顶部为标题及简介，说明拼贴画是使用黏合剂将实物贴于画面上的特殊技法，并提及1911年乔治·布拉克创造、1919年包豪斯提倡等历史。正文列举常用材料如报纸、丝带、木片等，并配有两张拼贴艺术示例图。下方分设“感观效果”、“派别”等章节，介绍立体派、超现实派及抽象派的相关特点，最后附有外部链接与维基百科版权声明。",
+    "tags": [
+     "拼贴画",
+     "维基百科",
+     "艺术技法",
+     "立体派",
+     "超现实派",
+     "视觉艺术",
+     "截图",
+     "中文"
+    ]
+   },
+   "en": {
+    "title": "Collage Art Technique Overview",
+    "caption": "A Wikipedia long screenshot explaining collage art, its history, materials, and major styles like Cubism and Surrealism.",
+    "detail": "A three-part vertical Wikipedia screenshot about collage art. It includes a definition of collage as an adhesive-based technique using clippings, ribbons, paint, and paper. The text covers its origins in 1911 by Georges Braque, promotion by Walter Gropius at Bauhaus, and its distinction from simple cut-and-paste. It lists common materials like sand, wood, and metal, and describes Cubist and Surrealist approaches. Two illustrative images show collage artworks, one with mixed media and another with scattered circular shapes. The page ends with external links and a footer.",
+    "tags": [
+     "collage",
+     "art technique",
+     "Wikipedia",
+     "Cubism",
+     "Surrealism",
+     "mixed media",
+     "Georges Braque",
+     "Bauhaus",
+     "visual arts",
+     "screenshot"
+    ]
+   }
+  }
  },
  {
   "kind": "file",
@@ -433,6 +1997,43 @@
   "height": 284,
   "en": {
    "file": "color-notes-green-inside-gray.pdf"
+  },
+  "understood": {
+   "zh": {
+    "title": "颜色笔记：灰调里的绿",
+    "caption": "莫兰迪静物与界面配色的观展笔记，探讨灰调中的绿色运用",
+    "detail": "一份三页PDF文档，题为《颜色笔记：灰调里的绿》，副标题为“观展笔记 · 莫兰迪静物与界面配色”。正文分四节：一、灰不是没有颜色，以莫兰迪静物为例，说明灰中偏色（偏黄、偏粉、偏绿）带来的呼吸感，并对比界面中的中性灰#808080与品牌色偏灰；二、绿色为什么难用，讨论高饱和绿在屏幕上的廉价感，提出降低饱和度、用于大面积底色、搭配暖灰文字色三条经验；三、从画到屏幕，强调颜色关系比颜色本身重要，配色应互相成全；四、留给以后的问题，对比纸上与屏幕上同一种灰绿的差异，提议做打印与屏幕的对照实验。文档中还提及将局部照片收进拼贴板，与浮世绘、蕨类植物习作并置。",
+    "tags": [
+     "色彩",
+     "莫兰迪",
+     "灰调",
+     "绿色",
+     "界面配色",
+     "观展笔记",
+     "静物画",
+     "饱和度",
+     "中性灰",
+     "设计"
+    ]
+   },
+   "en": {
+    "title": "Green Inside Gray",
+    "caption": "Exhibition notes linking Morandi's gray still lifes to interface color, exploring green as a subtle temperature.",
+    "detail": "Four-page PDF notes discussing gray as tinted rather than neutral, using Morandi's bottles as examples. Explains why saturated green looks cheap on screens and offers three rules: halve saturation, use for large backgrounds, pair with warm gray text. Draws parallels between painting palettes and UI palettes, noting color relationships matter more than individual colors. Ends with a question about gray-green appearing different on paper versus screen due to light absorption versus emission.",
+    "tags": [
+     "color theory",
+     "Morandi",
+     "gray",
+     "green",
+     "interface design",
+     "still life",
+     "palette",
+     "exhibition notes",
+     "UI color",
+     "saturation"
+    ],
+    "summary": "· Morandi's seemingly gray bottles each lean toward a hue—yellowish, pinkish, or greenish gray—which makes them feel alive rather than like a faded photo.\n· Pure #808080 looks dead in interfaces, while a gray nudged 2–3% toward the brand color feels intentionally chosen.\n· Saturated green reads as cheap on screen, so for interfaces the advice is to halve saturation, use green for large background areas, and pair it with warm gray text.\n· A palette works like a still life: what matters is not five pretty colors but five colors that bring out each other.\n· The same gray-green may need to be darker and warmer on screen than on paper, since paper absorbs light while screens emit it—worth testing by viewing a print and a screen side by side for a week."
+   }
   }
  },
  {
@@ -445,6 +2046,42 @@
   "height": 221,
   "en": {
    "file": "Interaction Principles for a Card Canvas.docx"
+  },
+  "understood": {
+   "zh": {
+    "title": "卡片画布交互原则",
+    "caption": "卡片画布交互设计备忘第三版，讲卡片动效、反馈与分类原则",
+    "detail": "一份设计备忘文档，讨论卡片式画布的交互原则。核心观点包括：卡片要有实物感，拿起浮起、松手回弹、带阴影和倾斜；一次操作只发生一次大的移动，搜索时卡片聚拢，等待反馈应原地点亮而非移动位置；动效只保留位移、浮起、淡入淡出三种；不要让用户手动整理分类，应由示例定义分类交给相似度处理；留白是功能，为下一次并置预留位置。",
+    "tags": [
+     "交互设计",
+     "卡片画布",
+     "动效设计",
+     "物理模拟",
+     "留白",
+     "分类",
+     "设计原则",
+     "用户体验",
+     "界面反馈",
+     "设计备忘"
+    ]
+   },
+   "en": {
+    "title": "Interaction Principles for a Card Canvas",
+    "caption": "Design memo outlining five interaction principles for a card-based canvas interface, emphasizing physicality and restraint.",
+    "detail": "A design memo titled 'Interaction Principles for a Card Canvas' (Third draft) outlining five principles: cards should feel like physical objects with weight and shadow; one action should cause one big move; only three kinds of motion (movement, lift, fade); don't make users organize via folders or tags, instead define categories by examples; and empty space is a feature, not to be filled with a grid. Discusses physics-like feel, feedback, animation types, categorization by similarity, and canvas whitespace.",
+    "tags": [
+     "card canvas",
+     "interaction design",
+     "UI principles",
+     "design memo",
+     "animation",
+     "categorization",
+     "whitespace",
+     "physicality",
+     "motion",
+     "user experience"
+    ]
+   }
   }
  },
  {
@@ -460,6 +2097,42 @@
   "en": {
    "text": "I spent the afternoon cutting up old magazines from the bookshelf. The most interesting part wasn’t the pictures I cut out but the scraps left on the table: half a headline, a corner of sky, a cropped-off finger. On their own they’re nothing; together they read like an unfinished poem. A collection is probably the same. What matters most is often not any single item but the bit of extra meaning that appears when a few happen to sit side by side. Next time I tidy up, I won’t rush to delete. I’ll spread them out first.",
    "source": "A note to self"
+  },
+  "understood": {
+   "zh": {
+    "title": "剪贴边角料的诗意",
+    "caption": "剪旧杂志一下午，发现边角料凑在一起像未写完的诗，联想到收藏夹。",
+    "detail": "作者在随手记中记录剪旧杂志一下午的体验。最有意思的不是剪下的图片，而是桌上的边角料：半个标题、一角天空、一截被裁掉的手指。它们单独看毫无意义，凑在一起却像一首没写完的诗。由此联想到收藏夹——真正有价值的往往不是某一条，而是几条恰好放在一起时多出来的意思。建议整理时先别急着删，先把它们摊开。",
+    "tags": [
+     "剪贴",
+     "杂志",
+     "边角料",
+     "收藏夹",
+     "随笔",
+     "整理",
+     "诗意",
+     "拼贴",
+     "生活感悟",
+     "碎片"
+    ]
+   },
+   "en": {
+    "title": "The Poetry of Fragments",
+    "caption": "A note on how fragments gain new meaning when placed side by side, like an unfinished poem.",
+    "detail": "A personal note reflecting on an afternoon spent cutting old magazines. The author finds the leftover scraps—a half headline, a corner of sky, a cropped finger—more interesting than the cut-out pictures. Alone they are nothing, but together they read like an unfinished poem. The author compares this to a collection: meaning often emerges not from any single item but from the extra significance created when several sit side by side. The conclusion is to spread items out before deleting when tidying up.",
+    "tags": [
+     "fragments",
+     "collage",
+     "magazines",
+     "collection",
+     "meaning",
+     "creativity",
+     "reflection",
+     "analogy",
+     "curation",
+     "ephemera"
+    ]
+   }
   }
  },
  {
@@ -469,7 +2142,42 @@
   "x": 2130,
   "y": 1624,
   "width": 220,
-  "height": 165
+  "height": 165,
+  "understood": {
+   "zh": {
+    "title": "1958年美国工业设计",
+    "caption": "复古工业风视频，展示机械滚轴与极地运输车，色调偏冷，氛围硬朗。",
+    "detail": "视频包含三个主要画面：特写镜头展示金属滚轴挤压白色片状材料；侧面视角展示白色平板拖车底部，装有黑色轮胎和黄色弧形挡泥板；远景展示一辆白色多轮极地运输车在雪地中行驶，车身载有黑色圆柱形油桶，驾驶室为橙色。画面呈现工业机械与极地运输场景，带有复古胶片质感，文字提及设计师对设备外观和风格的影响。",
+    "tags": [
+     "工业设计",
+     "机械",
+     "极地运输",
+     "复古",
+     "纪录片",
+     "金属",
+     "雪地",
+     "车辆",
+     "1958年"
+    ]
+   },
+   "en": {
+    "title": "Arctic Roller Transport Vehicle",
+    "caption": "Vintage film showing a heavy-duty tracked vehicle with orange rollers traversing snowy terrain.",
+    "detail": "The video features a specialized vehicle designed for polar transport, shown in three stages. It begins with a close-up of black cylindrical rollers on a metal axle. It then reveals the vehicle's underside with large tires equipped with orange curved guards. Finally, the full vehicle is seen moving across a snowy landscape, carrying a payload of dark barrels. The film has a grainy, vintage aesthetic typical of mid-century industrial documentation.",
+    "tags": [
+     "vehicle",
+     "arctic",
+     "transport",
+     "snow",
+     "rollers",
+     "vintage",
+     "industrial",
+     "orange",
+     "tires",
+     "documentary"
+    ]
+   }
+  }
  },
  {
   "kind": "file",
@@ -479,7 +2187,41 @@
   "y": 1604,
   "width": 220,
   "rotation": 5.0,
-  "height": 147
+  "height": 147,
+  "understood": {
+   "zh": {
+    "title": "奔马与骑手",
+    "caption": "黑白老照片风格的奔马与骑手，动态感强，氛围复古。",
+    "detail": "画面为一匹四蹄腾空的奔马，马背上有骑手，身着浅色上衣与深色裤子，身体前倾。背景为浅色天空与平坦地面，地面有模糊的横线，右侧可见一根细长标杆。图像呈黑白灰阶，颗粒感明显，为连续动作的分解帧，构图横向展开，主体居中偏右，展现马匹奔跑时的瞬间姿态。",
+    "tags": [
+     "奔马",
+     "骑手",
+     "运动",
+     "黑白",
+     "复古",
+     "动态",
+     "摄影",
+     "分解动作"
+    ]
+   },
+   "en": {
+    "title": "Horse in Motion Gallop",
+    "caption": "Black-and-white animated sequence of a racehorse galloping with jockey, showing early motion photography style.",
+    "detail": "Animated GIF showing multiple frames of a racehorse in full gallop with a jockey in racing silks. Monochrome, grainy vintage photograph with high contrast. Horse is dark with legs extended and tail streaming. Background is minimal with faint ground and vertical line. Early motion study style, reminiscent of Eadweard Muybridge. No visible text.",
+    "tags": [
+     "horse",
+     "gallop",
+     "jockey",
+     "animation",
+     "black-and-white",
+     "motion-study",
+     "vintage",
+     "racing",
+     "gif",
+     "monochrome"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -493,6 +2235,39 @@
   "en": {
    "text": "This weekend: Morandi’s still lifes. Look for the green inside the grays.",
    "source": "A note to self"
+  },
+  "understood": {
+   "zh": {
+    "title": "莫兰迪静物观展记",
+    "caption": "记录周末看莫兰迪静物展，关注灰调中的绿色。",
+    "detail": "这是一条随手记文字，内容为周末去看莫兰迪静物展的提醒，重点留意画面灰调里出现的绿色。涉及画家莫兰迪、静物题材、灰调与绿色等关键概念，属于观展笔记。",
+    "tags": [
+     "莫兰迪",
+     "静物",
+     "观展",
+     "随手记",
+     "灰调",
+     "绿色",
+     "艺术",
+     "绘画"
+    ]
+   },
+   "en": {
+    "title": "Morandi Still Life Color Study",
+    "caption": "A self-note about studying Morandi's still lifes this weekend, seeking green tones within gray palettes.",
+    "detail": "A short text note reminding the author to spend the weekend looking at Giorgio Morandi's still life paintings. The key instruction is to observe how green appears within the gray tonal ranges. The note is personal, reflective, and focused on close color observation in painting.",
+    "tags": [
+     "Morandi",
+     "still life",
+     "painting",
+     "color study",
+     "green",
+     "gray",
+     "art observation",
+     "self-note",
+     "weekend"
+    ]
+   }
   }
  },
  {
@@ -503,7 +2278,40 @@
   "x": 1920,
   "y": 1914,
   "width": 200,
-  "height": 118
+  "height": 118,
+  "understood": {
+   "zh": {
+    "title": "人不能两次踏进同一条河",
+    "caption": "赫拉克利特名言，关于万物流变与时间不可逆的哲理短句",
+    "detail": "这是古希腊哲学家赫拉克利特的一句英文名言，原文为 No man ever steps in the same river twice。含义是万物皆流、无物常驻，河水不断流动，人自身也在变化，因此第二次踏入的已非同一条河，同一人也已不同。涉及的核心概念包括万物流变、变化、时间、同一性与永恒。",
+    "tags": [
+     "赫拉克利特",
+     "哲学名言",
+     "万物流变",
+     "变化",
+     "时间",
+     "古希腊哲学",
+     "英文格言",
+     "哲理"
+    ]
+   },
+   "en": {
+    "title": "Heraclitus on Impermanence",
+    "caption": "A quote by Heraclitus about never stepping into the same river twice, expressing constant change.",
+    "detail": "A short philosophical quote attributed to Heraclitus: 'No man ever steps in the same river twice.' The text discusses the concept of universal flux and impermanence, suggesting that both the river and the person change between moments. No image, only plain text.",
+    "tags": [
+     "Heraclitus",
+     "philosophy",
+     "quote",
+     "impermanence",
+     "change",
+     "river",
+     "flux",
+     "ancient Greek",
+     "wisdom"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -517,6 +2325,40 @@
   "en": {
    "text": "Before you looked at this flower, it and your mind had both returned to stillness.",
    "source": "Wang Yangming · Instructions for Practical Living"
+  },
+  "understood": {
+   "zh": {
+    "title": "王阳明论心与花",
+    "caption": "《传习录》名句，论心外无物与寂感之理。",
+    "detail": "出自王阳明《传习录》的经典语录，讨论心与物的关系：未看此花时，花与心同归于寂；看时则颜色一时明白。涉及心学核心概念如心外无物、寂感、主体与客体。",
+    "tags": [
+     "王阳明",
+     "传习录",
+     "心学",
+     "心外无物",
+     "哲学",
+     "明代",
+     "语录",
+     "寂感"
+    ]
+   },
+   "en": {
+    "title": "Wang Yangming on Mind and Flower",
+    "caption": "A quote from Wang Yangming's Instructions for Practical Living about mind and the flower before perception.",
+    "detail": "Text excerpt from Wang Yangming's Instructions for Practical Living. The passage states: 'Before you looked at this flower, it and your mind had both returned to stillness.' It discusses the relationship between mind and external things, perception, stillness, and the act of looking. The quote is a single sentence, no layout or imagery described.",
+    "tags": [
+     "Wang Yangming",
+     "Neo-Confucianism",
+     "philosophy",
+     "mind",
+     "perception",
+     "stillness",
+     "flower",
+     "Chinese thought",
+     "quote",
+     "metaphysics"
+    ]
+   }
   }
  },
  {
@@ -531,6 +2373,39 @@
   "en": {
    "text": "My life has a limit, but knowing has none.",
    "source": "Zhuangzi · Nourishing the Lord of Life"
+  },
+  "understood": {
+   "zh": {
+    "title": "吾生也有涯",
+    "caption": "庄子名言，感叹生命有限而知识无穷。",
+    "detail": "出自《庄子·养生主》的经典名句：“吾生也有涯，而知也无涯。”意为人的生命有限，而知识却无边无际。讨论生命有限性与知识无限性之间的张力，体现道家对求知与养生的思考。",
+    "tags": [
+     "庄子",
+     "养生主",
+     "名言",
+     "道家",
+     "哲理",
+     "生命",
+     "知识",
+     "古文",
+     "先秦"
+    ]
+   },
+   "en": {
+    "title": "Life Has Limits, Knowledge Has None",
+    "caption": "A famous Zhuangzi quote about the limits of life and the boundlessness of knowledge.",
+    "detail": "This is a short philosophical text from Zhuangzi's chapter Nourishing the Lord of Life. The line states that human life is finite while knowledge is limitless, a core Daoist reflection on the pursuit of learning and the importance of knowing when to stop. The passage is aphoristic in form, concise in wording, and concerned with themes of mortality, epistemology, and moderation.",
+    "tags": [
+     "Zhuangzi",
+     "Daoism",
+     "philosophy",
+     "knowledge",
+     "mortality",
+     "aphorism",
+     "Chinese literature",
+     "wisdom"
+    ]
+   }
   }
  },
  {
@@ -543,7 +2418,43 @@
   "x": 4900,
   "y": 1132,
   "width": 320,
-  "height": 389
+  "height": 389,
+  "understood": {
+   "zh": {
+    "title": "俄耳甫斯之头",
+    "caption": "奥迪隆·雷东粉彩画，俄耳甫斯头颅与七弦琴漂浮于紫色山景中",
+    "detail": "画面中央漂浮着俄耳甫斯金黄色的头颅，下方是蓝紫色的七弦琴。背景为紫色与棕色交织的朦胧山脉，右侧点缀着几朵白色小花。粉彩材质带来柔和朦胧的质感，构图将头颅与琴置于画面下方，山体向上延伸，整体笼罩在神秘、梦幻的紫色调氛围中。",
+    "tags": [
+     "俄耳甫斯",
+     "奥迪隆·雷东",
+     "象征主义",
+     "粉彩",
+     "七弦琴",
+     "紫色",
+     "山脉",
+     "神话",
+     "梦幻",
+     "法国艺术"
+    ]
+   },
+   "en": {
+    "title": "Orpheus by Odilon Redon",
+    "caption": "Symbolist pastel painting of Orpheus's severed head resting on a lyre in a dreamy landscape.",
+    "detail": "Odilon Redon's Symbolist pastel depicts the severed head of Orpheus resting on his lyre, set against a mountainous landscape. A golden halo surrounds the head. The lyre has a blue body and yellow strings. Purple and violet dominate the sky and mountains; dark foliage with yellow flowers frames the right. The composition is dreamlike, blending myth and landscape.",
+    "tags": [
+     "Orpheus",
+     "Odilon Redon",
+     "Symbolism",
+     "pastel",
+     "mythology",
+     "severed head",
+     "lyre",
+     "purple",
+     "dreamlike",
+     "French art"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -555,7 +2466,43 @@
   "x": 5180,
   "y": 1062,
   "width": 280,
-  "height": 219
+  "height": 219,
+  "understood": {
+   "zh": {
+    "title": "维奥莱特·海曼肖像",
+    "caption": "奥迪隆·雷东1910年粉彩画，女子侧影与缤纷花卉，色彩梦幻。",
+    "detail": "画面右侧是一位棕发女子的侧面肖像，她身穿浅绿色高领上衣，袖口和领口有金色装饰，发髻低垂。左侧及背景布满绚烂的花卉图案，包括蓝、紫、白、橙等色的花朵与绿色叶片，以粉彩和干粉笔质感呈现，笔触松散朦胧。画中无明显文字。构图将人物与装饰性花卉并置，营造出梦幻、静谧的氛围，是奥迪隆·雷东晚年粉彩肖像风格的代表。",
+    "tags": [
+     "奥迪隆·雷东",
+     "粉彩画",
+     "象征主义",
+     "女子肖像",
+     "花卉",
+     "梦幻",
+     "侧影",
+     "浅绿",
+     "蓝紫",
+     "1910"
+    ]
+   },
+   "en": {
+    "title": "Violette Heymann by Odilon Redon",
+    "caption": "A pastel portrait of a young woman in profile beside vibrant, dreamlike floral arrangements.",
+    "detail": "Pastel portrait by Odilon Redon depicting Violette Heymann in profile facing left. She wears a pale mint green dress with gold trim and a high white collar, her brown hair tied back. A massive, colorful bouquet of flowers in blue, purple, white, and yellow dominates the left side. The background features soft gray and brown tones with vibrant floral patterns. The composition contrasts the detailed figure with abstract, impressionistic floral elements.",
+    "tags": [
+     "portrait",
+     "Odilon Redon",
+     "pastel",
+     "Symbolism",
+     "woman",
+     "flowers",
+     "profile",
+     "mint green",
+     "vibrant",
+     "dreamlike"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -567,7 +2514,43 @@
   "x": 5470,
   "y": 1032,
   "width": 160,
-  "height": 253
+  "height": 253,
+  "understood": {
+   "zh": {
+    "title": "雷东《幽灵》",
+    "caption": "雷东黑白石版画，幽灵与女子在黑暗中浮现，神秘忧郁。",
+    "detail": "画面为奥蒂隆·雷东1893–94年石版画《幽灵》。中央一位穿浅色长裙的女子侧身站立，面容平静，脚下是粗糙的地面。她周围有三个幽灵：左上方一个带角与眼的怪异头部，右上方一根弯曲的触手状物，右侧一个戴帽的男子面孔悬浮。背景全黑，人物以细密线条和明暗对比塑造，右下角有签名。整体呈现象征主义、梦幻、不安的氛围。",
+    "tags": [
+     "雷东",
+     "象征主义",
+     "石版画",
+     "幽灵",
+     "黑白",
+     "神秘",
+     "超现实",
+     "女性",
+     "法国艺术",
+     "19世纪"
+    ]
+   },
+   "en": {
+    "title": "Redon Haunting Etching 1893",
+    "caption": "A pale woman in a long dress stands against a dark void with floating monstrous heads, in a Symbolist etching.",
+    "detail": "Black and white etching by Odilon Redon titled Haunting, dated 1893-94. A pale, serene woman in a long flowing dress stands in profile at center. Around her in the dark void float grotesque elements: a dangling spider-like creature with a face, a long segmented horn or tentacle, and a staring human face with wide eyes. The composition uses heavy chiaroscuro with dense black background and scratchy cross-hatched ground. Redon's signature appears at bottom right. The scene conveys a dreamlike, eerie, Symbolist atmosphere of psychological unease.",
+    "tags": [
+     "Odilon Redon",
+     "Symbolist",
+     "etching",
+     "black and white",
+     "grotesque",
+     "dreamlike",
+     "eerie",
+     "haunting",
+     "woman",
+     "monster"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -579,7 +2562,41 @@
   "x": 5620,
   "y": 1062,
   "width": 140,
-  "height": 238
+  "height": 238,
+  "understood": {
+   "zh": {
+    "title": "面纱",
+    "caption": "费尔南德·赫诺普夫素描《面纱》，以细腻笔触描绘遮蔽人体的织物。",
+    "detail": "这是费尔南德·赫诺普夫约1887年的素描作品《面纱》的局部长图。画面以灰褐色调为主，展现了被厚重织物覆盖的人物局部。从上至下依次可见：顶部是覆盖头部的粗糙面纱，中部是紧密包裹身体的布料褶皱，底部是如瀑布般垂落的宽大织物。画面右侧有垂直的线条装饰，可能是画框或背景。作品通过炭笔或铅笔的细腻排线，表现出织物的厚重质感和光影变化，营造出神秘、静谧且略带忧郁的氛围。",
+    "tags": [
+     "素描",
+     "象征主义",
+     "织物",
+     "褶皱",
+     "灰褐色",
+     "神秘",
+     "比利时",
+     "赫诺普夫"
+    ]
+   },
+   "en": {
+    "title": "The Veil by Fernand Khnopff",
+    "caption": "A monochrome close-up sketch of a draped veil and a figure's arm, rendered in soft tones.",
+    "detail": "This is a detailed drawing in graphite or charcoal on textured paper, depicting a section of a figure draped in heavy fabric. The composition includes a veiled head, a bent arm with visible skin texture, and the folds of a garment. Vertical lines suggest a wall or architectural molding in the background. The artwork is characterized by fine shading and a muted, sepia-toned palette, typical of Symbolist works from the late 19th century.",
+    "tags": [
+     "Fernand Khnopff",
+     "The Veil",
+     "Symbolism",
+     "drawing",
+     "sketch",
+     "monochrome",
+     "drapery",
+     "graphite",
+     "charcoal",
+     "19th century"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -591,7 +2608,43 @@
   "x": 5220,
   "y": 1292,
   "width": 180,
-  "height": 267
+  "height": 267,
+  "understood": {
+   "zh": {
+    "title": "阿里·雷东肖像",
+    "caption": "奥迪隆·雷东粉彩画作，描绘一位男孩与盛放的花卉，色调柔和朦胧。",
+    "detail": "画面中央是一位身穿蓝色翻领上衣的男孩半身像，棕色短发，神情安静略带忧郁。背景左侧是白色与蓝色交织的繁盛花枝，右侧有黄色星点状花朵，整体背景为淡绿色与粉色晕染。画面采用粉彩技法，笔触细腻柔和，色彩淡雅朦胧，带有象征主义风格。",
+    "tags": [
+     "肖像",
+     "粉彩",
+     "象征主义",
+     "花卉",
+     "男孩",
+     "蓝色",
+     "柔和",
+     "朦胧",
+     "奥迪隆·雷东",
+     "法国艺术"
+    ]
+   },
+   "en": {
+    "title": "Portrait of Ari Redon",
+    "caption": "A pastel portrait of a boy surrounded by soft floral motifs in green and blue tones.",
+    "detail": "Pastel portrait of Ari Redon, a young boy with short brown hair and a calm, direct gaze, wearing a blue garment with a textured white collar. The background is a soft, powdery green, filled with stylized flowers in white, blue, and yellow, creating a dreamlike atmosphere. The composition is centered, with the boy's face rendered in delicate shading, while the floral elements frame him. The work is by Odilon Redon, circa 1898, and exemplifies his Symbolist style with pastel on paper.",
+    "tags": [
+     "portrait",
+     "boy",
+     "pastel",
+     "Symbolism",
+     "floral",
+     "green",
+     "blue",
+     "dreamlike",
+     "Odilon Redon",
+     "19th century"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -603,7 +2656,43 @@
   "x": 5420,
   "y": 1342,
   "width": 230,
-  "height": 173
+  "height": 173,
+  "understood": {
+   "zh": {
+    "title": "海中老人与美人鱼",
+    "caption": "海水中老人弹奏里拉琴，美人鱼环绕，象征主义油画，氛围神秘而忧郁。",
+    "detail": "阿诺德·勃克林1883年油画《在海中》。画面中央一位长须老人半浸在青绿海水中，手持里拉琴，身后一名金发美人鱼从背后环抱他，下方有红发女子仰面漂浮，左侧另一美人鱼张口呼喊，远处海面还有数个人头浮现。色调以青绿、灰蓝和肉色为主，云层密布的天空与水面倒影构成阴郁、梦幻的象征主义氛围。",
+    "tags": [
+     "象征主义",
+     "神话",
+     "美人鱼",
+     "里拉琴",
+     "海水",
+     "勃克林",
+     "油画",
+     "忧郁",
+     "神秘",
+     "19世纪"
+    ]
+   },
+   "en": {
+    "title": "In the Sea by Böcklin",
+    "caption": "A merman plays a lyre while surrounded by mermaids in calm sea waters under a cloudy sky.",
+    "detail": "Arnold Böcklin's 1883 painting In the Sea depicts a central merman playing a lyre, accompanied by several nude mermaids with fish tails. One mermaid rests on his back, another floats on red fabric in the foreground, and others emerge from the water in the background. The scene is set in a calm sea under a cloudy sky, with soft colors and a mythological atmosphere.",
+    "tags": [
+     "Arnold Böcklin",
+     "In the Sea",
+     "symbolism",
+     "mythology",
+     "merman",
+     "mermaids",
+     "lyre",
+     "seascape",
+     "19th century",
+     "painting"
+    ]
+   }
+  }
  },
  {
   "kind": "image",
@@ -615,7 +2704,42 @@
   "x": 5660,
   "y": 1332,
   "width": 220,
-  "height": 198
+  "height": 198,
+  "understood": {
+   "zh": {
+    "title": "岸上双女",
+    "caption": "蒙克1898年版画，岸边一黑一白两位女性，绿岸深水，氛围忧郁神秘。",
+    "detail": "蒙克1898年创作的木版画作品。画面左侧绿色坡岸上，一位穿黑袍的女性蹲坐，神情阴郁；右侧一位红发白裙女性站立，望向深色水面。背景为大片深蓝绿色，水面与陆地交错。作品采用木版画技法，色块粗犷，对比强烈，线条简洁。构图呈对角线，人物位置形成心理张力，呈现孤独、焦虑与神秘情绪。",
+    "tags": [
+     "蒙克",
+     "版画",
+     "岸上双女",
+     "表现主义",
+     "象征主义",
+     "黑白对比",
+     "忧郁",
+     "神秘",
+     "挪威艺术"
+    ]
+   },
+   "en": {
+    "title": "Two Women on the Shore",
+    "caption": "Edvard Munch woodcut of two women on a green shore beside dark water, contrasting white and black.",
+    "detail": "Woodcut print by Edvard Munch titled Two Women on the Shore, 1898. Two female figures stand on a sloping green shoreline against a dark teal sea or sky. The left figure is dressed in black with a pale face; the right figure wears a long white dress with flowing reddish hair. White curving lines suggest waves or footprints on the green ground. The composition is simple and symbolic, with flat areas of color and visible woodgrain texture.",
+    "tags": [
+     "Edvard Munch",
+     "woodcut",
+     "Symbolism",
+     "two women",
+     "shore",
+     "sea",
+     "green",
+     "black and white",
+     "melancholy",
+     "print"
+    ]
+   }
+  }
  },
  {
   "kind": "quote",
@@ -629,6 +2753,40 @@
   "en": {
    "text": "Color is the key, the eye is the hammer, the soul is the piano with many strings.",
    "source": "Wassily Kandinsky · On the Spiritual in Art, 1911"
+  },
+  "understood": {
+   "zh": {
+    "title": "论艺术里的精神",
+    "caption": "康定斯基1911年著作选段，以琴键比喻色彩与心灵的关系。",
+    "detail": "这段文字出自康定斯基1911年出版的《论艺术里的精神》，讨论色彩与人类心灵之间的感应关系。文中将色彩比作琴键、眼睛比作琴锤、心灵比作绷着许多弦的钢琴，阐述色彩通过视觉作用于内在情感的抽象艺术理念，是抽象绘画理论的核心表述之一。",
+    "tags": [
+     "康定斯基",
+     "论艺术里的精神",
+     "抽象艺术",
+     "色彩理论",
+     "心灵",
+     "音乐隐喻",
+     "艺术哲学",
+     "1911"
+    ]
+   },
+   "en": {
+    "title": "Color as Key to Soul",
+    "caption": "Kandinsky quote comparing color to a key, the eye to a hammer, and the soul to a piano.",
+    "detail": "A short text excerpt from Wassily Kandinsky's 1911 book On the Spiritual in Art. The quote reads: 'Color is the key, the eye is the hammer, the soul is the piano with many strings.' It presents a metaphor about the spiritual and emotional effect of color on the human soul, discussing perception, inner resonance, and artistic expression.",
+    "tags": [
+     "Kandinsky",
+     "quote",
+     "color theory",
+     "spirituality",
+     "art theory",
+     "metaphor",
+     "perception",
+     "soul",
+     "painting",
+     "modernism"
+    ]
+   }
   }
  },
  {
@@ -639,6 +2797,41 @@
   "x": 5420,
   "y": 1532,
   "width": 200,
-  "height": 143
+  "height": 143,
+  "understood": {
+   "zh": {
+    "title": "艺术与音乐之境",
+    "caption": "沃尔特·佩特《文艺复兴》名句：一切艺术皆向往音乐之境",
+    "detail": "出自沃尔特·佩特1877年著作《文艺复兴》的著名论断，原文为“All art constantly aspires towards the condition of music”。核心观点是各门艺术都试图消解内容与形式的界限，以音乐那种纯粹形式与内容合一的状态为理想。涉及美学、艺术哲学、形式主义、唯美主义运动等话题。",
+    "tags": [
+     "艺术哲学",
+     "美学",
+     "唯美主义",
+     "沃尔特·佩特",
+     "文艺复兴",
+     "音乐",
+     "形式主义",
+     "名言",
+     "英国文学"
+    ]
+   },
+   "en": {
+    "title": "Art Aspires to Music",
+    "caption": "Walter Pater's famous 1877 aphorism from The Renaissance on art and music.",
+    "detail": "A single quoted line from Walter Pater's 1877 essay collection The Renaissance: 'All art constantly aspires towards the condition of music.' Discusses aesthetic philosophy, the hierarchy of the arts, form and content, and the ideal of musical formlessness in art criticism.",
+    "tags": [
+     "aphorism",
+     "aesthetics",
+     "art theory",
+     "music",
+     "Walter Pater",
+     "Renaissance",
+     "philosophy",
+     "Victorian",
+     "criticism",
+     "quote"
+    ]
+   }
+  }
  }
 ]
