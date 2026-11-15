@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "拼贴",
+  "version": "1.0",
+  "version_name": "dev",
+  "description": "把正在看的网页、网页上的图和选中的文字收进拼贴；替拼贴在后台打开要登录、靠脚本加载的网页，取要登录才给的视频字幕。",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoeDHkx8RmahHY5YO2qCZAueCkEbWUnrK3XOtBVm65Ng8RcLzbfCwl+jyRUIL4qrW1QAkyZlK+K+JczSDCZF0bgS278ICq979+0q39BdZiR8vI8EddcA+KHScvsENXlhU5iNXjCMY90mv4TDbBNq30Lrw4e+LOU+zeSxWhR9NxQco83JtjO6N1RFMOqRhMYBCiEM2M348nDQ8IBJMMdfFrLbiQ85WqHm2Bx6WNpZDgg/gpaeMMHJg4Fzx3Ykhv7jmuVK94Lqa8qPuhA8OeAwtCxBrt3PqhawHxDkDQhrxB4fZstcPjKl0QguWx/D9rlkg/CeB6p1TIY8Rk9r72sm9qwIDAQAB",
+  "minimum_chrome_version": "120",
+  "permissions": ["nativeMessaging", "scripting", "alarms", "storage", "activeTab", "contextMenus", "declarativeNetRequestWithHostAccess"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "收进拼贴",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+}
