@@ -7,7 +7,7 @@ import Library
 @MainActor @Observable
 final class PhoneInbox {
     /// 快捷指令「Collect To Piyi」的分享链接：引导里做成二维码给手机扫
-    static let shortcut = URL(string: "https://www.icloud.com/shortcuts/03cc770bb57d471e9b0fe5fedbc06dc9")!
+    static let shortcut = URL(string: "https://www.icloud.com/shortcuts/5b5e848e90ed40ae9e1f65116217dec5")!
     /// 放在「快捷指令」自己的文件夹里：快捷指令按「它自己的文件夹」记这个位置，不绑账号，分享给别人添加后不用重选
     nonisolated static let folder = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: "Library/Mobile Documents/iCloud~is~workflow~my~workflows/Documents/PiyiInbox", directoryHint: .isDirectory)
