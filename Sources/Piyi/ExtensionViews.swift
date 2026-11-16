@@ -72,10 +72,10 @@ struct ExtensionGuide: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
-                    GuideStep(number: 1, text: String(localized: "在浏览器里打开扩展页，打开右上角的「开发者模式」")) {
+                    GuideStep(number: 1, text: String(localized: "在浏览器里打开扩展页，打开「开发者模式」（Edge 里叫「开发人员模式」）")) {
                         OpenPageButton(browserExtension: browserExtension)
                     }
-                    GuideStep(number: 2, text: String(localized: "把下面这个文件夹拖进扩展页")) {
+                    GuideStep(number: 2, text: String(localized: "把下面这个文件夹拖进扩展页。浏览器有多个个人资料的，拖进常用的那个")) {
                         FolderTile(browserExtension: browserExtension)
                     }
                     HStack(spacing: 8) {

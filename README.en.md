@@ -49,7 +49,7 @@ Discuss: click the speech-bubble icon at the top right to open the discussion pa
 
 ## Install
 
-There is no prebuilt download yet, so build from source. You need macOS 26 or later, Xcode 26, and Node.js (to build the browser extension):
+There is no prebuilt download yet, so build from source. You need macOS 26 or later, Xcode 26, and Node.js (to build the browser extension). If the command line still points at the standalone Command Line Tools, run `sudo xcode-select -s /Applications/Xcode.app` first:
 
 ```sh
 git clone https://github.com/Zhihao-R/piyi.git

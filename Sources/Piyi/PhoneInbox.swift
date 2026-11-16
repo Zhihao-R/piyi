@@ -27,6 +27,7 @@ final class PhoneInbox {
 
     private var store: Store?
     private var watcher: DispatchSourceFileSystemObject?
+    private var retry: Task<Void, Never>?
     /// 快捷指令把分享的链接和文字存成 .txt，其它文件原样存；读不到的（还没从 iCloud 下载下来）留到下次
     private let inbox = Inbox(folder: PhoneInbox.folder) { file in
         FileExtractor.sources(fromShared: file).map { Inbox.Arrival(file: file, sources: $0) }
@@ -43,10 +44,20 @@ final class PhoneInbox {
         look()
     }
 
-    /// 云盘开着、但「快捷指令」的文件夹还没同步到这台 Mac 时先不盯，下次回到 App 再试
+    /// 云盘开着、但「快捷指令」的文件夹还没同步到这台 Mac 时先不盯，每 10 秒再看一次：
+    /// 手机第一次存进东西后文件夹才同步过来，这时人多半正看着引导，不会切走再切回 App
     private func watch() {
         available = FileManager.default.fileExists(atPath: Self.drive.path)
-        guard available, FileManager.default.fileExists(atPath: Self.folder.deletingLastPathComponent().path) else { return }
+        guard available, FileManager.default.fileExists(atPath: Self.folder.deletingLastPathComponent().path) else {
+            if available, retry == nil {
+                retry = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(10))
+                    self?.retry = nil
+                    self?.look()
+                }
+            }
+            return
+        }
         try? FileManager.default.createDirectory(at: Self.folder, withIntermediateDirectories: true)
         let fd = open(Self.folder.path, O_EVTONLY)
         guard fd >= 0 else { return }

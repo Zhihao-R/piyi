@@ -49,7 +49,7 @@
 
 ## 安装
 
-目前还没有打包好的下载版，需要从源码编译。要求 macOS 26 以上、Xcode 26，以及用来编译浏览器扩展的 Node.js：
+目前还没有打包好的下载版，需要从源码编译。要求 macOS 26 以上、Xcode 26，以及用来编译浏览器扩展的 Node.js。如果装过 Xcode 后命令行仍指向精简版工具（Command Line Tools），先运行 `sudo xcode-select -s /Applications/Xcode.app`：
 
 ```sh
 git clone https://github.com/Zhihao-R/piyi.git
