@@ -1,55 +1,55 @@
-# 片羽
+# Piyi
 
-[English](README.en.md)
+[中文](README.md)
 
-片羽是 macOS 上的视觉素材库：网页、图片、视频、音频和文档收进来成为卡片，在无边界的画板上自由排布；查找时用一句话描述，相关卡片即聚拢到眼前。资料全部存于本机。需要 macOS 26，目前须从源码编译。
+Piyi (片羽, “a fragment of a feather”) is a visual library for macOS. Web pages, images, videos, audio, and documents become cards that you arrange freely on boundless boards; to find something, describe it in a sentence and the matching cards are gathered in front of you. All data stays on your Mac. Requires macOS 26; for now it must be built from source.
 
-![示例画板局部：勃克林、弗里德里希、哈默修伊的画作与文章、视频、文字卡并置](.github/images/board-zh.webp)
+![Part of the sample board: paintings by Böcklin, Friedrich, and Hammershøi alongside articles, videos, and notes](.github/images/board-en.webp)
 
-## 收集
+## Collecting
 
-| 来源 | 方式 |
+| Source | How |
 |---|---|
-| 文件、网址 | 拖入或粘贴到画板，卡片落在当前画板 |
-| 浏览器（Chrome、Edge、Arc） | 点击工具栏中的片羽图标收录当前网页，或在网页上右键选择「收进片羽」 |
-| 其他 App | 复制后按 ⌃⌥C；或选中文字、文件后右键选择「服务」›「收进片羽」 |
-| iPhone | 分享到「Collect To Piyi」快捷指令，经 iCloud 云盘同步到 Mac |
+| Files and links | Drag or paste onto a board; the card lands on that board |
+| Browser (Chrome, Edge, Arc) | Click the Piyi icon in the toolbar to collect the current page, or right-click a page and choose Collect to Piyi |
+| Other apps | Copy, then press ⌃⌥C; or select text or files and choose Services › Collect to Piyi |
+| iPhone | Share to the “Collect To Piyi” shortcut; items reach the Mac through iCloud Drive |
 
-从浏览器、其他 App 和手机收录的卡片先进入「未归类」。
+Items collected from the browser, other apps, or the iPhone go to Unsorted first.
 
-收录后，片羽提取内容：网页取正文，含公众号、微博、小红书；B 站和 YouTube 视频附带字幕，其中 B 站字幕需安装浏览器扩展并在该浏览器中登录 B 站；音视频文件在本机转录；图片中的文字自动识别。接入云端模型后，每张卡片另生成标题、一句话描述、要点和标签。
+Piyi extracts the content of what it collects. Web pages yield their main text, including WeChat articles, Weibo, and Xiaohongshu. Bilibili and YouTube videos come with subtitles; Bilibili subtitles require the browser extension and a Bilibili login in that browser. Audio and video files are transcribed locally, and text in images is recognized. With a cloud model connected, each card also receives a title, a one-line description, key points, and tags.
 
-## 画板
+## Boards
 
-卡片可拖动、缩放、旋转和裁剪（⌘K），借大小与疏密表达一组素材之间的关系。同一张卡片可放入多个画板（⌘C、⌘V）。
+Cards can be moved, resized, rotated, and cropped (⌘K), so size and spacing can express how a group of items relate. A card can appear on several boards (⌘C, ⌘V).
 
-画板可设置分拣规则：在侧边栏右键画板，选择「分拣设置…」，写一句描述，例如「配色和字体相关的参考」，此后新收录且符合规则的卡片自动归入该画板。自动分拣目前依赖 OpenRouter 及其默认判断模型，并需下载本机模型。
+A board can have a sorting rule: right-click it in the sidebar, choose Sorting Settings…, and write a one-line description such as “references for color and type”. New cards that match are placed on that board automatically. Auto-sort currently requires OpenRouter with its default judging model, plus the local model.
 
-## 搜索
+## Search
 
-搜索按语义匹配，无需记得卡片名称或所在画板。点击搜索框后，上方出现时间、类型、颜色等筛选；「全部卡片」还可按日期、颜色、来源分组浏览。
+Search matches by meaning, so neither a card's name nor its board needs to be remembered. Clicking into the search field shows filters for date, type, color, and more above it; All Cards can also be grouped by day, color, or source.
 
-![搜索「安静的房间，一个人」：哈默修伊的室内画、关于他的视频和维基百科页面、《茶之书》论虚空一章、侘寂、广重的浮世绘与萨蒂的《吉姆诺佩迪》](.github/images/search-zh.webp)
+![Searching “quiet rooms, someone alone” brings up a Hammershøi interior, a video about him, his Wikipedia page, and Satie's Gymnopédie No. 1](.github/images/search-en.webp)
 
-## 放大查看
+## Detail view
 
-双击卡片或按 ⌘Y 放大查看。文章首先列出要点，点击要点跳转至原文对应段落。视频和音频（含 B 站、YouTube）在此播放，字幕按时间分段，点击任一句从该处播放。
+Double-click a card or press ⌘Y to open it. Articles open with their key points; clicking a point jumps to the passage it summarizes. Video and audio, including Bilibili and YouTube, play here with time-segmented transcripts; clicking a line plays from that moment.
 
-![放大查看一篇维基百科文章：标题、一句话描述、五条要点，其下为原文配图](.github/images/detail-zh.webp)
+![A Wikipedia article in the detail view: title, one-line description, five key points, followed by the article's images](.github/images/detail-en.webp)
 
-## 灵感与讨论
+## Inspire and Discuss
 
-灵感：点击搜索框右侧的 ✦，片羽从当前画板选出几张卡片，指出它们之间的一处具体联系；点击「换一组」重新选择。
+Inspire: click ✦ to the right of the search field. Piyi selects a few cards from the current board and states one concrete connection between them; Try Another Set makes a new selection.
 
-![灵感选出哈默修伊画中背对观者的黑衣女子与雷东画中侧脸的女子，指出二者都不正面朝向观者](.github/images/inspire-zh.webp)
+![Inspire pairs Böcklin's Isle of the Dead with a hilltop landscape: both set a dark vertical mass against a lighter sky, with small figures low in the foreground](.github/images/inspire-en.webp)
 
-讨论：点击右上角的对话图标打开讨论栏。输入 @ 可指定若干卡片作为讨论对象；也可直接就整个资料库提问，由模型自行检索相关卡片。回答中的引用以灰色小号数字标注，悬停显示原文与出处，点击打开原文对应段落。讨论保存在侧边栏，三天无新消息即自动归档。
+Discuss: click the speech-bubble icon at the top right to open the discussion panel. Type @ to choose cards to discuss, or ask about the whole library and let the model find relevant cards. Citations appear as small gray numbers; hovering shows the quoted text and its source, and clicking opens that passage. Discussions are kept in the sidebar and archived after three days without new messages.
 
-![讨论中放入哈默修伊的室内画、《茶之书》和《死亡之岛》，询问三者如何以「空」营造寂静，回答逐一分析并附引用编号](.github/images/discuss-zh.webp)
+![A discussion with a Hammershøi interior, The Book of Tea, and Isle of the Dead, asking how each uses emptiness to create silence; the answer addresses each work with numbered citations](.github/images/discuss-en.webp)
 
-## 安装
+## Installation
 
-目前没有预编译版本，须从源码编译。环境要求：macOS 26 及以上、Xcode 26，以及用于编译浏览器扩展的 Node.js。若命令行仍指向独立的 Command Line Tools，先执行 `sudo xcode-select -s /Applications/Xcode.app`。
+No prebuilt release is available yet. Building requires macOS 26 or later, Xcode 26, and Node.js for the browser extension. If the command line still points to the standalone Command Line Tools, first run `sudo xcode-select -s /Applications/Xcode.app`.
 
 ```sh
 git clone https://github.com/Zhihao-R/piyi.git
@@ -57,42 +57,42 @@ cd piyi
 ./scripts/build_app.sh
 ```
 
-编译产物为 `build/Piyi.app`，移入「应用程序」文件夹即可使用。
+The build produces `build/Piyi.app`; move it to the Applications folder.
 
-## 首次启动
+## First launch
 
-首次启动会打开「示例」画板，其中卡片已附描述和要点，未配置密钥也可浏览。随后的引导共四步，均可跳过，日后在设置中补全：
+Piyi opens on a Sample board whose cards already include descriptions and key points, so it can be browsed without an API key. Setup then has four steps, each of which can be skipped and completed later in Settings:
 
-1. 接入云端模型：选择服务商并填写密钥。内置 OpenRouter、DeepSeek、火山引擎、阿里云百炼、硅基流动、智谱 GLM、Kimi、MiniMax、Anthropic、Gemini、OpenAI，也支持其他兼容 OpenAI 接口的地址。未接入时仍可收集和排布，但新卡片没有标题、描述、要点和标签，无法自动分拣，灵感与讨论不可用。
-2. 下载本机模型（约 600 MB）：搜索依赖此模型，下载后可离线使用。
-3. 安装浏览器扩展：按引导在浏览器扩展页加载 App 自带的扩展。需要登录或依赖脚本加载的网页，片羽也通过扩展在后台打开。
-4. 从手机收集：在 iPhone 上添加「Collect To Piyi」快捷指令。iPhone 与 Mac 须登录同一 Apple 账户，且 Mac 已开启 iCloud 云盘。
+1. Connect a cloud model: choose a provider and enter its API key. Built-in providers are OpenRouter, DeepSeek, Volcano Engine, Alibaba Cloud Model Studio, SiliconFlow, Zhipu GLM, Kimi, MiniMax, Anthropic, Gemini, and OpenAI; any other OpenAI-compatible endpoint also works. Without a cloud model, collecting and arranging still work, but new cards get no title, description, key points, or tags, auto-sort is off, and Inspire and Discuss are unavailable.
+2. Download the local model (about 600 MB): search depends on it and works offline once it is downloaded.
+3. Install the browser extension: load the extension bundled with the app from the browser's extensions page, as the guide shows. Piyi also uses it to open pages that require a login or load through scripts, in the background.
+4. Collect from the iPhone: add the “Collect To Piyi” shortcut. The iPhone and Mac must be signed in to the same Apple Account, with iCloud Drive turned on on the Mac.
 
-## 数据与隐私
+## Data and privacy
 
-资料库位于 `~/Library/Application Support/Piyi/`，包括卡片、原文件、缩略图和密钥。本机搜索模型、音视频转录和图片文字识别均在本机运行。
+The library is stored in `~/Library/Application Support/Piyi/`, including cards, original files, thumbnails, and API keys. The local search model, transcription, and text recognition all run on the Mac.
 
-接入云端模型后，以下操作会将卡片或网页内容发送给所选服务商：生成标题、描述、要点和标签；解析搜索语句并对结果排序；自动分拣；判断抓取的网页是正文还是登录页，并在无法直接识别正文时代为提取；灵感与讨论。未接入云端模型时，不发送任何内容。
+With a cloud model connected, the following send card or page content to the chosen provider: generating titles, descriptions, key points, and tags; interpreting search queries and ranking results; auto-sort; checking whether a fetched page is the article or a login page, and extracting the text when it cannot be identified directly; Inspire and Discuss. Without a cloud model, nothing is sent.
 
-## 快捷键
+## Keyboard shortcuts
 
-| 按键 | 作用 |
+| Keys | Action |
 |---|---|
-| ⌘N | 新建画板 |
-| ⌘F | 搜索 |
-| ⌘0 | 显示画板全部卡片 |
-| ⌘Y | 放大查看所选卡片 |
-| ⌘K | 裁剪 |
-| ⌘C、⌘V | 将卡片放入另一画板 |
-| ⇧⌘A | 将所选卡片按行整理 |
-| ⌘[ | 后退 |
-| ⌘Z | 撤销，各画板的撤销记录相互独立 |
-| ⌃⌥C | 在任意 App 中收录刚复制的内容 |
+| ⌘N | New board |
+| ⌘F | Search |
+| ⌘0 | Show the whole board |
+| ⌘Y | Open the selected card |
+| ⌘K | Crop |
+| ⌘C, ⌘V | Put cards on another board |
+| ⇧⌘A | Arrange the selected cards in rows |
+| ⌘[ | Back |
+| ⌘Z | Undo; each board has its own history |
+| ⌃⌥C | Collect what was just copied, from any app |
 
-## 参与开发
+## Contributing
 
-编译调试、代码分块、界面翻译和示例画板的生成流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+Building, code layout, translation, and generation of the sample board are described in [CONTRIBUTING.md](CONTRIBUTING.md) (in Chinese).
 
-## 许可证
+## License
 
-代码以 [MIT 许可证](LICENSE)发布。示例画板中的画作和文字来自公有领域或开放许可来源，逐项出处及第三方代码许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+The code is released under the [MIT License](LICENSE). The artworks and texts on the sample board come from public-domain or openly licensed sources; per-item credits and the licenses of third-party code are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
