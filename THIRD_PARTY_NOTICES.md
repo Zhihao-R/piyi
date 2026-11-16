@@ -15,7 +15,7 @@
 | 名字 | 怎么用 | 许可 |
 |---|---|---|
 | [Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF) | 用户在设置里自己下载，用来按意思搜索 | Apache 2.0 |
-| OpenRouter 上的云端模型 | 填了密钥才用，按 OpenRouter 和各模型自己的条款 | — |
+| 云端模型 | 用户在设置里选服务商、填了密钥才用，按该服务商和各模型自己的条款 | — |
 
 ## 示例画板里的素材
 
