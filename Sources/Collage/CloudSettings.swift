@@ -70,7 +70,8 @@ struct CloudField: View {
             .onChange(of: focused) { if !focused { save() } }
             .onAppear { text = model.cloudSetup[keyPath: path] }
             .onDisappear(perform: save)
-            .id(vendor)
+            // 带上是哪一项：设置的 Form 按行认身份，几项都只用 vendor 会被当成同一行，显示成重复的
+            .id("\(vendor.rawValue).\(title)")
     }
 
     private func save() {

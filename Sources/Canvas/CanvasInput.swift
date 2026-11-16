@@ -563,10 +563,10 @@ extension CanvasView: NSDraggingSource {
         guard cropper == nil, outgoing == nil else { return [] }
         var ids = sounding.map { card in live.keys.filter { items[$0]?.cardID == card } } ?? []
         if let hovered, !ids.contains(hovered) { ids.append(hovered) }
-        return ids.compactMap { id in
+        return ids.compactMap { id -> (id: Int64, center: CGPoint, size: CGFloat, pause: Bool)? in
             guard case .card(let card)? = items[id]?.face, card.kind == .audio, card.original != nil,
                   live[id]?.isHidden == false, let p = placement(id) else { return nil }
-            let size = min(p.width * camera.scale * CardType.playMark, Overlay.playKnob.upperBound)
+            let size: CGFloat = min(p.width * camera.scale * CardType.playMark, Overlay.playKnob.upperBound)
             guard size >= Overlay.playKnob.lowerBound else { return nil }
             // 声波那一块的中心离卡片中心多远；上下翻过的卡在另一边
             let rise = (CardArt.waveform.midY - 0.5) * (p.flipY ? -1 : 1)

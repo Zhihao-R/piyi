@@ -79,6 +79,7 @@
 "图片" = "Images";
 "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，拼贴也交给它在后台打开。" = "Collect the page you’re viewing in Chrome, Edge, or Arc with one click. Collage also uses it to open pages that need sign-in or scripts in the background.";
 "在 iPhone 上分享到「收集拼贴」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect to Collage” on your iPhone; items arrive in your library through iCloud Drive.";
+"iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到" = "Your iPhone and this Mac must be signed in to the same Apple Account with iCloud Drive turned on, or nothing will arrive";
 "在浏览器里打开扩展页，打开右上角的「开发者模式」" = "Open your browser’s extensions page and turn on “Developer mode” in the top-right corner";
 "在浏览器里点工具栏上的拼贴图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把拼贴固定上去。" = "Click the Collage icon in your browser’s toolbar to collect the page you’re viewing. If you don’t see it, click the puzzle-piece icon and pin Collage.";
 "在画板上写一张文字卡（也可以双击空白处）" = "Write a note on the board (or double-click empty space)";

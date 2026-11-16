@@ -66,7 +66,7 @@ Collage opens on a Sample board whose cards already have descriptions and key po
 1. Connect a cloud model. Pick a provider and paste its API key. Built in are OpenRouter, DeepSeek, Volcano Engine, Alibaba Cloud Model Studio, SiliconFlow, Zhipu GLM, Kimi, MiniMax, Anthropic, Gemini, and OpenAI, plus any other OpenAI-compatible endpoint. Without one you can still collect and arrange, but new cards get no title, description, key points, or tags, nothing is auto-sorted, and Inspire and Discuss are unavailable.
 2. Download the local model (about 600 MB). Search runs on it and works offline once downloaded.
 3. Install the browser extension. Follow the steps to load the extension bundled with the app from your browser's extensions page. Collage also uses it to open pages that need a login or load through scripts, in the background.
-4. Collect from your phone. Add the shortcut on your iPhone; this needs iCloud Drive turned on on your Mac.
+4. Collect from your phone. Add the shortcut on your iPhone; your iPhone and Mac must be signed in to the same Apple Account, with iCloud Drive turned on on your Mac.
 
 ## Where your data lives and what leaves your Mac
 

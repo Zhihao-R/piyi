@@ -67,7 +67,10 @@ struct Onboarding: View {
         VStack(alignment: .leading, spacing: 20) {
             StepHeader(step: step)
             switch step {
-            case .keys: VStack(spacing: 10) { CloudAccess(model: model, labeled: false) }
+            // 不带左边标题：服务商选框靠左、按内容宽，和下面的密钥框左边对齐
+            case .keys:
+                VStack(alignment: .leading, spacing: 12) { CloudAccess(model: model, labeled: false) }
+                    .labelsHidden()
             case .model: LocalModelRow(model: model)
             case .browser: ExtensionGuide(model: model)
             case .phone: PhoneGuide(inbox: model.phoneInbox)

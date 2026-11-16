@@ -68,6 +68,10 @@ struct PhoneGuide: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
+                    // 账户不同不会报错，只是一直收不到，先说在前面
+                    Label("iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到", systemImage: "exclamationmark.icloud")
+                        .font(.callout.weight(.semibold))
+                        .foregroundStyle(Palette.warning.color)
                     GuideStep(number: 1, text: String(localized: "用 iPhone 相机扫码，添加快捷指令")) {
                         HStack(spacing: 16) {
                             QRCode(url: PhoneInbox.shortcut)
