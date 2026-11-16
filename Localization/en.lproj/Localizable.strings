@@ -77,14 +77,14 @@
 "回到全景" = "Zoom to Fit";
 "回答" = "Answer";
 "图片" = "Images";
-"在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，拼贴也交给它在后台打开。" = "Collect the page you’re viewing in Chrome, Edge, or Arc with one click. Collage also uses it to open pages that need sign-in or scripts in the background.";
-"在 iPhone 上分享到「收集拼贴」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect to Collage” on your iPhone; items arrive in your library through iCloud Drive.";
+"在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，片羽也交给它在后台打开。" = "Collect the page you’re viewing in Chrome, Edge, or Arc with one click. Piyi also uses it to open pages that need sign-in or scripts in the background.";
+"在 iPhone 上分享到「收集片羽」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect to Piyi” on your iPhone; items arrive in your library through iCloud Drive.";
 "iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到" = "Your iPhone and this Mac must be signed in to the same Apple Account with iCloud Drive turned on, or nothing will arrive";
 "在浏览器里打开扩展页，打开右上角的「开发者模式」" = "Open your browser’s extensions page and turn on “Developer mode” in the top-right corner";
-"在浏览器里点工具栏上的拼贴图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把拼贴固定上去。" = "Click the Collage icon in your browser’s toolbar to collect the page you’re viewing. If you don’t see it, click the puzzle-piece icon and pin Collage.";
+"在浏览器里点工具栏上的片羽图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把片羽固定上去。" = "Click the Piyi icon in your browser’s toolbar to collect the page you’re viewing. If you don’t see it, click the puzzle-piece icon and pin Piyi.";
 "在画板上写一张文字卡（也可以双击空白处）" = "Write a note on the board (or double-click empty space)";
-"在相册中分享一张照片，选择「收集拼贴」" = "Share a photo from Photos and choose “Collect to Collage”";
-"在网页上右键「收进拼贴」：点在图上收这张图，选中了文字收这段话，其余收整页。要登录、靠脚本加载的网页，也交给它在你的浏览器里后台打开。\n别的 App 里：复制后按 ⌃⌥C，或者选中文字、文件后右键「服务」→「收进拼贴」。" = "Right-click a web page and choose “Collect to Collage”: on an image it collects the image, on selected text it collects the text, anywhere else the whole page. Pages that need sign-in or scripts are opened in your browser in the background.\nIn other apps: copy and press ⌃⌥C, or select text or files and right-click Services → “Collect to Collage”.";
+"在相册中分享一张照片，选择「收集片羽」" = "Share a photo from Photos and choose “Collect to Piyi”";
+"在网页上右键「收进片羽」：点在图上收这张图，选中了文字收这段话，其余收整页。要登录、靠脚本加载的网页，也交给它在你的浏览器里后台打开。\n别的 App 里：复制后按 ⌃⌥C，或者选中文字、文件后右键「服务」→「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”: on an image it collects the image, on selected text it collects the text, anywhere else the whole page. Pages that need sign-in or scripts are opened in your browser in the background.\nIn other apps: copy and press ⌃⌥C, or select text or files and right-click Services → “Collect to Piyi”.";
 "在访达中显示" = "Show in Finder";
 "填上密钥才能用灵感" = "Add a key to use Inspire";
 "填云端服务方的密钥" = "Add a cloud provider key";
@@ -105,7 +105,7 @@
 "已下载" = "Downloaded";
 "已从废纸篓恢复" = "Restored from Trash";
 "已填，输入新的可以替换" = "Saved. Enter a new one to replace it";
-"已存下，拼贴打开后收进" = "Saved; Collage will collect it when it opens";
+"已存下，片羽打开后收进" = "Saved; Piyi will collect it when it opens";
 "已存入资料库「未归类」" = "Saved to Unsorted in your library";
 "已引用" = "Cited";
 "已引用到「%@」" = "Cited in “%@”";
@@ -114,7 +114,7 @@
 "已收下这张图" = "Image collected";
 "已收下这段话" = "Text collected";
 "已收到" = "Received";
-"已收进拼贴" = "Collected to Collage";
+"已收进片羽" = "Collected to Piyi";
 "已经收过" = "Already collected";
 "已经收过，提到了最前" = "Already collected; moved to the top";
 "已连上 %@" = "Connected to %@";
@@ -151,8 +151,8 @@
 "拷贝" = "Copy";
 "拷贝的卡已经不在资料库里了" = "The copied cards are no longer in your library";
 "拷贝链接" = "Copy Link";
-"拼贴" = "Collage";
-"拼贴扩展" = "Collage Extension";
+"片羽" = "Piyi";
+"片羽扩展" = "Piyi Extension";
 "按天" = "By Day";
 "按来源" = "By Source";
 "按颜色" = "By Color";
@@ -165,7 +165,7 @@
 "收成文字卡" = "Save as Note";
 "收起" = "Hide";
 "收起（Esc）" = "Hide (Esc)";
-"收集拼贴" = "Collect to Collage";
+"收集片羽" = "Collect to Piyi";
 "收集没完成：%@" = "Couldn’t finish collecting: %@";
 "放入画板入口" = "Add Board Link";
 "放回" = "Put Back";
@@ -217,7 +217,7 @@
 "没做成" = "Couldn’t do that";
 "没发出去：%@" = "Couldn’t send: %@";
 "没存下：%@" = "Couldn’t save: %@";
-"没存好，下次打开拼贴时再试" = "Couldn’t save. Collage will try again next time it opens";
+"没存好，下次打开片羽时再试" = "Couldn’t save. Piyi will try again next time it opens";
 "没找到 Chrome、Edge 或 Arc" = "Chrome, Edge, or Arc not found";
 "没找到相关的卡" = "No related cards found";
 "没抓到：%@" = "Couldn’t fetch: %@";
@@ -307,7 +307,7 @@
 "转录" = "Transcript";
 "还没安装" = "Not installed";
 "还没抓完，联网后自动补全" = "Not finished fetching; it will be completed when you’re online";
-"还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进拼贴」" = "No cards yet. Drag images or links onto a board, or right-click in your browser and choose “Collect to Collage”";
+"还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进片羽」" = "No cards yet. Drag images or links onto a board, or right-click in your browser and choose “Collect to Piyi”";
 "还没有引用卡片" = "No cards cited yet";
 "这一周" = "Past week";
 "这个月" = "Past month";
@@ -398,8 +398,8 @@
 "密钥仅保存在本机。" = " Keys are stored only on this Mac.";
 "%@。" = " %@.";
 "用于搜索，离线可用。" = "Powers search and works offline.";
-"在网页上右键「收进拼贴」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进拼贴」。" = "Right-click a web page and choose “Collect to Collage”. In other apps, copy and press ⌃⌥C, or right-click Services › “Collect to Collage”.";
-"在 iPhone 上分享到「收集拼贴」。" = "Share to “Collect to Collage” on your iPhone.";
+"在网页上右键「收进片羽」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”. In other apps, copy and press ⌃⌥C, or right-click Services › “Collect to Piyi”.";
+"在 iPhone 上分享到「收集片羽」。" = "Share to “Collect to Piyi” on your iPhone.";
 "密钥" = "Key";
 "未填写" = "Not set";
 "填入 %@ 的密钥" = "Enter your %@ key";

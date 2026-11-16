@@ -57,7 +57,7 @@ enum Readability {
     private static func blockEverything() async -> WKContentRuleList? {
         if let rules { return rules }
         let json = #"[{"trigger":{"url-filter":".*"},"action":{"type":"block"}}]"#
-        rules = try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "collage-offline", encodedContentRuleList: json)
+        rules = try? await WKContentRuleListStore.default().compileContentRuleList(forIdentifier: "piyi-offline", encodedContentRuleList: json)
         return rules
     }
 
@@ -85,7 +85,7 @@ enum Readability {
 extension Bundle {
     /// 资料块的资源包。打包成 .app 后在 Contents/Resources 里，swift run 和测试时在编译目录里
     static let library: Bundle? = {
-        let name = "Collage_Library.bundle"
+        let name = "Piyi_Library.bundle"
         for base in [Bundle.main.resourceURL, Bundle.main.bundleURL].compactMap({ $0 }) {
             if let bundle = Bundle(url: base.appending(path: name)) { return bundle }
         }

@@ -1,10 +1,10 @@
 import AppKit
 import Library
 
-/// 卡片进出剪贴板：每张卡一项。拼贴自己认它的摆放（大小、裁剪、旋转、位置），粘贴是同一张卡再放一份；
+/// 卡片进出剪贴板：每张卡一项。片羽自己认它的摆放（大小、裁剪、旋转、位置），粘贴是同一张卡再放一份；
 /// 别的 App 认原文件、网址或文字
 enum Clip {
-    static let type = NSPasteboard.PasteboardType("collage.placement")
+    static let type = NSPasteboard.PasteboardType("piyi.placement")
 
     struct Original: Sendable { let title: String, file: URL }
 
@@ -27,7 +27,7 @@ enum Clip {
     /// APFS 上拷贝是克隆，不占空间、不费时；在别处改它也碰不到资料库里的原件。上一次拷贝的先清掉
     static func export(_ originals: [Int64: Original]) async -> [Int64: URL] {
         await Task.detached(priority: .userInitiated) {
-            let manager = FileManager.default, folder = manager.temporaryDirectory.appending(path: "collage-clip")
+            let manager = FileManager.default, folder = manager.temporaryDirectory.appending(path: "piyi-clip")
             try? manager.removeItem(at: folder)
             var named = [Int64: URL]()
             for (card, original) in originals {
@@ -45,10 +45,10 @@ enum Clip {
         }.value
     }
 
-    /// 标题做文件名：路径符号换掉，太长的截断；没有标题叫「拼贴」
+    /// 标题做文件名：路径符号换掉，太长的截断；没有标题叫「片羽」
     static func name(_ title: String, ext: String) -> String {
         let clean = title.components(separatedBy: CharacterSet(charactersIn: "/:\n")).joined(separator: " ").trimmingCharacters(in: .whitespaces)
-        let stem = clean.isEmpty ? "拼贴" : String(clean.prefix(60))
+        let stem = clean.isEmpty ? "片羽" : String(clean.prefix(60))
         return ext.isEmpty ? stem : stem + "." + ext
     }
 }

@@ -28,7 +28,7 @@ struct FakeLocalEmbedder: Embedding {
 }
 
 func temporaryStore() throws -> Store {
-    try Store(root: FileManager.default.temporaryDirectory.appending(path: "collage-test-\(UUID().uuidString)"))
+    try Store(root: FileManager.default.temporaryDirectory.appending(path: "piyi-test-\(UUID().uuidString)"))
 }
 
 /// 收一张网页卡（内容已经抽好）
@@ -228,7 +228,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
     @Test(.enabled(if: ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] != nil))
     func understandsOneImage() async throws {
         let store = try temporaryStore()
-        let seed = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../Sources/Collage/Resources/Seed/images").standardized
+        let seed = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../Sources/Piyi/Resources/Seed/images").standardized
         let file = try #require(try FileManager.default.contentsOfDirectory(at: seed, includingPropertiesForKeys: nil).first { $0.pathExtension == "jpg" })
         let board = try await store.createBoard("A").id!
         guard case .created(let id) = try await store.collect(FileExtractor.image(try Data(contentsOf: file)), into: board, frame: .zero) else { return }

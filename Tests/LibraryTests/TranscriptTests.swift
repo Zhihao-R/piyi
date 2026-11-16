@@ -37,7 +37,7 @@ import GRDB
 
     /// 升级：转录过的卡，正文最后一段分出来成转录；拼回去和原来一样，理解的依据不变
     @Test func migrationSplitsTranscriptOffBody() throws {
-        let path = FileManager.default.temporaryDirectory.appending(path: "collage-migrate-\(UUID().uuidString).sqlite").path
+        let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
         let db = try DatabaseQueue(path: path)
         try Schema.migrator.migrate(db, upTo: "v9")
         let bodies: [(String?, Bool)] = [("简介\n\n第二段\n\n说的话 一句一句", true), ("只有转录", true), ("没转录\n\n的简介", false), (nil, false)]

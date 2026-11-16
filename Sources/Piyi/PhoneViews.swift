@@ -12,7 +12,7 @@ struct PhoneRow: View {
         HStack(spacing: 10) {
             StatusDot(on: inbox.received != nil)
             VStack(alignment: .leading, spacing: 2) {
-                Text("收集拼贴")
+                Text("收集片羽")
                 Group {
                     if let date = inbox.received { Text("上次接收：\(date.formatted(.relative(presentation: .named)))") } else { Text("尚未接收") }
                 }
@@ -30,7 +30,7 @@ struct PhoneRow: View {
 }
 
 /// 扫码添加快捷指令、分享一张照片，收到后换成「已收到」。引导和设置共用。
-/// 拼贴看不到手机上装了什么，收到第一样东西才算连好
+/// 片羽看不到手机上装了什么，收到第一样东西才算连好
 struct PhoneGuide: View {
     let inbox: PhoneInbox
 
@@ -82,7 +82,7 @@ struct PhoneGuide: View {
                             .buttonStyle(.link).font(.callout)
                         }
                     }
-                    GuideStep(number: 2, text: String(localized: "在相册中分享一张照片，选择「收集拼贴」")) { EmptyView() }
+                    GuideStep(number: 2, text: String(localized: "在相册中分享一张照片，选择「收集片羽」")) { EmptyView() }
                     HStack(spacing: 8) {
                         StatusDot(on: false)
                         Text("等待接收").font(.callout).foregroundStyle(.secondary)

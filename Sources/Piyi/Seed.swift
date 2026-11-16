@@ -56,7 +56,7 @@ enum Seed {
 
     /// 打包成 .app 后资源包在 Contents/Resources 里；swift run 时在编译目录里
     static var directory: URL? {
-        let name = "Collage_Collage.bundle"
+        let name = "Piyi_Piyi.bundle"
         for base in [Bundle.main.resourceURL, Bundle.main.bundleURL].compactMap({ $0 }) {
             if let bundle = Bundle(url: base.appending(path: name)), let url = bundle.url(forResource: "Seed", withExtension: nil) { return url }
         }

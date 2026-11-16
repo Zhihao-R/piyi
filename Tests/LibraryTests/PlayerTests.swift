@@ -17,7 +17,7 @@ struct PlayerTests {
 
     /// 升级：已经收的 YouTube、B 站视频补上播放地址；跳转过的短链看出处网址；名字里带 youtube.com 的别的网站不算
     @Test func migrationBackfillsPlayers() throws {
-        let path = FileManager.default.temporaryDirectory.appending(path: "collage-migrate-\(UUID().uuidString).sqlite").path
+        let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
         let db = try DatabaseQueue(path: path)
         try Schema.migrator.migrate(db, upTo: "v8")
         try db.write { db in

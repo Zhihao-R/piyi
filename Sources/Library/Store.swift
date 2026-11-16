@@ -9,9 +9,9 @@ public final class Store: Sendable {
     /// 资料库目录：数据库、文件、缩略图、本机模型都在这里
     public let root: URL
 
-    /// ~/Library/Application Support/Collage
+    /// ~/Library/Application Support/Piyi
     public static var defaultRoot: URL {
-        URL.applicationSupportDirectory.appending(path: "Collage", directoryHint: .isDirectory)
+        URL.applicationSupportDirectory.appending(path: "Piyi", directoryHint: .isDirectory)
     }
 
     public init(root: URL = Store.defaultRoot) throws {

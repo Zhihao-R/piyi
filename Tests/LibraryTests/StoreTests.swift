@@ -8,7 +8,7 @@ import GRDB
 
 /// 每个测试一个临时资料库
 func temporaryStore() throws -> Store {
-    try Store(root: FileManager.default.temporaryDirectory.appending(path: "collage-test-\(UUID().uuidString)"))
+    try Store(root: FileManager.default.temporaryDirectory.appending(path: "piyi-test-\(UUID().uuidString)"))
 }
 
 /// 一张纯色 PNG，颜色不同内容就不同

@@ -89,7 +89,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(browser.requests.first?.scroll == false)
     }
 
-    /// 在浏览器里点「收进拼贴」：页面已经渲染好，不再下载
+    /// 在浏览器里点「收进片羽」：页面已经渲染好，不再下载
     @Test func renderedPageIsParsedDirectly() async {
         let images = ["https://sns-webpic-qc.xhscdn.com/1"]
         serve([:], images: images)

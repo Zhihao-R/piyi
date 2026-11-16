@@ -2,12 +2,12 @@ import SwiftUI
 import Library
 
 @main
-struct CollageApp: App {
+struct PiyiApp: App {
     @State private var model = AppModel()
     @NSApplicationDelegateAdaptor private var app: AppDelegate
 
     var body: some Scene {
-        Window("拼贴", id: "main") {
+        Window("片羽", id: "main") {
             Shell(model: model)
                 .frame(minWidth: 800, minHeight: 500)
                 .task {

@@ -1,5 +1,5 @@
 {
-  "name": "collage-extension",
+  "name": "piyi-extension",
   "private": true,
   "scripts": {
     "build": "tsc --noEmit && node build.mjs"

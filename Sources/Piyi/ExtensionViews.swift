@@ -11,7 +11,7 @@ struct ExtensionRow: View {
         HStack(spacing: 10) {
             StatusDot(on: status.isConnected)
             VStack(alignment: .leading, spacing: 2) {
-                Text("拼贴扩展")
+                Text("片羽扩展")
                 Text(status.summary).font(.caption).foregroundStyle(.secondary)
                     .contentTransition(.opacity)
             }
@@ -65,7 +65,7 @@ struct ExtensionGuide: View {
                         .font(.headline)
                         .symbolRenderingMode(.multicolor)
                         .symbolEffect(.bounce, value: names)
-                    Text("在浏览器里点工具栏上的拼贴图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把拼贴固定上去。")
+                    Text("在浏览器里点工具栏上的片羽图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把片羽固定上去。")
                         .font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -140,7 +140,7 @@ private struct FolderTile: View {
                 .resizable()
                 .frame(width: 36, height: 36)
             VStack(alignment: .leading, spacing: 2) {
-                Text("拼贴扩展").font(.callout.weight(.medium))
+                Text("片羽扩展").font(.callout.weight(.medium))
                 Text("也可以在扩展页点「加载已解压的扩展程序」选它").font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)

@@ -1,5 +1,5 @@
 // 注入到网页里：读出渲染完的整页 HTML，交回 App 去解析（App 用和直接下载时同一套解析）。
-// 后台抓取时先等脚本把页面画完、需要的话滚到底让懒加载的内容出来；你点「收进拼贴」时页面就在眼前，直接读。
+// 后台抓取时先等脚本把页面画完、需要的话滚到底让懒加载的内容出来；你点「收进片羽」时页面就在眼前，直接读。
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -32,10 +32,10 @@ async function scrollToBottom() {
   window.scrollTo(0, 0)
 }
 
-async function collageRead(options: { settle: boolean; scroll: boolean }) {
+async function piyiRead(options: { settle: boolean; scroll: boolean }) {
   if (options.settle) await quiet(800, 8000)
   if (options.scroll) await scrollToBottom()
   return { url: location.href, html: document.documentElement.outerHTML }
 }
 
-;(globalThis as any).collageRead = collageRead
+;(globalThis as any).piyiRead = piyiRead

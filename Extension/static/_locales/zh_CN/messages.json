@@ -1,30 +1,30 @@
 {
   "name": {
-    "message": "拼贴"
+    "message": "片羽"
   },
   "description": {
-    "message": "把正在看的网页、网页上的图和选中的文字收进拼贴；替拼贴在后台打开要登录、靠脚本加载的网页，取要登录才给的视频字幕。"
+    "message": "把正在看的网页、网页上的图和选中的文字收进片羽；替片羽在后台打开要登录、靠脚本加载的网页，取要登录才给的视频字幕。"
   },
   "collect": {
-    "message": "收进拼贴"
+    "message": "收进片羽"
   },
   "collecting": {
-    "message": "收进拼贴…"
+    "message": "收进片羽…"
   },
   "cannotCollectPage": {
     "message": "这个页面收不了"
   },
   "notConnected": {
-    "message": "没连上拼贴：打开一次拼贴 App 再试"
+    "message": "没连上片羽：打开一次片羽 App 再试"
   },
   "notSaved": {
     "message": "没存下"
   },
   "savedQueued": {
-    "message": "已存下，拼贴打开后收进"
+    "message": "已存下，片羽打开后收进"
   },
   "savedLater": {
-    "message": "已存下，拼贴稍后收进"
+    "message": "已存下，片羽稍后收进"
   },
   "unreadable": {
     "message": "这个页面读不出来"
@@ -39,10 +39,10 @@
     "message": "标签页被关掉了"
   },
   "readerTitle": {
-    "message": "拼贴 · 后台读取"
+    "message": "片羽 · 后台读取"
   },
   "readerLine1": {
-    "message": "拼贴在这个窗口里后台读取网页"
+    "message": "片羽在这个窗口里后台读取网页"
   },
   "readerLine2": {
     "message": "闲下来几分钟后它会自己关掉"

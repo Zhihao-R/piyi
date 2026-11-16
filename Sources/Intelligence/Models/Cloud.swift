@@ -126,7 +126,7 @@ public final class Cloud: Generation, Keyed {
         } else {
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         }
-        if setup.vendor == .openRouter { request.setValue("Collage", forHTTPHeaderField: "X-Title") }
+        if setup.vendor == .openRouter { request.setValue("Piyi", forHTTPHeaderField: "X-Title") }
         for (field, value) in headers { request.setValue(value, forHTTPHeaderField: field) }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         var lastError: Error = Failure(message: String(localized: "\(displayed(name)) 请求失败"))

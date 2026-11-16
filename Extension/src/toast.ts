@@ -3,7 +3,7 @@
 // 这个函数会被整段注入到网页里执行，所以不能引用外面的任何东西
 
 export function toast(text: string, state: 'busy' | 'done' | 'fail') {
-  const TAG = 'collage-toast'
+  const TAG = 'piyi-toast'
   let host = document.querySelector(TAG) as (HTMLElement & { timer?: number }) | null
   if (!host) {
     host = document.createElement(TAG)

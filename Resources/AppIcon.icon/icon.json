@@ -1,0 +1,18 @@
+{
+  "fill" : {
+    "solid" : "srgb:0.11000,0.11000,0.10000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        { "image-name" : "front.png", "name" : "front" },
+        { "image-name" : "back.png", "name" : "back" }
+      ],
+      "shadow" : { "kind" : "neutral", "opacity" : 0.5 },
+      "translucency" : { "enabled" : false, "value" : 0.5 }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [ "macOS" ]
+  }
+}

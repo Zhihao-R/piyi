@@ -46,14 +46,14 @@ struct SettingsView: View {
             } header: {
                 Text("浏览器扩展")
             } footer: {
-                Text("在网页上右键「收进拼贴」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进拼贴」。").foregroundStyle(.secondary)
+                Text("在网页上右键「收进片羽」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进片羽」。").foregroundStyle(.secondary)
             }
             Section {
                 PhoneRow(inbox: model.phoneInbox)
             } header: {
                 Text("手机")
             } footer: {
-                Text("在 iPhone 上分享到「收集拼贴」。").foregroundStyle(.secondary)
+                Text("在 iPhone 上分享到「收集片羽」。").foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

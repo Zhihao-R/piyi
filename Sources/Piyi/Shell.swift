@@ -383,7 +383,7 @@ struct CanvasHost: NSViewRepresentable {
 }
 
 extension View {
-    /// 一句提示的样子：玻璃胶囊，离边 16 点。窗口顶部的提示和拼贴在后台时屏幕右上角的提示共用；
+    /// 一句提示的样子：玻璃胶囊，离边 16 点。窗口顶部的提示和片羽在后台时屏幕右上角的提示共用；
     /// 屏幕上的那条（prominent）胶囊更宽松，配大一号的字
     func noticeStyle(prominent: Bool = false) -> some View {
         padding(.horizontal, prominent ? 22 : 16).padding(.vertical, prominent ? 14 : 10).glassEffect().padding(16)

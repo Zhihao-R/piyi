@@ -512,7 +512,7 @@ extension CanvasView: NSDraggingSource {
     }
 
     /// 拖出画布的摆放、拖进画布的画板，用这两个前缀的文字在拖放里传编号
-    public static let placementsPrefix = "collage-placements:", boardPrefix = "collage-board:"
+    public static let placementsPrefix = "piyi-placements:", boardPrefix = "piyi-board:"
 
     /// 拖去别的画板时按住 ⌥ 是放一份，这里留着（和 Finder 一样）。光标、原位变不变淡、落下后移还是放都按它
     public static var keepsHere: Bool { NSEvent.modifierFlags.contains(.option) }

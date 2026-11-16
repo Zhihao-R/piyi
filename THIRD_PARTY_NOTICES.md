@@ -1,6 +1,6 @@
 # 第三方许可
 
-拼贴自己的代码按 MIT 许可发布（见 `LICENSE`）。下面这些不是拼贴写的，各按各的许可。
+片羽自己的代码按 MIT 许可发布（见 `LICENSE`）。下面这些不是片羽写的，各按各的许可。
 
 ## 打进 App 的代码
 
@@ -26,7 +26,7 @@
 - **American Look（1958）**（`files/american-look-1958.mp4`）：Jam Handy 为通用汽车拍的宣传片，收在互联网档案馆的 [Prelinger 档案](https://archive.org/details/American1958)，公共领域
 - **The Horse in Motion（1878）**（`files/horse-in-motion.gif`）：Eadweard Muybridge 拍的奔马连续照片，公共领域
 - **萨蒂《裸体歌舞》第一号**（`files/gymnopedie-1.mp3`）：Robin Alciatore 演奏，经 [Musopen](https://musopen.org) 以公共领域发布，取自[维基共享资源](https://commons.wikimedia.org/wiki/File:Erik_Satie_-_gymnopedies_-_la_1_ere._lent_et_douloureux.ogg)
-- **《茶之书》摘录**（`files/茶之书-论虚空.md`，英文版 `files/the-book-of-tea-on-the-vacuum.md`）：冈仓天心 1906 年的英文原文，公共领域，取自[古登堡计划](https://www.gutenberg.org/ebooks/769)；中文是拼贴自己翻译的
-- **引文**：出自古籍和公版著作；克利、康定斯基两句的中英文，以及王维、王阳明、庄子几句的英文，都是拼贴自己翻译的
-- **其余文件**（`关于拼贴.md`、`卡片画布的交互原则.docx`、`颜色笔记-灰调里的绿.pdf` 和它们的英文版）：拼贴自己写的，按 MIT
+- **《茶之书》摘录**（`files/茶之书-论虚空.md`，英文版 `files/the-book-of-tea-on-the-vacuum.md`）：冈仓天心 1906 年的英文原文，公共领域，取自[古登堡计划](https://www.gutenberg.org/ebooks/769)；中文是片羽自己翻译的
+- **引文**：出自古籍和公版著作；克利、康定斯基两句的中英文，以及王维、王阳明、庄子几句的英文，都是片羽自己翻译的
+- **其余文件**（`关于拼贴.md`、`卡片画布的交互原则.docx`、`颜色笔记-灰调里的绿.pdf` 和它们的英文版）：片羽自己写的，按 MIT
 - **网址卡**（YouTube、B 站、斯坦福哲学百科等）：只存网址，内容是打开时从原网站取的，不随 App 发

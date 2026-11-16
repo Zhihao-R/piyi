@@ -226,7 +226,7 @@
 			<string>Key rejected; %lld cards are waiting for a new key</string>
 		</dict>
 	</dict>
-	<key>已收进拼贴 %lld 条</key>
+	<key>已收进片羽 %lld 条</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@</string>
@@ -237,12 +237,12 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>one</key>
-			<string>Collected %lld item to Collage</string>
+			<string>Collected %lld item to Piyi</string>
 			<key>other</key>
-			<string>Collected %lld items to Collage</string>
+			<string>Collected %lld items to Piyi</string>
 		</dict>
 	</dict>
-	<key>已收进拼贴 %lld 条，另有 %lld 条已经收过</key>
+	<key>已收进片羽 %lld 条，另有 %lld 条已经收过</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@%#@n1@</string>
@@ -397,7 +397,7 @@
 			<string>; %lld were already there</string>
 		</dict>
 	</dict>
-	<key>；有 %lld 条没存好，下次打开拼贴时再试</key>
+	<key>；有 %lld 条没存好，下次打开片羽时再试</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@</string>
@@ -408,9 +408,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>one</key>
-			<string>; %lld couldn’t be saved and will be retried next time Collage opens</string>
+			<string>; %lld couldn’t be saved and will be retried next time Piyi opens</string>
 			<key>other</key>
-			<string>; %lld couldn’t be saved and will be retried next time Collage opens</string>
+			<string>; %lld couldn’t be saved and will be retried next time Piyi opens</string>
 		</dict>
 	</dict>
 </dict>

@@ -61,7 +61,7 @@ import Library
         #expect(try await browser.next(.collected).queued == false)
         try await events.wait { $0.arrivals == 2 }
 
-        let store = try Store(root: URL.temporaryDirectory.appending(path: "collage-test-\(UUID().uuidString)"))
+        let store = try Store(root: URL.temporaryDirectory.appending(path: "piyi-test-\(UUID().uuidString)"))
         let intake = Intake(store: store, extractor: Extractor())
         let receipts = Mutex<[Receipt]>([])
         await Inbox(folder: Bridge.inbox(in: directory)).drain { arrival in
@@ -204,7 +204,7 @@ final class FakeBrowser: @unchecked Sendable {
     init(_ directory: URL, name: String = "假浏览器", failing: Bool = false) throws {
         self.failing = failing
         relay.executableURL = try Self.relayBinary()
-        relay.environment = ["COLLAGE_BRIDGE": directory.path]
+        relay.environment = ["PIYI_BRIDGE": directory.path]
         relay.standardInput = input
         relay.standardOutput = output
         relay.standardError = FileHandle.nullDevice
@@ -245,6 +245,6 @@ final class FakeBrowser: @unchecked Sendable {
     /// 编译出来的中转程序和测试包在同一个目录
     static func relayBinary() throws -> URL {
         let dirs = [Bundle(for: FakeBrowser.self), Bundle.main].map { $0.bundleURL.deletingLastPathComponent() }
-        return try #require(dirs.map { $0.appending(path: "CollageRelay") }.first { FileManager.default.isExecutableFile(atPath: $0.path) })
+        return try #require(dirs.map { $0.appending(path: "PiyiRelay") }.first { FileManager.default.isExecutableFile(atPath: $0.path) })
     }
 }

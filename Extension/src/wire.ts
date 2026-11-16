@@ -24,4 +24,4 @@ export interface Message {
 }
 
 /// 中转程序的登记名，和 App 写进浏览器目录的登记文件一致
-export const HOST = 'local.collage.relay'
+export const HOST = 'io.github.zhihao_r.piyi.relay'

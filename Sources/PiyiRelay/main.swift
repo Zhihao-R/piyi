@@ -16,7 +16,7 @@ let toBrowser = Channel(fd: STDOUT_FILENO)
 let link = Mutex<(app: Channel?, hello: Data?)>((nil, nil))
 
 func log(_ text: String) {
-    FileHandle.standardError.write(Data("collage-relay: \(text)\n".utf8))
+    FileHandle.standardError.write(Data("piyi-relay: \(text)\n".utf8))
 }
 
 /// 启动我们的浏览器叫什么："…/Google Chrome.app/Contents/MacOS/Google Chrome" → "Google Chrome"
@@ -85,6 +85,6 @@ while let frame = fromBrowser.readFrame() {
         $0.app?.writeLine(Message(.collect, id: message?.id).encoded)
         return $0.app == nil
     }
-    toBrowser.writeFrame(Message(.collected, id: message?.id, ok: true, queued: queued, say: queued ? String(localized: "已存下，拼贴打开后收进") : nil).encoded)
+    toBrowser.writeFrame(Message(.collected, id: message?.id, ok: true, queued: queued, say: queued ? String(localized: "已存下，片羽打开后收进") : nil).encoded)
 }
 exit(0)

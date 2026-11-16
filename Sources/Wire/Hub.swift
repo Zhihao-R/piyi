@@ -15,7 +15,7 @@ public final class Hub: Sendable {
     public enum Event: Sendable {
         /// 连上的浏览器有变化（连上、断开、扩展报了版本）
         case browsers([Browser])
-        /// 收件箱里可能有新的：浏览器里刚点了「收进拼贴」，或者中转程序刚连上（它没连上的那段时间收的都存在那里）
+        /// 收件箱里可能有新的：浏览器里刚点了「收进片羽」，或者中转程序刚连上（它没连上的那段时间收的都存在那里）
         case arrived
     }
 

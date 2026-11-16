@@ -4,8 +4,8 @@ import SwiftUI
 import Library
 import Tokens
 
-/// 不切到拼贴也能收：任何 App 里按 ⌃⌥C 收剪贴板里新复制的东西；选中文字、文件后右键「服务」→「收进拼贴」收选中的。
-/// 和手机、浏览器收的一样先存进收件箱、只进资料库，等自动分拣。拼贴在后台时，屏幕右上角弹一句提示，不把窗口拉到前面
+/// 不切到片羽也能收：任何 App 里按 ⌃⌥C 收剪贴板里新复制的东西；选中文字、文件后右键「服务」→「收进片羽」收选中的。
+/// 和手机、浏览器收的一样先存进收件箱、只进资料库，等自动分拣。片羽在后台时，屏幕右上角弹一句提示，不把窗口拉到前面
 @MainActor
 final class QuickCollect: NSObject {
     /// 叫收集去看本机收件箱。资料库准备好之前是 nil：这时收到的在收件箱里等着
@@ -18,7 +18,7 @@ final class QuickCollect: NSObject {
     private var lastTaken: Int?
     private let toast = Toast()
 
-    /// App 一启动就接：从「服务」菜单把没开的拼贴叫起来时，请求马上就到，等不到资料库打开
+    /// App 一启动就接：从「服务」菜单把没开的片羽叫起来时，请求马上就到，等不到资料库打开
     func listen() {
         NSApp.servicesProvider = self
         // 系统级快捷键：不用辅助功能权限，别的 App 在前台也收得到
@@ -31,7 +31,7 @@ final class QuickCollect: NSObject {
                             GetApplicationEventTarget(), 0, &hotKey)
     }
 
-    /// 资料库准备好了：收件箱里等着的收进去。tell 在拼贴是前台时用窗口里的提示
+    /// 资料库准备好了：收件箱里等着的收进去。tell 在片羽是前台时用窗口里的提示
     func start(look: @escaping () -> Void, tell: @escaping (String) -> Void) {
         self.look = look
         self.tell = tell
@@ -39,7 +39,7 @@ final class QuickCollect: NSObject {
         if hotKey == nil { tell(String(localized: "⌃⌥C 被别的 App 占用了，按它收不了东西")) }
     }
 
-    /// 「服务」菜单里的「收进拼贴」：名字和 Info.plist 里 NSServices 的 NSMessage 对应
+    /// 「服务」菜单里的「收进片羽」：名字和 Info.plist 里 NSServices 的 NSMessage 对应
     @objc func collect(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
         take(Collector.sources(in: pasteboard), empty: String(localized: "选中的内容收不了"))
     }

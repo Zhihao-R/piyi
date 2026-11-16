@@ -123,8 +123,8 @@ final class AppModel {
     func start(quickCollect: QuickCollect) async {
         guard store == nil else { return }
         do {
-            // 环境变量 COLLAGE_ROOT 指定另一个资料库目录（试新装用户时用）
-            let root = ProcessInfo.processInfo.environment["COLLAGE_ROOT"].map { URL(fileURLWithPath: $0) }
+            // 环境变量 PIYI_ROOT 指定另一个资料库目录（试新装用户时用）
+            let root = ProcessInfo.processInfo.environment["PIYI_ROOT"].map { URL(fileURLWithPath: $0) }
             let store = try Store(root: root ?? Store.defaultRoot)
             self.store = store
             let interaction = interaction
@@ -162,10 +162,10 @@ final class AppModel {
             audio.soundingChanged = { [weak self] in self?.canvas?.sounding = self?.audio.sounding }
             if let view = try? await store.setting(Self.libraryViewKey, as: LibraryView.self) { libraryView = view }
             // 第一次打开停在示例画板：它和「我的画板」同一刻建成，按最近打开排谁在前说不准。
-            // 自查用：COLLAGE_SAMPLE="画板名" 在现有资料库里再放一份示例画板并打开它，看示例摆得怎样
+            // 自查用：PIYI_SAMPLE="画板名" 在现有资料库里再放一份示例画板并打开它，看示例摆得怎样
             var landing: Int64?
             if try await store.boards().isEmpty { landing = try await firstLaunch(store) }
-            else if let name = ProcessInfo.processInfo.environment["COLLAGE_SAMPLE"] { landing = try await addSample(store, named: name) }
+            else if let name = ProcessInfo.processInfo.environment["PIYI_SAMPLE"] { landing = try await addSample(store, named: name) }
             try await refreshBoards()
             try await closeSampleSortingOnce(store)
             if let id = landing ?? boards.first?.id { go(.board(id)) }
@@ -193,9 +193,9 @@ final class AppModel {
                 embedder.unload()
             }
             try await prepareOnboarding(store)
-            // 自查用：COLLAGE_TRY="一句话" 启动后自动输入并回车，COLLAGE_TRY="✦" 按灵感按钮，COLLAGE_TRY="…一句话" 只输入不回车，
-            // COLLAGE_TRY="💬一句话" 把画板上第一张卡放上讨论的桌再问这句
-            if let line = ProcessInfo.processInfo.environment["COLLAGE_TRY"] {
+            // 自查用：PIYI_TRY="一句话" 启动后自动输入并回车，PIYI_TRY="✦" 按灵感按钮，PIYI_TRY="…一句话" 只输入不回车，
+            // PIYI_TRY="💬一句话" 把画板上第一张卡放上讨论的桌再问这句
+            if let line = ProcessInfo.processInfo.environment["PIYI_TRY"] {
                 try? await Task.sleep(for: .seconds(3))
                 if line == "✦" { search.inspireHere() } else if line.hasPrefix("…") { search.text = String(line.dropFirst()) }
                 else if line.hasPrefix("💬"), let board = boards.first?.id,
@@ -406,7 +406,7 @@ final class AppModel {
         }
     }
 
-    /// 浏览器里点了「收进拼贴」：去收本机收件箱（扩展那边会告诉你收下了，这里收一张不另外提示）；扩展连上后，等浏览器的残缺卡自动补抓
+    /// 浏览器里点了「收进片羽」：去收本机收件箱（扩展那边会告诉你收下了，这里收一张不另外提示）；扩展连上后，等浏览器的残缺卡自动补抓
     private func connectBrowsers(_ quickCollect: QuickCollect) {
         browserExtension.start { [weak self] in
             self?.collector.drainLocal(quick: quickCollect)
@@ -439,11 +439,11 @@ final class AppModel {
 
     var title: String {
         switch location {
-        case .board(let id): boards.first { $0.id == id }?.name ?? String(localized: "拼贴")
+        case .board(let id): boards.first { $0.id == id }?.name ?? String(localized: "片羽")
         case .collection(.all): String(localized: "全部卡片")
         case .collection(.unplaced): String(localized: "未归类")
         case .collection(.trash): String(localized: "废纸篓")
-        case nil: String(localized: "拼贴")
+        case nil: String(localized: "片羽")
         }
     }
 
@@ -1090,7 +1090,7 @@ extension AppModel: CanvasDelegate {
 
     /// 空着的时候说一句这里怎么会有东西；画板都用同一句
     private static let emptyHints: [CanvasContent?: String] = [
-        .collection(.all): String(localized: "还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进拼贴」"),
+        .collection(.all): String(localized: "还没有卡。把图片、链接拖进画板，或在浏览器里右键「收进片羽」"),
         .collection(.unplaced): String(localized: "都归进画板了"),
         .collection(.trash): String(localized: "废纸篓是空的"),
     ]

@@ -95,7 +95,7 @@ import GRDB
 
 /// 升级：已有的卡都算分拣过、补全过正文，摆放都没有新放进标记
 @Test func migrationMarksExistingCardsSorted() throws {
-    let path = FileManager.default.temporaryDirectory.appending(path: "collage-migrate-\(UUID().uuidString).sqlite").path
+    let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
     let db = try DatabaseQueue(path: path)
     try Schema.migrator.migrate(db, upTo: "v5")
     try db.write { db in

@@ -1,16 +1,16 @@
 import AppKit
 import Library
 
-/// 手机收件箱：iCloud 云盘里「快捷指令」文件夹下的 CollageInbox。手机上的快捷指令「收集拼贴」把分享来的链接、文字、图片、文件存进去，
+/// 手机收件箱：iCloud 云盘里「快捷指令」文件夹下的 PiyiInbox。手机上的快捷指令「收集片羽」把分享来的链接、文字、图片、文件存进去，
 /// 同步到这台 Mac 后在这里收。文件夹有变化、App 回到前台时各看一遍；App 没开时文件留在 iCloud 里，打开后补收。
 /// 和本机收件箱是同一种做法（Library 的 Inbox）：原件等内容存进资料库才删
 @MainActor @Observable
 final class PhoneInbox {
-    /// 快捷指令「收集拼贴」的分享链接：引导里做成二维码给手机扫
+    /// 快捷指令「收集片羽」的分享链接：引导里做成二维码给手机扫
     static let shortcut = URL(string: "https://www.icloud.com/shortcuts/8b7c043f5c534adba30d949475279ba2")!
     /// 放在「快捷指令」自己的文件夹里：快捷指令按「它自己的文件夹」记这个位置，不绑账号，分享给别人添加后不用重选
     nonisolated static let folder = FileManager.default.homeDirectoryForCurrentUser
-        .appending(path: "Library/Mobile Documents/iCloud~is~workflow~my~workflows/Documents/CollageInbox", directoryHint: .isDirectory)
+        .appending(path: "Library/Mobile Documents/iCloud~is~workflow~my~workflows/Documents/PiyiInbox", directoryHint: .isDirectory)
     private static let drive = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: "Library/Mobile Documents/com~apple~CloudDocs", directoryHint: .isDirectory)
     private static let receivedKey = "phoneReceived"

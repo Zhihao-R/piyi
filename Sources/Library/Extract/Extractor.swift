@@ -12,7 +12,7 @@ public enum Source: Sendable {
     /// 一句话里带着的网址：收这个网址，那句话记在卡上
     case mentioned(URL, in: String)
     case text(String)
-    /// 在浏览器里点了「收进拼贴」：页面已经渲染好
+    /// 在浏览器里点了「收进片羽」：页面已经渲染好
     case rendered(RenderedPage)
     /// 已经抽取好的（示例数据里事先下载好的链接卡）
     case ready(Material)

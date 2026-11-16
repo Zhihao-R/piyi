@@ -6,15 +6,15 @@ import Foundation
 
 public enum Bridge {
     /// 浏览器按这个名字找登记文件，扩展按它连中转程序
-    public static let hostName = "local.collage.relay"
+    public static let hostName = "io.github.zhihao_r.piyi.relay"
     /// 扩展的编号，由 Extension/manifest.json 里的 key 决定，固定不变。登记文件只允许它连
-    public static let extensionID = "hoiclamefncicnbdlbaelhlacodfkdgp"
+    public static let extensionID = "cbkgaojdimngmgnhhpjbljeeimhabcbb"
 
     /// socket、收件箱、装给浏览器的扩展都在这里，只给当前用户。
-    /// 测试时用环境变量 COLLAGE_BRIDGE 换一个目录，不碰正在用的 App
+    /// 测试时用环境变量 PIYI_BRIDGE 换一个目录，不碰正在用的 App
     public static var directory: URL {
-        if let custom = ProcessInfo.processInfo.environment["COLLAGE_BRIDGE"] { return URL(fileURLWithPath: custom) }
-        return URL.applicationSupportDirectory.appending(path: "Collage Bridge", directoryHint: .isDirectory)
+        if let custom = ProcessInfo.processInfo.environment["PIYI_BRIDGE"] { return URL(fileURLWithPath: custom) }
+        return URL.applicationSupportDirectory.appending(path: "Piyi Bridge", directoryHint: .isDirectory)
     }
 
     public static func socket(in directory: URL) -> String { directory.appending(path: "app.sock").path }
@@ -44,7 +44,7 @@ public struct Message: Codable, Sendable, Equatable {
         case request
         /// 扩展 → App：抓取结果
         case result
-        /// 扩展 → 中转程序：你在浏览器里点了「收进拼贴」。url 是所在的网页；带 image、imageURL 的收这张图，带 text 的收这段话，
+        /// 扩展 → 中转程序：你在浏览器里点了「收进片羽」。url 是所在的网页；带 image、imageURL 的收这张图，带 text 的收这段话，
         /// 带 html 的收整页。中转程序存进收件箱，再转给 App 一条只有编号的，叫它去看收件箱
         case collect
         /// 回给扩展，按 collect 的编号对上，先后两条。中转程序：存进收件箱了没有（ok），queued 说 App 是不是没开（没存下、没开就只有这一条）。

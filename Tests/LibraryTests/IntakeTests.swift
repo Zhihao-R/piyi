@@ -116,7 +116,7 @@ import GRDB
         _ = try await intake.collect([.text("一句话")], report: listen)
         _ = try await intake.collect([.text("一句话"), .text("另一句"), .ready(page("https://example.com/a")), .ready(page("https://example.com/a"))], report: listen)
         #expect(heard.withLock { $0 } == [Receipt(new: 2), Receipt(existing: 1), Receipt(new: 1, existing: 2)])
-        #expect(Receipt(new: 1).text == "已收进拼贴" && Receipt(new: 3).text == "已收进拼贴 3 条")
+        #expect(Receipt(new: 1).text == "已收进片羽" && Receipt(new: 3).text == "已收进片羽 3 条")
         #expect(Receipt(existing: 1).text == "已经收过，提到了最前")
         #expect(try await store.cards(in: .all).count == 3)
     }
@@ -132,13 +132,13 @@ import GRDB
         })
         #expect(heard.withLock { $0 } == [Receipt(new: 1, failed: 1)])
         #expect(!Intake.saved(outcomes))
-        #expect(Receipt(new: 1, failed: 1).text == "已收进拼贴；有 1 条没存好，下次打开拼贴时再试")
-        #expect(Receipt(failed: 1).text == "没存好，下次打开拼贴时再试" && !Receipt(failed: 1).kept)
+        #expect(Receipt(new: 1, failed: 1).text == "已收进片羽；有 1 条没存好，下次打开片羽时再试")
+        #expect(Receipt(failed: 1).text == "没存好，下次打开片羽时再试" && !Receipt(failed: 1).kept)
         // 浏览器里右键收的：说出收的是什么；收过、没存好时和别的入口同一句
         let image = Source.image(png(gray: 0.1), page: nil), words = Source.text("话"), whole = Source.url(URL(string: "https://a.com")!)
         #expect(Receipt(new: 1).text(taking: image) == "已收下这张图" && Receipt(new: 1).text(taking: words) == "已收下这段话")
         #expect(Receipt(new: 1).text(taking: whole) == "已收下这一页")
-        #expect(Receipt(existing: 1).text(taking: image) == "已经收过，提到了最前" && Receipt(failed: 1).text(taking: image) == "没存好，下次打开拼贴时再试")
+        #expect(Receipt(existing: 1).text(taking: image) == "已经收过，提到了最前" && Receipt(failed: 1).text(taking: image) == "没存好，下次打开片羽时再试")
     }
 
     /// 重复收时新带来的那句话：卡上还没有就记下，已经有的不动

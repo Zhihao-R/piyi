@@ -5,7 +5,7 @@
   "version_name": "dev",
   "description": "__MSG_description__",
   "default_locale": "en",
-  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoeDHkx8RmahHY5YO2qCZAueCkEbWUnrK3XOtBVm65Ng8RcLzbfCwl+jyRUIL4qrW1QAkyZlK+K+JczSDCZF0bgS278ICq979+0q39BdZiR8vI8EddcA+KHScvsENXlhU5iNXjCMY90mv4TDbBNq30Lrw4e+LOU+zeSxWhR9NxQco83JtjO6N1RFMOqRhMYBCiEM2M348nDQ8IBJMMdfFrLbiQ85WqHm2Bx6WNpZDgg/gpaeMMHJg4Fzx3Ykhv7jmuVK94Lqa8qPuhA8OeAwtCxBrt3PqhawHxDkDQhrxB4fZstcPjKl0QguWx/D9rlkg/CeB6p1TIY8Rk9r72sm9qwIDAQAB",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAs571LdPmb92uBxygHfmb+ZXCXe3lbqv4086KUIxbeIDzxKqVRYLCnBytDDjOSknH1XzlyByWkS+yAkzWfx2g4yn25H8Ylk3k+gmf8A3Hb8dWT8qxnI6vSU5XS3bm+LYQcqP3jeNayEDgSlbJTMcXMwFGJ0KqviRzD3tkArelZXsp5TBMBiOjBT8Wcc8M+w8EQn42yB6b4+54dPuU2JGDBkYUmXgMvUIHI7VKjDTOZAMj5yT548xSL+e9ebqwwfozXSYOcRVgupkA2s8hNvVjD5HgCMNqIcO2B7ZHIvaFcIYUGCfd7vxFG/GhuJ0iXSXuPUM1Oh4N/F+eVlH/8PhcUQIDAQAB",
   "minimum_chrome_version": "120",
   "permissions": [
     "nativeMessaging",

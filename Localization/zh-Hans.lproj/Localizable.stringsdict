@@ -198,7 +198,7 @@
 			<string>密钥被拒绝，%lld 张等新密钥</string>
 		</dict>
 	</dict>
-	<key>已收进拼贴 %lld 条</key>
+	<key>已收进片羽 %lld 条</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@</string>
@@ -209,10 +209,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>已收进拼贴 %lld 条</string>
+			<string>已收进片羽 %lld 条</string>
 		</dict>
 	</dict>
-	<key>已收进拼贴 %lld 条，另有 %lld 条已经收过</key>
+	<key>已收进片羽 %lld 条，另有 %lld 条已经收过</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@%#@n1@</string>
@@ -223,7 +223,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>已收进拼贴 %lld 条</string>
+			<string>已收进片羽 %lld 条</string>
 		</dict>
 		<key>n1</key>
 		<dict>
@@ -347,7 +347,7 @@
 			<string>，其中 %lld 张本来就在</string>
 		</dict>
 	</dict>
-	<key>；有 %lld 条没存好，下次打开拼贴时再试</key>
+	<key>；有 %lld 条没存好，下次打开片羽时再试</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
 		<string>%#@n0@</string>
@@ -358,7 +358,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>；有 %lld 条没存好，下次打开拼贴时再试</string>
+			<string>；有 %lld 条没存好，下次打开片羽时再试</string>
 		</dict>
 	</dict>
 </dict>

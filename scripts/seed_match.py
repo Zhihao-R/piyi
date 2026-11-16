@@ -3,9 +3,9 @@
 # 原版和各语言的版本（清单项里的 variants）都认。
 import json, os, re, sqlite3
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../Sources/Collage/Resources/Seed")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../Sources/Piyi/Resources/Seed")
 MANIFEST = f"{ROOT}/manifest.json"
-DEFAULT_DB = os.path.expanduser("~/Library/Application Support/Collage/library.sqlite")
+DEFAULT_DB = os.path.expanduser("~/Library/Application Support/Piyi/library.sqlite")
 
 def load_items():
     return json.load(open(MANIFEST))

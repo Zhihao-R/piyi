@@ -12,7 +12,7 @@ public struct Receipt: Sendable, Equatable {
     /// 至少有一样在资料库里了；一样都没存好时不能说「收下了」，也不响那一声
     public var kept: Bool { new + existing > 0 }
 
-    public var text: String { text(new: new > 1 ? String(localized: "已收进拼贴 \(new) 条") : String(localized: "已收进拼贴")) }
+    public var text: String { text(new: new > 1 ? String(localized: "已收进片羽 \(new) 条") : String(localized: "已收进片羽")) }
 
     /// 在浏览器里右键收的这一样，说出收的是什么：图片站的图常被透明层盖住，浏览器不认为右键在图上，会收成整页，看提示当场就知道
     public func text(taking source: Source) -> String {
@@ -25,14 +25,14 @@ public struct Receipt: Sendable, Equatable {
     }
 
     private func text(new said: String) -> String {
-        guard kept else { return String(localized: "没存好，下次打开拼贴时再试") }
+        guard kept else { return String(localized: "没存好，下次打开片羽时再试") }
         let kept = switch (new, existing) {
         case (_, 0): said
         case (0, 1): String(localized: "已经收过，提到了最前")
         case (0, _): String(localized: "\(existing) 条都已经收过，提到了最前")
-        default: String(localized: "已收进拼贴 \(new) 条，另有 \(existing) 条已经收过")
+        default: String(localized: "已收进片羽 \(new) 条，另有 \(existing) 条已经收过")
         }
-        return failed > 0 ? kept + String(localized: "；有 \(failed) 条没存好，下次打开拼贴时再试") : kept
+        return failed > 0 ? kept + String(localized: "；有 \(failed) 条没存好，下次打开片羽时再试") : kept
     }
 }
 

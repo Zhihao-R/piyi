@@ -56,14 +56,14 @@ final class BrowserExtension {
         Task { [weak self] in for await event in events { self?.handle(event) } }
     }
 
-    /// 装扩展文件、写登记文件、开始等中转程序。onArrive 在本机收件箱里可能来了新的时候调用（浏览器里点了「收进拼贴」，或者中转程序刚连上）；
+    /// 装扩展文件、写登记文件、开始等中转程序。onArrive 在本机收件箱里可能来了新的时候调用（浏览器里点了「收进片羽」，或者中转程序刚连上）；
     /// onConnect 在从没有能用的浏览器变成有的时候调用：连着、而且扩展已经是新版（要重新加载的那个会断开一下，不能这时交活给它）
     func start(onArrive: @escaping () -> Void, onConnect: @escaping () -> Void) {
         self.onArrive = onArrive
         self.onConnect = onConnect
         install()
         register()
-        do { try hub.start() } catch { NSLog("拼贴：扩展的连接没能开始监听：\(error)") }
+        do { try hub.start() } catch { NSLog("片羽：扩展的连接没能开始监听：\(error)") }
     }
 
     private func handle(_ event: Hub.Event) {
@@ -113,7 +113,7 @@ final class BrowserExtension {
             try? FileManager.default.removeItem(at: folder)
             try FileManager.default.moveItem(at: staging, to: folder)
         } catch {
-            NSLog("拼贴：扩展文件没装上：\(error)")
+            NSLog("片羽：扩展文件没装上：\(error)")
         }
     }
 
@@ -135,10 +135,10 @@ final class BrowserExtension {
     /// 告诉各浏览器：扩展可以启动哪个本机程序。每次启动都写一遍，App 挪了位置也能找到；只写装了的浏览器，内容没变不碰
     private func register() {
         guard let executable = Bundle.main.executableURL else { return }
-        let relay = executable.deletingLastPathComponent().appending(path: "CollageRelay")
+        let relay = executable.deletingLastPathComponent().appending(path: "PiyiRelay")
         let manifest: [String: Any] = [
             "name": Bridge.hostName,
-            "description": "拼贴的扩展中转程序",
+            "description": "片羽的扩展中转程序",
             "path": relay.path,
             "type": "stdio",
             "allowed_origins": ["chrome-extension://\(Bridge.extensionID)/"],

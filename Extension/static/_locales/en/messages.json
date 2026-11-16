@@ -1,30 +1,30 @@
 {
   "name": {
-    "message": "Collage"
+    "message": "Piyi"
   },
   "description": {
-    "message": "Collect the page you’re viewing, images on it, and selected text into Collage. Also opens pages that need sign-in or scripts in the background for Collage, and fetches subtitles that require sign-in."
+    "message": "Collect the page you’re viewing, images on it, and selected text into Piyi. Also opens pages that need sign-in or scripts in the background for Piyi, and fetches subtitles that require sign-in."
   },
   "collect": {
-    "message": "Collect to Collage"
+    "message": "Collect to Piyi"
   },
   "collecting": {
-    "message": "Collecting to Collage…"
+    "message": "Collecting to Piyi…"
   },
   "cannotCollectPage": {
     "message": "This page can’t be collected"
   },
   "notConnected": {
-    "message": "Not connected to Collage. Open the Collage app and try again"
+    "message": "Not connected to Piyi. Open the Piyi app and try again"
   },
   "notSaved": {
     "message": "Couldn’t save"
   },
   "savedQueued": {
-    "message": "Saved; Collage will collect it when it opens"
+    "message": "Saved; Piyi will collect it when it opens"
   },
   "savedLater": {
-    "message": "Saved; Collage will collect it shortly"
+    "message": "Saved; Piyi will collect it shortly"
   },
   "unreadable": {
     "message": "This page can’t be read"
@@ -39,10 +39,10 @@
     "message": "The tab was closed"
   },
   "readerTitle": {
-    "message": "Collage · Background reading"
+    "message": "Piyi · Background reading"
   },
   "readerLine1": {
-    "message": "Collage reads pages in this window in the background"
+    "message": "Piyi reads pages in this window in the background"
   },
   "readerLine2": {
     "message": "It closes itself after a few idle minutes"

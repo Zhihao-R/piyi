@@ -28,9 +28,9 @@ import Foundation
     }
 
     @Test func nonUTF8TextIsStillText() throws {
-        let gbk = try #require("拼贴收件箱里的一段中文".data(using: String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))))
+        let gbk = try #require("片羽收件箱里的一段中文".data(using: String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.GB_18030_2000.rawValue)))))
         guard case .text(let text)? = shared("文本.txt", gbk)?.first else { Issue.record("应当是文字"); return }
-        #expect(text == "拼贴收件箱里的一段中文")
+        #expect(text == "片羽收件箱里的一段中文")
     }
 
     @Test func otherFilesAreCollectedLikeDraggedFiles() {

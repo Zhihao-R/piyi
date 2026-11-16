@@ -1,0 +1,3 @@
+/* App 名的中文写法：访达按它显示 Piyi.app */
+"CFBundleName" = "片羽";
+"CFBundleDisplayName" = "片羽";

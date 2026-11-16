@@ -12,7 +12,7 @@ public enum FileExtractor {
 
     /// 抽取器自己下载的临时文件放这里，存进文件库后删掉
     static let downloads: URL = {
-        let dir = FileManager.default.temporaryDirectory.appending(path: "collage-downloads", directoryHint: .isDirectory)
+        let dir = FileManager.default.temporaryDirectory.appending(path: "piyi-downloads", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()

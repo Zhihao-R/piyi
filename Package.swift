@@ -3,7 +3,7 @@ import PackageDescription
 
 // 分块和依赖方向见 CONTRIBUTING.md：编译器只允许按下面写明的方向调用
 let package = Package(
-    name: "Collage",
+    name: "Piyi",
     platforms: [.macOS("26.0")],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.9.0"),
@@ -30,17 +30,17 @@ let package = Package(
         .target(name: "Canvas", dependencies: ["Library", "Tokens"]),
         // App：界面外壳、收集入口、放大查看
         .executableTarget(
-            name: "Collage",
+            name: "Piyi",
             dependencies: ["Library", "Intelligence", "Canvas", "Tokens", "Wire"],
             resources: [.copy("Resources/Seed")]
         ),
         // 扩展的中转程序：由浏览器启动，在扩展和 App 之间转发消息
-        .executableTarget(name: "CollageRelay", dependencies: ["Wire"]),
+        .executableTarget(name: "PiyiRelay", dependencies: ["Wire"]),
         .testTarget(name: "LibraryTests", dependencies: ["Library"]),
         .testTarget(name: "CanvasTests", dependencies: ["Canvas", "Library"]),
         .testTarget(name: "IntelligenceTests", dependencies: ["Intelligence", "Library"]),
         // 依赖中转程序只为让 swift test 先把它编译出来：测试像浏览器一样启动它
         // 资料块：扩展收的东西从中转程序一路走到资料库的测试要用
-        .testTarget(name: "WireTests", dependencies: ["Wire", "CollageRelay", "Library"]),
+        .testTarget(name: "WireTests", dependencies: ["Wire", "PiyiRelay", "Library"]),
     ]
 )

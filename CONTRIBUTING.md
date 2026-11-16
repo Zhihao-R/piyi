@@ -5,12 +5,12 @@
 要求：macOS 26 以上，Xcode 26（带 Swift 6 工具链），Node.js（编译浏览器扩展）。
 
 ```sh
-./scripts/build_app.sh             # 正式版，生成 build/拼贴.app
-swift build && swift run Collage   # 调试版（先 build，扩展的中转程序才会一起编译出来）
+./scripts/build_app.sh             # 正式版，生成 build/Piyi.app
+swift build && swift run Piyi   # 调试版（先 build，扩展的中转程序才会一起编译出来）
 swift test                         # 自动测试
 ```
 
-资料库在 `~/Library/Application Support/Collage/`。启动时设环境变量 `COLLAGE_ROOT=<目录>` 可以换一个资料库目录，试「新装用户第一次打开」时用。
+资料库在 `~/Library/Application Support/Piyi/`。启动时设环境变量 `PIYI_ROOT=<目录>` 可以换一个资料库目录，试「新装用户第一次打开」时用。
 
 ## 用到的模型
 
@@ -27,11 +27,11 @@ swift test                         # 自动测试
 | `Library` | 资料库、内容抽取 | 无 |
 | `Intelligence` | 模型接入、理解、搜索、灵感、分拣、讨论 | `Library` |
 | `Canvas` | 画布、卡片呈现 | `Library`、`Tokens` |
-| `Collage` | App：界面外壳、收集入口、放大查看 | 以上全部 |
+| `Piyi` | App：界面外壳、收集入口、放大查看 | 以上全部 |
 | `Tokens` | 设计数值：间距、动效时长、颜色、字号，只有数字 | 无 |
 | `Wire` | App、扩展中转程序、扩展之间的消息格式和连接 | 无 |
 
-另有两个独立的程序：扩展的中转程序 `CollageRelay`（由浏览器启动，只用 `Wire`），浏览器扩展本身 `Extension/`（TypeScript，`npm run build` 打包，正式版打包脚本会自动做）。
+另有两个独立的程序：扩展的中转程序 `PiyiRelay`（由浏览器启动，只用 `Wire`），浏览器扩展本身 `Extension/`（TypeScript，`npm run build` 打包，正式版打包脚本会自动做）。
 
 `Package.swift` 按上表写明依赖，编译器会挡住反方向的调用。三处特意的安排：
 
@@ -84,7 +84,7 @@ SPEECH_CHECK=1 swift test --filter SpeechLanguage     # 用系统朗读做一段
 
 ## 示例画板
 
-新装时放进「示例」画板的素材在 `Sources/Collage/Resources/Seed/`，清单是 `manifest.json`，每项可以带位置、宽高和旋转，引文和中文文件另带一份英文版（`en`），界面不是中文时换上。想重新摆：在 App 里把示例画板摆好，再运行
+新装时放进「示例」画板的素材在 `Sources/Piyi/Resources/Seed/`，清单是 `manifest.json`，每项可以带位置、宽高和旋转，引文和中文文件另带一份英文版（`en`），界面不是中文时换上。想重新摆：在 App 里把示例画板摆好，再运行
 
 ```sh
 python3 scripts/seed_export.py "画板名"
@@ -95,8 +95,8 @@ python3 scripts/seed_export.py "画板名"
 示例卡的标题、描述、标签、要点也是事先生成好、随 App 发的，新用户不用填密钥就能看到完整的卡。换了素材后重新生成：用一份全新的资料库、带着密钥，分别以中文和英文界面打开打包好的 App，等示例卡都理解完，再把两份结果写回清单：
 
 ```sh
-COLLAGE_ROOT=/tmp/seed-zh OPENROUTER_API_KEY=… build/拼贴.app/Contents/MacOS/Collage -AppleLanguages "(zh-Hans)"
-COLLAGE_ROOT=/tmp/seed-en OPENROUTER_API_KEY=… build/拼贴.app/Contents/MacOS/Collage -AppleLanguages "(en)"
+PIYI_ROOT=/tmp/seed-zh OPENROUTER_API_KEY=… build/Piyi.app/Contents/MacOS/Piyi -AppleLanguages "(zh-Hans)"
+PIYI_ROOT=/tmp/seed-en OPENROUTER_API_KEY=… build/Piyi.app/Contents/MacOS/Piyi -AppleLanguages "(en)"
 python3 scripts/seed_understood.py /tmp/seed-zh/library.sqlite zh
 python3 scripts/seed_understood.py /tmp/seed-en/library.sqlite en
 ```

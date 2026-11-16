@@ -1,6 +1,6 @@
 // 扩展后台：一启动就连上中转程序并一直保持连接（连接开着时浏览器不会让后台休眠）。
 // 做三件事：
-// 1. 你点工具栏上的图标，把眼前这个页面收进拼贴；在网页上右键「收进拼贴」，收右键的那张图、选中的那段话，或者整页；
+// 1. 你点工具栏上的图标，把眼前这个页面收进片羽；在网页上右键「收进片羽」，收右键的那张图、选中的那段话，或者整页；
 // 2. App 要读一个需要登录、靠脚本加载的网页时，在一个常驻的最小化窗口里开标签页读出来；
 // 3. App 要调一个要登录的接口时（B 站的字幕地址），带着浏览器里的登录状态请求，不开标签页。
 import { HOST, type Message } from './wire'
@@ -36,7 +36,7 @@ function onMessage(message: Message) {
   }
 }
 
-// MARK: 收进拼贴
+// MARK: 收进片羽
 
 /// 等一声回话，按收集的编号对上。先后两声：中转程序说存进收件箱了，App 说查过重了。要显示的话都由它们给（say），这里只管显示
 const acks = new Map<string, (reply: Message | null) => void>()
@@ -63,7 +63,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.action.onClicked.addListener(tab => collect(tab, page))
 
-/// take 交回要发给拼贴的内容：整页、选中的话，或者一张图
+/// take 交回要发给片羽的内容：整页、选中的话，或者一张图
 async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, page: string) => Promise<Partial<Message>>) {
   if (!tab?.id || !/^https?:/.test(tab.url ?? '')) return flag(t('cannotCollectPage'))
   const tabId = tab.id
@@ -84,7 +84,7 @@ async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, p
   if (!ack) return say(t('notConnected'), 'fail')
   if (ack.ok === false) return say(ack.say ?? t('notSaved'), 'fail')
   if (ack.queued) return say(ack.say ?? t('savedQueued'), 'done')
-  // 到这里已经落在拼贴的收件箱里，不会丢；等 App 查过重，说收下的是什么、是不是收过。它一时没回话，东西也在收件箱里
+  // 到这里已经落在片羽的收件箱里，不会丢；等 App 查过重，说收下的是什么、是不是收过。它一时没回话，东西也在收件箱里
   const verdict = await reply(id, 8000)
   await say(verdict?.say ?? t('savedLater'), verdict?.ok === false ? 'fail' : 'done')
 }
@@ -214,7 +214,7 @@ async function read(tabId: number, options: { settle: boolean; scroll: boolean }
   await chrome.scripting.executeScript({ target: { tabId }, files: ['read.js'] })
   const [injection] = await chrome.scripting.executeScript({
     target: { tabId },
-    func: (options) => (globalThis as any).collageRead(options),
+    func: (options) => (globalThis as any).piyiRead(options),
     args: [options],
   })
   return injection.result as { url: string; html: string }
