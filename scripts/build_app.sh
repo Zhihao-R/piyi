@@ -19,7 +19,7 @@ cp -R "$BIN/Piyi_Piyi.bundle" "$BIN/Piyi_Library.bundle" "$APP/Contents/Resource
 # 界面语言：系统是中文时用中文，其余用英文。翻译表放在 App 自己的 en.lproj 里，SwiftUI 的文字和 String(localized:) 默认都到这里查；
 # 中文就是代码里的原文。两个文件夹都在，系统自带的菜单（文件、编辑、窗口、帮助）和「设置」窗口标题也跟着切
 cp -R Localization/*.lproj "$APP/Contents/Resources/"
-# App 图标：Icon Composer 格式，actool 编译成 Assets.car（系统按层加玻璃质感）和给旧系统的 AppIcon.icns
+# App 图标：Icon Composer 格式，actool 编译成 Assets.car（系统按层加玻璃质感），另附一份 AppIcon.icns
 xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --app-icon AppIcon --target-device mac \
   --minimum-deployment-target 26.0 --platform macosx --output-partial-info-plist /dev/null >/dev/null
 # llama.cpp 是动态库：放进 Contents/Frameworks，并告诉程序去那里找。本机模型文件不进安装包，在设置里下载

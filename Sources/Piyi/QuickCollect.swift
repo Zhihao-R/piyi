@@ -27,7 +27,7 @@ final class QuickCollect: NSObject {
             MainActor.assumeIsolated { Unmanaged<QuickCollect>.fromOpaque(me!).takeUnretainedValue().takeClipboard() }
             return noErr
         }, 1, &pressed, Unmanaged.passUnretained(self).toOpaque(), nil)
-        RegisterEventHotKey(UInt32(kVK_ANSI_C), UInt32(controlKey | optionKey), EventHotKeyID(signature: OSType(0x434C_4C47), id: 1),
+        RegisterEventHotKey(UInt32(kVK_ANSI_C), UInt32(controlKey | optionKey), EventHotKeyID(signature: OSType(0x5049_5949), id: 1),
                             GetApplicationEventTarget(), 0, &hotKey)
     }
 

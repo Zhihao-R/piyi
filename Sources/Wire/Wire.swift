@@ -5,9 +5,9 @@
 import Foundation
 
 public enum Bridge {
-    /// 浏览器按这个名字找登记文件，扩展按它连中转程序
+    /// 浏览器按这个名字找登记文件，扩展按它连中转程序。Chrome 的宿主名不许有连字符，所以是 zhihao_r，不是 bundle id 里的 zhihao-r
     public static let hostName = "io.github.zhihao_r.piyi.relay"
-    /// 扩展的编号，由 Extension/manifest.json 里的 key 决定，固定不变。登记文件只允许它连
+    /// 扩展的编号，由 Extension/static/manifest.json 里的 key 决定，固定不变。登记文件只允许它连
     public static let extensionID = "cbkgaojdimngmgnhhpjbljeeimhabcbb"
 
     /// socket、收件箱、装给浏览器的扩展都在这里，只给当前用户。
