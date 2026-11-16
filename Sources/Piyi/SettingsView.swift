@@ -53,7 +53,7 @@ struct SettingsView: View {
             } header: {
                 Text("手机")
             } footer: {
-                Text("在 iPhone 上分享到「收集片羽」。").foregroundStyle(.secondary)
+                Text("在 iPhone 上分享到「Collect To Piyi」。").foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

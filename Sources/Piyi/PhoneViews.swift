@@ -12,7 +12,7 @@ struct PhoneRow: View {
         HStack(spacing: 10) {
             StatusDot(on: inbox.received != nil)
             VStack(alignment: .leading, spacing: 2) {
-                Text("收集片羽")
+                Text(verbatim: "Collect To Piyi")
                 Group {
                     if let date = inbox.received { Text("上次接收：\(date.formatted(.relative(presentation: .named)))") } else { Text("尚未接收") }
                 }
@@ -82,7 +82,7 @@ struct PhoneGuide: View {
                             .buttonStyle(.link).font(.callout)
                         }
                     }
-                    GuideStep(number: 2, text: String(localized: "在相册中分享一张照片，选择「收集片羽」")) { EmptyView() }
+                    GuideStep(number: 2, text: String(localized: "在相册中分享一张照片，选择「Collect To Piyi」")) { EmptyView() }
                     HStack(spacing: 8) {
                         StatusDot(on: false)
                         Text("等待接收").font(.callout).foregroundStyle(.secondary)

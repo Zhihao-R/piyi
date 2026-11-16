@@ -20,7 +20,7 @@ enum OnboardingStep: String, CaseIterable {
         case .keys: String(localized: "用于生成标题、描述、标签和总结。可稍后填写，已收集的卡片会自动补全。")
         case .model: String(localized: "用于搜索，离线可用。仅需下载一次。")
         case .browser: String(localized: "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，片羽也交给它在后台打开。")
-        case .phone: String(localized: "在 iPhone 上分享到「收集片羽」，内容经 iCloud 云盘存入资料库。")
+        case .phone: String(localized: "在 iPhone 上分享到「Collect To Piyi」，内容经 iCloud 云盘存入资料库。")
         }
     }
 }

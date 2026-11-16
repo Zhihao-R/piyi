@@ -13,7 +13,7 @@ You can collect from anywhere:
 - Drag files or links onto a board, or paste them; the cards land on that board.
 - Browser extension (Chrome, Edge, Arc): click the Piyi icon in the toolbar to collect the page you are reading, or right-click a page and choose Collect to Piyi.
 - In other apps: copy, then press ⌃⌥C; or select text or files, right-click, and choose Services › Collect to Piyi.
-- iPhone: share to the shortcut Piyi sets up for you, which delivers items to your Mac through iCloud Drive.
+- iPhone: share to the “Collect To Piyi” shortcut, which delivers items to your Mac through iCloud Drive.
 
 Cards collected from the browser, other apps, or your phone land in Unsorted first.
 
@@ -66,7 +66,7 @@ Piyi opens on a Sample board whose cards already have descriptions and key point
 1. Connect a cloud model. Pick a provider and paste its API key. Built in are OpenRouter, DeepSeek, Volcano Engine, Alibaba Cloud Model Studio, SiliconFlow, Zhipu GLM, Kimi, MiniMax, Anthropic, Gemini, and OpenAI, plus any other OpenAI-compatible endpoint. Without one you can still collect and arrange, but new cards get no title, description, key points, or tags, nothing is auto-sorted, and Inspire and Discuss are unavailable.
 2. Download the local model (about 600 MB). Search runs on it and works offline once downloaded.
 3. Install the browser extension. Follow the steps to load the extension bundled with the app from your browser's extensions page. Piyi also uses it to open pages that need a login or load through scripts, in the background.
-4. Collect from your phone. Add the shortcut on your iPhone; your iPhone and Mac must be signed in to the same Apple Account, with iCloud Drive turned on on your Mac.
+4. Collect from your phone. Add the “Collect To Piyi” shortcut on your iPhone; your iPhone and Mac must be signed in to the same Apple Account, with iCloud Drive turned on on your Mac.
 
 ## Where your data lives and what leaves your Mac
 

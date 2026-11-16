@@ -78,12 +78,12 @@
 "回答" = "Answer";
 "图片" = "Images";
 "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，片羽也交给它在后台打开。" = "Collect the page you’re viewing in Chrome, Edge, or Arc with one click. Piyi also uses it to open pages that need sign-in or scripts in the background.";
-"在 iPhone 上分享到「收集片羽」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect to Piyi” on your iPhone; items arrive in your library through iCloud Drive.";
+"在 iPhone 上分享到「Collect To Piyi」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect To Piyi” on your iPhone; items arrive in your library through iCloud Drive.";
 "iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到" = "Your iPhone and this Mac must be signed in to the same Apple Account with iCloud Drive turned on, or nothing will arrive";
 "在浏览器里打开扩展页，打开「开发者模式」（Edge 里叫「开发人员模式」）" = "Open your browser’s extensions page and turn on “Developer mode”";
 "在浏览器里点工具栏上的片羽图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把片羽固定上去。" = "Click the Piyi icon in your browser’s toolbar to collect the page you’re viewing. If you don’t see it, click the puzzle-piece icon and pin Piyi.";
 "在画板上写一张文字卡（也可以双击空白处）" = "Write a note on the board (or double-click empty space)";
-"在相册中分享一张照片，选择「收集片羽」" = "Share a photo from Photos and choose “Collect to Piyi”";
+"在相册中分享一张照片，选择「Collect To Piyi」" = "Share a photo from Photos and choose “Collect To Piyi”";
 "在网页上右键「收进片羽」：点在图上收这张图，选中了文字收这段话，其余收整页。要登录、靠脚本加载的网页，也交给它在你的浏览器里后台打开。\n别的 App 里：复制后按 ⌃⌥C，或者选中文字、文件后右键「服务」→「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”: on an image it collects the image, on selected text it collects the text, anywhere else the whole page. Pages that need sign-in or scripts are opened in your browser in the background.\nIn other apps: copy and press ⌃⌥C, or select text or files and right-click Services → “Collect to Piyi”.";
 "在访达中显示" = "Show in Finder";
 "填上密钥才能用灵感" = "Add a key to use Inspire";
@@ -165,7 +165,6 @@
 "收成文字卡" = "Save as Note";
 "收起" = "Hide";
 "收起（Esc）" = "Hide (Esc)";
-"收集片羽" = "Collect to Piyi";
 "收集没完成：%@" = "Couldn’t finish collecting: %@";
 "放入画板入口" = "Add Board Link";
 "放回" = "Put Back";
@@ -399,7 +398,7 @@
 "%@。" = " %@.";
 "用于搜索，离线可用。" = "Powers search and works offline.";
 "在网页上右键「收进片羽」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”. In other apps, copy and press ⌃⌥C, or right-click Services › “Collect to Piyi”.";
-"在 iPhone 上分享到「收集片羽」。" = "Share to “Collect to Piyi” on your iPhone.";
+"在 iPhone 上分享到「Collect To Piyi」。" = "Share to “Collect To Piyi” on your iPhone.";
 "密钥" = "Key";
 "未填写" = "Not set";
 "填入 %@ 的密钥" = "Enter your %@ key";
