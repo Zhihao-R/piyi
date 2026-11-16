@@ -94,6 +94,10 @@ struct Shell: View {
                         .help("把这里的卡重新分拣一遍，有把握的放进对应的画板")
                 }
             }
+            // 有声音在播：不论在哪个画板、开没开放大查看，都能在这里暂停、回到那张卡
+            if model.audio.track != nil {
+                ToolbarItem { NowPlaying(audio: model.audio) { model.detail = $0 } }
+            }
             // 展开、收起讨论栏；收起时有新回答，按钮上亮一个点
             ToolbarItem(placement: .primaryAction) {
                 Button { model.discussions.isOpen.toggle() } label: {
@@ -126,11 +130,12 @@ struct Shell: View {
             // 每张卡一块面板：换了卡是新的一块（播放器、翻到第几张图都不带过去），换下去的那块自己淡完
             ForEach(model.panels, id: \.self) { id in
                 let current = id == model.detail
-                DetailView(store: store, card: id, focus: current ? model.focus : nil, discuss: discussButton(id),
+                DetailView(store: store, card: id, focus: current ? model.focus : nil, audio: model.audio, discuss: discussButton(id),
                            spot: current ? model.spot : nil, stayed: current && model.stayed, closing: current && model.closing, away: !current)
                     { model.closeDetail() }
                     follow: { model.follow($0, of: id) }
                     refetch: { model.refetch(id) }
+                    rewrite: { model.rewrite(id, to: $0) }
                     lift: { model.lift($0) }
                     closed: { current ? model.finishClosing() : model.dismissed(id) }
                     // 进来、淡出都由它自己做；淡出途中不接点击

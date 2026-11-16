@@ -60,12 +60,12 @@ public struct WholeText: Recipe {
             case .question(let text):
                 say([.text(text)])
             case .answer(let answer):
-                messages.append(.text(.assistant, answer.text))
-            case .calls(let said, let calls):
+                messages.append(ChatMessage(.assistant, [.text(answer.text)], thought: answer.thought))
+            case .calls(let said, let thought, let calls):
                 // 中途停下、没等到结果的调用不交给模型
                 let done = calls.filter { answered.contains($0.id) }
                 guard !done.isEmpty else { continue }
-                messages.append(ChatMessage(.assistant, said.isEmpty ? [] : [.text(said)], calls: done))
+                messages.append(ChatMessage(.assistant, said.isEmpty ? [] : [.text(said)], calls: done, thought: thought))
                 pending = Set(done.map(\.id))
             case .result(let result):
                 messages.append(ChatMessage(.tool, [.text(result.text)], callID: result.call))

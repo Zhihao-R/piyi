@@ -85,7 +85,8 @@ struct CardArt {
             if let d = card.duration { pen.badges([Self.clock(d)], w: t, bottom: true, trailing: true) }
         case .audio:
             pen.fill(Palette.card.now)
-            pen.waveform(in: CGRect(x: w * 0.3, y: size.height * 0.18, width: w * 0.4, height: size.height * 0.32))
+            let wave = Self.waveform
+            pen.waveform(in: CGRect(x: w * wave.minX, y: size.height * wave.minY, width: w * wave.width, height: size.height * wave.height))
             let p = t * CardType.padding
             pen.text(card.title.isEmpty ? (card.source ?? "") : card.title, size: t * CardType.title, weight: .semibold,
                      color: Palette.ink.now, in: CGRect(x: p, y: size.height * 0.56, width: w - p * 2, height: size.height * 0.28))
@@ -95,6 +96,9 @@ struct CardArt {
         state(card, &pen)
         if unseen { pen.badges([String(localized: "新")], w: t, trailing: true) }
     }
+
+    /// 音频卡上声波占的那一块（相对卡片宽高）。播放钮摆在它正中（见 CanvasView.playButtons）
+    static let waveform = CGRect(x: 0.3, y: 0.18, width: 0.4, height: 0.32)
 
     /// 短文：引文卡，宋体 / 衬线，留白多
     private func quote(_ card: CardFace, _ pen: inout Pen) {
@@ -359,7 +363,7 @@ struct Pen {
 
     /// 视频的播放标记：画面中间一个半透明圆，里面一个三角
     func playMark(w: CGFloat) {
-        let d = w * 0.16
+        let d = w * CardType.playMark
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
         ctx.setFillColor(Palette.badge.cg)
         ctx.fillEllipse(in: flip(CGRect(x: c.x - d / 2, y: c.y - d / 2, width: d, height: d)))

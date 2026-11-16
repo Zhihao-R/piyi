@@ -1,5 +1,6 @@
 import SwiftUI
 import Library
+import Canvas
 import Tokens
 
 /// 一张卡的文字，放大查看里只有这一种版式，从上到下越来越细：出处和时间、标题、一句描述、要点、全文、转录、标签。
@@ -23,6 +24,10 @@ struct Reader: View {
     /// 点了一条要点：滚到它依据的那一段，视频从那一秒播
     let jump: (Passage) -> Void
     let refetch: () -> Void
+    /// 你写的文字卡改了字：存下来
+    let rewrite: (String) -> Void
+    /// 文字卡正改到的样子；nil 是还没动过
+    @State private var draft: String?
 
     private var type: Reading.Scale { compact ? Reading.narrow : Reading.wide }
     /// 文章：正文里记着配图位置，图回到原文那一段之后
@@ -59,7 +64,10 @@ struct Reader: View {
                 status
             }
             if let summary = card.summary { Points(summary: summary, sources: sources, size: type.lead, jump: jump) }
-            if isArticle { article } else if let bodyText { LongText(bodyText, highlight: highlight, onLink: link) }
+            // 你写的文字卡在这里也能改：从资料库、搜索、讨论里点开的，不用回到它所在的画板。废纸篓里的不改
+            if card.form == .note, card.trashedAt == nil {
+                NoteField(text: Binding(get: { draft ?? card.text ?? "" }, set: { draft = $0 }), type: type, highlight: highlight, commit: rewrite)
+            } else if isArticle { article } else if let bodyText { LongText(bodyText, highlight: highlight, onLink: link) }
             if let transcriptText {
                 VStack(alignment: .leading, spacing: type.gap / 2) {
                     // 平台的字幕和本机转出来的，可信程度不同
@@ -165,6 +173,101 @@ struct Reader: View {
     }
 }
 
+/// 你写的文字卡的正文，能直接改。文本框里是原文，标记变淡、标题变大，和画布上写字时同一种样子（见 NoteEditor）。
+/// 点到别处、按 Esc、关掉放大查看时存
+private struct NoteField: NSViewRepresentable {
+    @Binding var text: String
+    let type: Reading.Scale
+    var highlight: LongText.Highlight?
+    let commit: (String) -> Void
+
+    func makeNSView(context: Context) -> NSTextView {
+        let view = NSTextView(usingTextLayoutManager: false)
+        view.drawsBackground = false
+        view.isRichText = false
+        view.allowsUndo = true
+        view.textContainerInset = .zero
+        view.textContainer?.lineFragmentPadding = 0
+        view.textContainer?.widthTracksTextView = true
+        view.delegate = context.coordinator
+        view.string = text
+        context.coordinator.saved = text
+        context.coordinator.restyle(view)
+        return view
+    }
+
+    func updateNSView(_ view: NSTextView, context: Context) {
+        let coordinator = context.coordinator
+        (coordinator.edited, coordinator.commit) = ({ text = $0 }, commit)
+        if let highlight, coordinator.flashed != highlight.id {
+            coordinator.flashed = highlight.id
+            DispatchQueue.main.async { LongText.flash(highlight.text, in: view) }
+        }
+    }
+
+    /// 写多了往下长：量法和 LongText 一样
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView view: NSTextView, context: Context) -> CGSize? {
+        guard let width = proposal.width, width.isFinite, let container = view.textContainer, let layout = view.layoutManager else { return nil }
+        container.size = NSSize(width: width, height: .greatestFiniteMagnitude)
+        layout.ensureLayout(for: container)
+        let height = ceil(layout.usedRect(for: container).height)
+        if view.bounds.width > 0 { container.size = NSSize(width: view.bounds.width, height: .greatestFiniteMagnitude) }
+        return CGSize(width: width, height: max(height, type.body + type.lineSpacing))
+    }
+
+    static func dismantleNSView(_ view: NSTextView, coordinator: Coordinator) { coordinator.save(view) }
+
+    func makeCoordinator() -> Coordinator { Coordinator(style: DetailView.markdown(type)) }
+
+    @MainActor final class Coordinator: NSObject, NSTextViewDelegate {
+        let style: Markdown.Style
+        var edited: ((String) -> Void)?
+        var commit: ((String) -> Void)?
+        /// 已经存下的那一版：没变就不再存
+        var saved = ""
+        var flashed: UUID?
+
+        init(style: Markdown.Style) { self.style = style }
+
+        /// 每改一个字重新上一遍样式。拼音还没选字时不动，免得打断输入法
+        func restyle(_ view: NSTextView) {
+            guard let storage = view.textStorage, !view.hasMarkedText() else { return }
+            let styled = Markdown.styled(storage.string, style: style)
+            storage.beginEditing()
+            styled.enumerateAttributes(in: NSRange(location: 0, length: styled.length)) { attributes, range, _ in
+                storage.setAttributes(attributes, range: range)
+            }
+            storage.endEditing()
+            view.typingAttributes = Markdown.styled(" ", style: style).attributes(at: 0, effectiveRange: nil)
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let view = notification.object as? NSTextView else { return }
+            restyle(view)
+            edited?(view.string)
+        }
+
+        func textDidEndEditing(_ notification: Notification) {
+            if let view = notification.object as? NSTextView { save(view) }
+        }
+
+        /// 写空了不存：删卡是画布上的事，在这里字一删光卡就没了太突然
+        func save(_ view: NSTextView) {
+            let text = view.string.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty, text != saved else { return }
+            saved = text
+            commit?(text)
+        }
+
+        /// Esc：写完（再按一次才关放大查看）
+        func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            guard selector == #selector(NSResponder.cancelOperation(_:)) else { return false }
+            textView.window?.makeFirstResponder(nil)
+            return true
+        }
+    }
+}
+
 /// 要点：浅底方块里一行一条，「· 」开头的行画成圆点，其余的行（如「仅根据简介」）当小字说明。
 /// 找得到依据的那条是个按钮，点了跳到原文那一段；转录里的依据在末尾标出时间
 private struct Points: View {
@@ -198,17 +301,17 @@ private struct Points: View {
     private func row(_ point: String, time: Int?) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
             Circle().fill(.tertiary).frame(width: 4, height: 4).alignmentGuide(.firstTextBaseline) { $0[.bottom] + 4 }
-            (Text(point) + Text(time.map { "　" + Self.clock($0) } ?? "").foregroundStyle(.tertiary).monospacedDigit())
+            (Text(point) + Text(time.map { "　" + clockText($0) } ?? "").foregroundStyle(.tertiary).monospacedDigit())
                 .font(.system(size: size)).lineSpacing(5).multilineTextAlignment(.leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 2)
     }
+}
 
-    /// 1:02:03、12:30
-    static func clock(_ seconds: Int) -> String {
-        seconds >= 3600 ? String(format: "%d:%02d:%02d", seconds / 3600, seconds % 3600 / 60, seconds % 60) : String(format: "%d:%02d", seconds / 60, seconds % 60)
-    }
+/// 1:02:03、12:30：要点末尾的时间、播放条上的进度
+func clockText(_ seconds: Int) -> String {
+    seconds >= 3600 ? String(format: "%d:%02d:%02d", seconds / 3600, seconds % 3600 / 60, seconds % 60) : String(format: "%d:%02d", seconds / 60, seconds % 60)
 }
 
 /// 正文里的一张图：铺满栏宽，在后台解码，没到之前留一块底色

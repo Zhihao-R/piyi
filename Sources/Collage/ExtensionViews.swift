@@ -30,9 +30,9 @@ extension BrowserExtension.Status {
 
     var summary: String {
         switch self {
-        case .connected(let names): String(localized: "已连上 \(names.formatted(.list(type: .and)))")
-        case .idle: String(localized: "没连上：浏览器开着时会自动连上")
-        case .absent: String(localized: "还没安装")
+        case .connected(let names): String(localized: "已连接 \(names.formatted(.list(type: .and)))")
+        case .idle: String(localized: "未连接，打开浏览器后自动连接")
+        case .absent: String(localized: "未安装")
         }
     }
 }

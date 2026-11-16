@@ -2,39 +2,58 @@ import SwiftUI
 import Library
 import Intelligence
 
-/// 设置：按服务方填密钥、下载本机模型、浏览器扩展、手机
+/// 设置：云端服务商和密钥、下载本机模型、浏览器扩展、手机
 struct SettingsView: View {
     let model: AppModel
 
     var body: some View {
+        let vendor = model.cloudSetup.vendor
         Form {
             Section {
-                ForEach(model.cloud, id: \.name) { KeyField(provider: $0, model: model) }
+                CloudAccess(model: model)
+                if model.cloudModelUnknown {
+                    Text("OpenRouter 上未找到该模型").font(.caption).foregroundStyle(.secondary)
+                } else if let failure = model.cloudFailure {
+                    Text("上次请求未成功。\(failure)").font(.caption).foregroundStyle(.secondary)
+                }
+                // 判断可以另用一个更快的模型。OpenRouter 默认用专做判断的 Jev；别家默认和上面的模型相同，个别有另外推荐的
+                CloudField(title: String(localized: "判断模型"), prompt: vendor == .openRouter ? String(localized: "Jev（推荐）") : vendor.defaultJudgeModel ?? String(localized: "与上方模型相同"),
+                           path: \.judgeModel, vendor: vendor, model: model)
+                if vendor.canSetThinking {
+                    Toggle("讨论时深入思考", isOn: Binding(get: { model.cloudSetup.thinking }, set: { on in
+                        var setup = model.cloudSetup
+                        setup.thinking = on
+                        model.setCloud(setup)
+                    }))
+                }
             } header: {
-                Text("服务方")
+                Text("云端模型")
             } footer: {
-                Text("标题、描述、标签和总结交给云端生成。密钥存在本机的一个文件里，只有你的账户能读。").foregroundStyle(.secondary)
+                Text(String(localized: "用于生成标题、描述、标签和总结，以及搜索和讨论。判断模型用于理解搜索语句、排序结果，宜选较快的模型。")
+                     + (vendor.canSetThinking ? String(localized: "深入思考时回答更细致，也更慢。") : "") + String(localized: "密钥仅保存在本机。")
+                     + (model.sortingUnavailable.map { String(localized: "\($0)。") } ?? ""))
+                    .foregroundStyle(.secondary)
             }
             Section {
                 LocalModelRow(model: model)
             } header: {
                 Text("本机模型")
             } footer: {
-                Text("向量在本机算：离线也能搜。").foregroundStyle(.secondary)
+                Text("用于搜索，离线可用。").foregroundStyle(.secondary)
             }
             Section {
                 ExtensionRow(model: model)
             } header: {
                 Text("浏览器扩展")
             } footer: {
-                Text("在网页上右键「收进拼贴」：点在图上收这张图，选中了文字收这段话，其余收整页。要登录、靠脚本加载的网页，也交给它在你的浏览器里后台打开。\n别的 App 里：复制后按 ⌃⌥C，或者选中文字、文件后右键「服务」→「收进拼贴」。").foregroundStyle(.secondary)
+                Text("在网页上右键「收进拼贴」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进拼贴」。").foregroundStyle(.secondary)
             }
             Section {
                 PhoneRow(inbox: model.phoneInbox)
             } header: {
                 Text("手机")
             } footer: {
-                Text(OnboardingStep.phone.detail).foregroundStyle(.secondary)
+                Text("在 iPhone 上分享到「收集拼贴」。").foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -47,11 +66,13 @@ struct SettingsView: View {
 struct KeyField: View {
     let provider: any Keyed
     let model: AppModel
+    /// 引导里没有每行左边的标题，提示语要自己说明填什么
+    var labeled = true
     @State private var key = ""
 
     var body: some View {
         HStack {
-            SecureField("\(provider.name) 密钥", text: $key, prompt: Text(prompt))
+            SecureField("密钥", text: $key, prompt: Text(prompt))
                 .onSubmit(save)
             Button("保存", action: save).disabled(key.isEmpty)
             if state != .missing, key.isEmpty { Button("删除") { model.setKey("", for: provider) } }
@@ -62,9 +83,9 @@ struct KeyField: View {
 
     private var prompt: String {
         switch state {
-        case .missing: String(localized: "填入密钥")
-        case .rejected: String(localized: "密钥被拒绝，请换一把")
-        case .ready: String(localized: "已填，输入新的可以替换")
+        case .missing: labeled ? String(localized: "未填写") : String(localized: "填入 \(displayed(provider.name)) 的密钥")
+        case .rejected: String(localized: "密钥无效，请更换")
+        case .ready: String(localized: "已填写")
         }
     }
 
@@ -111,7 +132,7 @@ struct StatusBar: View {
                     }
                 }
                 if c.waitingKey > 0 {
-                    Button(model.keyRejected ? "密钥被拒绝，\(c.waitingKey) 张等新密钥" : "\(c.waitingKey) 张等待密钥") { openSettings() }.buttonStyle(.link)
+                    Button(model.keyRejected ? "密钥无效，\(c.waitingKey) 张等待更换" : model.keyStates.values.contains(.missing) ? "\(c.waitingKey) 张等待密钥" : "\(c.waitingKey) 张等待云端模型设置") { openSettings() }.buttonStyle(.link)
                 }
                 if c.failed > 0 {
                     HStack(spacing: 4) {

@@ -86,6 +86,20 @@
 			<string>%lld 张理解失败</string>
 		</dict>
 	</dict>
+	<key>%lld 张等待云端模型设置</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@n0@</string>
+		<key>n0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 张等待云端模型设置</string>
+		</dict>
+	</dict>
 	<key>%lld 张等待密钥</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
@@ -154,6 +168,20 @@
 			<string>lld</string>
 			<key>other</key>
 			<string>其中 %lld 张卡不在任何别的画板里。别的画板里指向它的入口会一起移除。</string>
+		</dict>
+	</dict>
+	<key>密钥无效，%lld 张等待更换</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@n0@</string>
+		<key>n0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>密钥无效，%lld 张等待更换</string>
 		</dict>
 	</dict>
 	<key>密钥被拒绝，%lld 张等新密钥</key>

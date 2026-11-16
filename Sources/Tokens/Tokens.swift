@@ -165,6 +165,8 @@ public enum CardType {
     public static let bodyLineSpacing = 0.012
     /// 角标文字
     public static let badge = 0.038
+    /// 播放标记的直径：视频封面正中的那个、音频卡上的播放钮
+    public static let playMark = 0.16
     /// 要点和要点之间的空隙
     public static let pointSpacing = 0.016
     /// 多短算短文：短文做引文卡，长文显示标题和开头几段

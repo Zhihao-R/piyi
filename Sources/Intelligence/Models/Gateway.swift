@@ -157,8 +157,11 @@ public struct ChatMessage: Sendable, Equatable {
     /// 工具结果对应哪次调用
     public var callID: String?
 
-    public init(_ role: Role, _ parts: [Part], calls: [ToolCall] = [], callID: String? = nil) {
-        (self.role, self.parts, self.calls, self.callID) = (role, parts, calls, callID)
+    /// 助手这一轮想的内容：有的服务方要求原样带回去
+    public var thought: String?
+
+    public init(_ role: Role, _ parts: [Part], calls: [ToolCall] = [], callID: String? = nil, thought: String? = nil) {
+        (self.role, self.parts, self.calls, self.callID, self.thought) = (role, parts, calls, callID, thought)
     }
 
     public static func text(_ role: Role, _ text: String) -> ChatMessage { ChatMessage(role, [.text(text)]) }
@@ -182,6 +185,8 @@ public struct ToolSpec: Sendable, Equatable {
 
 public enum ChatChunk: Sendable, Equatable {
     case text(String)
+    /// 想的内容，不给人看
+    case thought(String)
     case call(ToolCall)
     case done(ChatUsage)
 }
@@ -218,12 +223,13 @@ public final class Gateway: Sendable {
     let transcribers: [any Transcription]
     let conversers: [any Conversation]
 
-    public init(embedder: (any Embedding)?, generators: [any Generation], judges: [any Judgment] = [], transcribers: [any Transcription] = [],
-                conversers: [any Conversation] = []) {
+    /// judging：拿来冒充判断的生成服务方（可以另用一个更快的模型）；不给就用 generators
+    public init(embedder: (any Embedding)?, generators: [any Generation], judges: [any Judgment] = [], judging: [any Generation]? = nil,
+                transcribers: [any Transcription] = [], conversers: [any Conversation] = []) {
         self.embedder = embedder
         self.generators = generators
         // 专门的判断服务方在前；要看图时、没有专门的服务方时用生成能力来判断
-        self.judges = judges + generators.map { GeneratedJudgment(generation: $0, careful: false) }
+        self.judges = judges + (judging ?? generators).map { GeneratedJudgment(generation: $0, careful: false) }
         dedicatedJudges = judges
         self.transcribers = transcribers
         self.conversers = conversers
@@ -314,6 +320,9 @@ public final class Gateway: Sendable {
 
     /// 判断能力现在能不能用（搜索的理解、精排、主题筛选）
     public var canJudge: Bool { judges.contains(where: \.isReady) }
+
+    /// 自动分拣现在能不能用：它只认专门的判断服务方（见 judge 的 fallback）
+    public var canSort: Bool { dedicatedJudges.contains(where: \.isReady) }
 
     /// 能用的服务方（下标，按排列顺序）；一个都不能用时抛 notReady
     private func ready(_ providers: [any Provider]) throws -> [Int] {

@@ -435,6 +435,39 @@ final class Overlay: QuietLayer {
 
     private static let dotTransform = CATransform3DMakeScale(dotSize / knobSize, dotSize / knobSize, 1)
 
+    /// 音频卡的播放钮：纸样卡片上的东西用卡片自己的颜色，墨色的圆、纸色的三角，深浅色跟着换；正在出声的那张是暂停。
+    /// 只给悬停的和在出声的那张，最多两个，不随卡片数量增加
+    private var playKnobs: [QuietLayer] = []
+    /// 钮在屏幕上最小、最大多大（屏幕点）：再小点不准，就不画了
+    static let playKnob: ClosedRange<CGFloat> = 20...44
+
+    func setPlayButtons(_ list: [(center: CGPoint, size: CGFloat, pause: Bool)]) {
+        while playKnobs.count < list.count {
+            let knob = QuietLayer(), glyph = QuietLayer()
+            knob.opacity = 0
+            glyph.contentsGravity = .resizeAspect
+            knob.addSublayer(glyph)
+            addSublayer(knob)
+            playKnobs.append(knob)
+        }
+        for (i, knob) in playKnobs.enumerated() {
+            guard i < list.count else {
+                if knob.opacity != 0 { ease(knob, "opacity", to: 0) }
+                continue
+            }
+            let (center, size, pause) = list[i]
+            if knob.opacity == 0 { ease(knob, "opacity", to: 1) }
+            knob.backgroundColor = Palette.ink.now.cg
+            knob.bounds = CGRect(x: 0, y: 0, width: size, height: size)
+            knob.position = center
+            knob.cornerRadius = size / 2
+            let glyph = knob.sublayers![0]
+            glyph.frame = knob.bounds.insetBy(dx: size * 0.3, dy: size * 0.3)
+            let glyphs = pause ? Self.pauseGlyph : Self.playGlyph
+            glyph.contents = Screen.dark ? glyphs.dark : glyphs.light
+        }
+    }
+
     /// 浮层的淡入淡出：从屏幕上现在的样子过渡到 value
     private func ease(_ l: CALayer, _ key: String, to value: Any, from: Any? = nil) {
         let a = CABasicAnimation(keyPath: key)
@@ -445,19 +478,24 @@ final class Overlay: QuietLayer {
         l.add(a, forKey: key)
     }
 
-    /// 旋转钮里的白色箭头
-    private static let rotateGlyph: CGImage? = {
-        let config = NSImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
-        guard let symbol = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: nil)?.withSymbolConfiguration(config) else { return nil }
+    /// 旋转钮里的白色箭头；播放钮里纸色的三角和暂停，浅色、深色各一份
+    private static let rotateGlyph = glyph("arrow.clockwise", pointSize: 12, color: Palette.badgeInk)
+    private static let playGlyph = (light: glyph("play.fill", pointSize: 20, color: Palette.card.light), dark: glyph("play.fill", pointSize: 20, color: Palette.card.dark))
+    private static let pauseGlyph = (light: glyph("pause.fill", pointSize: 20, color: Palette.card.light), dark: glyph("pause.fill", pointSize: 20, color: Palette.card.dark))
+
+    /// 系统符号画成一种颜色的图
+    private static func glyph(_ name: String, pointSize: CGFloat, color: RGBA) -> CGImage? {
+        let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)
+        guard let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(config) else { return nil }
         let image = NSImage(size: symbol.size, flipped: false) { r in
             symbol.draw(in: r)
-            NSColor(cgColor: Palette.badgeInk.cg)!.set()
+            NSColor(cgColor: color.cg)!.set()
             r.fill(using: .sourceAtop)
             return true
         }
         var rect = CGRect(origin: .zero, size: CGSize(width: symbol.size.width * Screen.scale, height: symbol.size.height * Screen.scale))
         return image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
-    }()
+    }
 
     /// 裁剪：整张图里裁剪框以外的部分压暗，裁剪框四角画控制点
     func setCrop(full: CGRect?, crop: CGRect?) {

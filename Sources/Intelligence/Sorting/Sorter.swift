@@ -71,7 +71,7 @@ public actor Sorter {
     /// 能分拣的卡按收集时间从新到旧，逐张判断、写入。快照每轮读一次，放进去的卡随手记进快照。
     /// 判断不了（Jev 不可用、出错、超时）或写入失败，这张卡保持未分拣，这一轮停下，等下次被叫醒
     private func pass() async {
-        guard gateway.canJudge, let model = gateway.embeddingModel,
+        guard gateway.canSort, let model = gateway.embeddingModel,
               let cards = try? await store.unsortedCards(), let vectors = try? await store.vectorBases() else { return }
         let ready = cards.filter { Understander.isUnderstood($0, vector: vectors[$0.id!], model: model) }.sorted { $0.collectedAt > $1.collectedAt }
         guard !ready.isEmpty, let rows = try? await store.searchRows(), let boards = try? await store.boards(),

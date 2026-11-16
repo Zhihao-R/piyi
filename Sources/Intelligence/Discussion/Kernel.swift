@@ -10,7 +10,7 @@ public final class DiscussionKernel: Sendable {
     let recipe: any Recipe
 
     /// 一个问题最多走几轮工具（暂定），到了就让模型用已有的信息作答
-    public static let toolRounds = 5
+    public static let toolRounds = 20
     /// 工具交给模型的文字最长多少字（暂定）
     static let resultLimit = 4000
     /// 桌上的卡最多占模型上下文的多少（暂定），剩下的留给对话和回答
@@ -62,7 +62,7 @@ public final class DiscussionKernel: Sendable {
         let answered = Set(after.compactMap { if case .result(let r) = $0.what { r.call } else { nil } })
         var round = 0
         for event in after {
-            guard case .calls(_, let calls) = event.what else { continue }
+            guard case .calls(_, _, let calls) = event.what else { continue }
             round += 1
             let missing = calls.filter { !answered.contains($0.id) }
             if !missing.isEmpty { return .runTools(missing, round: round) }
@@ -95,13 +95,14 @@ public final class DiscussionKernel: Sendable {
                 var chat = recipe.chat(desk: desk, events: events, tools: tools.map(\.spec))
                 chat.toolsAllowed = round < Self.toolRounds
                 if let length = await gateway.contextLength(), Self.estimate(chat) > length { throw TooLong() }
-                var text = "", calls: [ToolCall] = []
+                var text = "", thought = "", calls: [ToolCall] = []
                 for try await chunk in try gateway.converse(chat) {
                     switch chunk {
                     case .text(let piece):
                         if report.firstText == nil { report.firstText = ContinuousClock.now - started }
                         text += piece
                         progress(.writing(text))
+                    case .thought(let piece): thought += piece
                     case .call(let call): calls.append(call)
                     case .done(let usage):
                         report.usage.input += usage.input
@@ -112,9 +113,10 @@ public final class DiscussionKernel: Sendable {
                 }
                 try Task.checkCancellation()
                 if !calls.isEmpty, chat.toolsAllowed {
-                    try await store.append([.calls(said: text, calls)], to: discussion)
+                    try await store.append([.calls(said: text, thought: thought.isEmpty ? nil : thought, calls)], to: discussion)
                 } else {
-                    let answer = Citations.check(text, against: Self.sources(desk, events))
+                    var answer = Citations.check(text, against: Self.sources(desk, events))
+                    if !thought.isEmpty { answer.thought = thought }
                     try await store.append([.answer(answer)], to: discussion)
                 }
                 progress(.recorded)
@@ -170,14 +172,14 @@ public final class DiscussionKernel: Sendable {
                 case .text(let text): sum + text.count
                 case .image: sum + pictureTokens
                 }
-            } + message.calls.reduce(0) { $0 + $1.arguments.count }
+            } + message.calls.reduce(0) { $0 + $1.arguments.count } + (message.thought?.count ?? 0)
         }
     }
 
     /// 检查引用要对照的：桌上（不在废纸篓里）的卡的段落，和每次工具调用读回的几项
     static func sources(_ desk: [DeskCard], _ events: [DiscussionEvent]) -> Citations.Sources {
         let cards = Dictionary(uniqueKeysWithValues: desk.filter { $0.card.trashedAt == nil }.map { ($0.id, (title: $0.card.displayTitle, passages: $0.passages)) })
-        let order: [String] = events.flatMap { event -> [String] in if case .calls(_, let calls) = event.what { calls.map(\.id) } else { [] } }
+        let order: [String] = events.flatMap { event -> [String] in if case .calls(_, _, let calls) = event.what { calls.map(\.id) } else { [] } }
         let items = Dictionary(events.compactMap { event -> (String, [String])? in if case .result(let r) = event.what { (r.call, r.items) } else { nil } },
                                uniquingKeysWith: { a, _ in a })
         var results: [Int: [String]] = [:]

@@ -12,6 +12,8 @@ struct DetailView: View {
     let card: Int64
     /// 讨论里点了引用：滚到那一段闪一下，视频从那一秒播
     let focus: AppModel.Focus?
+    /// 全应用那一个播放器：音频卡的声音交给它，这里带声音的视频开播时让它停
+    let audio: AudioPlayer
     /// 出处那一行右端的按钮：讨论、放上桌
     let discuss: Action
     /// 对着画布上哪张卡：打开时从它长出来，关的时候缩回它。按方向键换来的、从讨论栏打开的没有
@@ -27,6 +29,8 @@ struct DetailView: View {
     let follow: (URL) -> Void
     /// 残缺的卡重新抓取
     let refetch: () -> Void
+    /// 你写的文字卡改了字
+    let rewrite: (String) -> Void
     /// 把画布上那张卡拿起来（飞着的时候它不该还在原处）、放回去
     let lift: (Bool) -> Void
     let closed: () -> Void
@@ -55,8 +59,10 @@ struct DetailView: View {
     @State private var picture: CGImage?
     /// 画面的高 / 宽：面板的大小跟着它走。读封面的文件头就知道，不用等解码
     @State private var aspect: CGFloat = 1
-    /// 网上的视频点了播放、点了时间点，本机的视频、音频点了时间点；nil 是还停在封面（本机视频静音循环）
+    /// 网上的视频点了播放、点了时间点，本机的视频点了时间点；nil 是还停在封面（本机视频静音循环）
     @State private var playing: Seek?
+    /// 动图的原文件：读进来了就换下静止的第一帧，接着动
+    @State private var moving: NSImage?
     /// 全文和转录：打开时排一次，点播放、点时间点不重排
     @State private var bodyText: NSAttributedString?
     @State private var transcriptText: NSAttributedString?
@@ -121,6 +127,16 @@ struct DetailView: View {
             if stayed, let card, !Self.hasStage(card, pictures: gallery.count) { reappear() }
         }
         .onChange(of: focus?.id) { aim() }
+        // 同一时间只有一个声音：视频带声音播了，音频停。音频播了，系统播放器播的视频自己暂停（见 StreamVideo）；
+        // 平台的嵌入播放器是别人的网页，停不了它，只能回到封面
+        .onChange(of: playing) { if playing != nil { audio.pause() } }
+        .onChange(of: audio.isPlaying) { if audio.isPlaying, let loaded, loaded.original == nil, loaded.player.map(Player.isStream) != true { playing = nil } }
+        .task(id: loaded?.id) {
+            moving = nil
+            guard let loaded, loaded.form == .animated, let name = loaded.original ?? loaded.cover else { return }
+            let image = await Self.moving(store.files.url(of: name))
+            if !Task.isCancelled { moving = image }
+        }
         .task(id: gallery.indices.contains(page) ? gallery[page] : nil) {
             picture = nil
             guard let loaded else { return }
@@ -340,10 +356,7 @@ struct DetailView: View {
             }
         } else {
             VStack(spacing: 0) {
-                // 点了音频转录里的时间点：顶上出一条播放条
-                if card.kind == .audio, let original = card.original, let playing {
-                    StreamVideo(url: store.files.url(of: original), seek: playing).frame(height: 54)
-                }
+                if let track = AudioPlayer.Track(card, files: store.files) { AudioBar(audio: audio, track: track) }
                 reader(card, compact: false)
             }
             .frame(maxWidth: Reading.pageWidth, maxHeight: room.height)
@@ -352,8 +365,8 @@ struct DetailView: View {
 
     private func reader(_ card: Card, compact: Bool) -> some View {
         Reader(store: store, card: card, images: images, compact: compact, bodyText: bodyText, transcriptText: transcriptText,
-               highlight: highlight, discuss: discuss, follow: follow, seek: { playing = Seek(seconds: $0) }, jump: { aim(at: $0.text, seconds: $0.seconds) },
-               refetch: refetch)
+               highlight: highlight, discuss: discuss, follow: follow, seek: { play(at: $0) }, jump: { aim(at: $0.text, seconds: $0.seconds) },
+               refetch: refetch, rewrite: rewrite)
     }
 
     /// 有没有画面可看：图片、视频总有；网页和文档要有配图、且不是按文章读的
@@ -385,7 +398,12 @@ struct DetailView: View {
         guard let loaded else { return }
         highlight = text.map { LongText.Highlight(text: $0) }
         let seekable = loaded.original != nil || loaded.player.map(Player.canSeek) == true
-        if let seconds, seekable, loaded.kind == .video || loaded.kind == .audio { playing = Seek(seconds: seconds) }
+        if let seconds, seekable, loaded.kind == .video || loaded.kind == .audio { play(at: seconds) }
+    }
+
+    /// 从那一秒播：音频交给全应用那一个播放器（关了放大查看、切了画板接着响），视频在画面里播
+    private func play(at seconds: Int) {
+        if let loaded, let track = AudioPlayer.Track(loaded, files: store.files) { audio.play(track, at: Double(seconds)) } else { playing = Seek(seconds: seconds) }
     }
 
     /// 你写的文字卡、Markdown 文件排好了看，颜色跟着系统深浅色
@@ -411,7 +429,7 @@ struct DetailView: View {
         case .video where card.original != nil:
             // 点了转录里的时间点：带声音从那里播
             if let playing {
-                StreamVideo(url: store.files.url(of: card.original!), seek: playing)
+                StreamVideo(url: store.files.url(of: card.original!), seek: playing, hushed: audio.isPlaying) { audio.pause() }
             } else {
                 LoopingVideo(url: store.files.url(of: card.original!))
             }
@@ -430,7 +448,11 @@ struct DetailView: View {
                 if long {
                     ScrollView { image.resizable().scaledToFit() }
                 } else {
+                    // 动图：原文件读进来了就由它接着动。静止的第一帧留着占位置，但藏起来：透明底的动图不然会透出一个不动的影子
+                    let moves = page == 0 ? moving : nil
                     image.resizable().scaledToFit()
+                        .opacity(moves == nil ? 1 : 0)
+                        .overlay { if let moves { MovingImage(image: moves) } }
                 }
             }
             if gallery.count > 1 {
@@ -453,7 +475,7 @@ struct DetailView: View {
     private func onlineVideo(_ player: String, page: String?) -> some View {
         if let playing {
             if Player.isStream(player), let url = URL(string: player) {
-                StreamVideo(url: url, seek: playing)
+                StreamVideo(url: url, seek: playing, hushed: audio.isPlaying) { audio.pause() }
             } else {
                 EmbeddedPlayer(player: player, seek: playing,
                                origin: [page, player].lazy.compactMap { $0.flatMap(URL.init(string:)).flatMap(Self.origin) }.first)
@@ -506,6 +528,11 @@ struct DetailView: View {
             if seekable { text.addAttributes([.link: URL(string: "seek:\(seconds)")!, .foregroundColor: NSColor.linkColor], range: range) }
         }
         return text
+    }
+
+    /// 动图的原文件在后台读进来；各帧由系统的图片视图边播边解，一百多帧的大图也只占一两帧的内存
+    @concurrent static func moving(_ url: URL) async -> NSImage? {
+        (try? Data(contentsOf: url)).flatMap(NSImage.init(data:))
     }
 
     /// 在后台解码，最长边不超过 maxPixel
@@ -616,6 +643,27 @@ struct LongText: NSViewRepresentable {
     }
 }
 
+/// 一直在动的动图：按比例放进给它的地方，和垫在下面的第一帧重合
+private struct MovingImage: NSViewRepresentable {
+    let image: NSImage
+
+    func makeNSView(context: Context) -> NSImageView {
+        let view = NSImageView()
+        view.imageScaling = .scaleProportionallyUpOrDown
+        view.animates = true
+        // 大小听外面的，不按图的原始尺寸把面板撑开
+        for axis in [NSLayoutConstraint.Orientation.horizontal, .vertical] {
+            view.setContentCompressionResistancePriority(.defaultLow, for: axis)
+            view.setContentHuggingPriority(.defaultLow, for: axis)
+        }
+        return view
+    }
+
+    func updateNSView(_ view: NSImageView, context: Context) {
+        if view.image !== image { view.image = image }
+    }
+}
+
 /// 静音循环播放
 private struct LoopingVideo: NSViewRepresentable {
     let url: URL
@@ -645,31 +693,53 @@ struct Seek: Equatable {
     let id = UUID()
 }
 
-/// 带声音、带控制条，从点的那一秒开始播：网上的视频流，点了时间点的本机视频、音频
+/// 带声音、带控制条，从点的那一秒开始播：网上的视频流，点了时间点的本机视频
 struct StreamVideo: NSViewRepresentable {
     let url: URL
     let seek: Seek
+    /// 别处（音频）出声了：这边暂停，停在看到的地方
+    let hushed: Bool
+    /// 这边出声了（刚开播，或者你在控制条上点了继续）：让别处停
+    let sounded: () -> Void
 
     func makeNSView(context: Context) -> AVPlayerView {
-        let view = AVPlayerView()
+        let view = AVPlayerView(), player = AVPlayer(url: url), coordinator = context.coordinator
         view.controlsStyle = .inline
-        view.player = AVPlayer(url: url)
+        view.player = player
+        coordinator.watching = player.observe(\.timeControlStatus) { player, _ in
+            guard player.timeControlStatus == .playing else { return }
+            Task { @MainActor in coordinator.sounded?() }
+        }
         updateNSView(view, context: context)
         return view
     }
 
     /// 点了别的时间点：跳过去接着播
     func updateNSView(_ view: AVPlayerView, context: Context) {
-        guard context.coordinator.seek != seek else { return }
-        context.coordinator.seek = seek
-        view.player?.seek(to: CMTime(seconds: Double(seek.seconds), preferredTimescale: 1))
-        view.player?.play()
+        let coordinator = context.coordinator
+        coordinator.sounded = sounded
+        if coordinator.seek != seek {
+            coordinator.seek = seek
+            view.player?.seek(to: CMTime(seconds: Double(seek.seconds), preferredTimescale: 1))
+            view.player?.play()
+        } else if hushed, !coordinator.hushed {
+            view.player?.pause()
+        }
+        coordinator.hushed = hushed
     }
 
-    static func dismantleNSView(_ view: AVPlayerView, coordinator: Coordinator) { view.player?.pause() }
+    static func dismantleNSView(_ view: AVPlayerView, coordinator: Coordinator) {
+        coordinator.watching = nil
+        view.player?.pause()
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
-    final class Coordinator { var seek: Seek? }
+    @MainActor final class Coordinator {
+        var seek: Seek?
+        var hushed = false
+        var sounded: (() -> Void)?
+        var watching: NSKeyValueObservation?
+    }
 }
 
 /// 平台的嵌入播放器：铺满的 iframe，放在以 origin 为来源的空白页里

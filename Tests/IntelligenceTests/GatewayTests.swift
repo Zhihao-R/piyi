@@ -232,7 +232,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         let file = try #require(try FileManager.default.contentsOfDirectory(at: seed, includingPropertiesForKeys: nil).first { $0.pathExtension == "jpg" })
         let board = try await store.createBoard("A").id!
         guard case .created(let id) = try await store.collect(FileExtractor.image(try Data(contentsOf: file)), into: board, frame: .zero) else { return }
-        let cloud = OpenRouter(key: { ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] })
+        let cloud = Cloud(key: { _ in ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] })
         await Understander(store: store, gateway: Gateway(embedder: FakeLocalEmbedder(), generators: [cloud])) {}.run()
         let card = try #require(try await store.card(id))
         #expect(card.understandError == nil)

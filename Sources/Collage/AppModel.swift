@@ -39,6 +39,8 @@ final class AppModel {
             if focus?.card != detail { focus = nil }
         }
     }
+    /// 全应用那一个播放器：声音不跟着画板、放大查看走
+    let audio = AudioPlayer()
     /// ⌘F 每按一次加一，搜索栏看到就把光标接过去
     var searchFocus = 0
     /// 眼前一张卡也没有时，画布正中的一行提示
@@ -103,6 +105,15 @@ final class AppModel {
     private(set) var cloud: [any Keyed] = []
     /// 各服务方的密钥状态、本机模型在不在：填密钥、下完模型、理解有进展（可能发现密钥被拒）时更新
     private(set) var keyStates: [String: KeyState] = [:]
+    /// 云端怎么接：哪家服务商、哪个模型、讨论时要不要思考
+    private(set) var cloudSetup = CloudSetup.saved
+    /// 刚换的模型在 OpenRouter 的列表里没查到
+    private(set) var cloudModelUnknown = false
+    /// 云端能用了：密钥没问题，自定义服务商的地址和模型也填了
+    private(set) var cloudReady = false
+    /// 最近一次请求被服务商退回的原因：模型下线了、没开通、地址不对，设置页在模型那一行下面说出来
+    private(set) var cloudFailure: String?
+    @ObservationIgnored private var cloudAPI: Cloud?
     private(set) var localModelReady = false
     /// 第一次打开的引导：填密钥、下载本机模型、装浏览器扩展、连手机
     var showsOnboarding = false
@@ -118,13 +129,16 @@ final class AppModel {
             self.store = store
             let interaction = interaction
             let embedder = LocalEmbedder(file: LocalModel.file(in: store.root)) { interaction.isRecent }
-            // 自查时从环境变量读密钥，不碰密钥文件（和真实云端测试一样）
+            // 自查时从环境变量读 OpenRouter 的密钥，不碰密钥文件（和真实云端测试一样）。这把只给 OpenRouter，别家照常读各自的
             let envKey = ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"]
-            let openRouter = OpenRouter(key: envKey.map { key -> @Sendable () -> String? in { key } })
-            let gateway = Gateway(embedder: embedder, generators: [openRouter], judges: [Jev(via: openRouter)],
-                                  transcribers: [SystemSpeech()], conversers: [openRouter])
+            let cloudAPI = Cloud(cloudSetup, key: envKey.map { key -> @Sendable (Vendor) -> String? in
+                { $0 == .openRouter ? key : KeyFile.key(for: $0.rawValue) }
+            })
+            self.cloudAPI = cloudAPI
+            let gateway = Gateway(embedder: embedder, generators: [cloudAPI], judges: [Jev(via: cloudAPI)], judging: [cloudAPI.judging],
+                                  transcribers: [SystemSpeech()], conversers: [cloudAPI])
             self.embedder = embedder
-            cloud = [openRouter]
+            cloud = [cloudAPI]
             refreshModelStates()
             understander = Understander(store: store, gateway: gateway) { [weak self] in
                 Task { @MainActor in self?.understandingProgressed() }
@@ -145,6 +159,7 @@ final class AppModel {
             let canvas = CanvasView(store: store)
             canvas.delegate = self
             self.canvas = canvas
+            audio.soundingChanged = { [weak self] in self?.canvas?.sounding = self?.audio.sounding }
             if let view = try? await store.setting(Self.libraryViewKey, as: LibraryView.self) { libraryView = view }
             // 第一次打开停在示例画板：它和「我的画布」同一刻建成，按最近打开排谁在前说不准。
             // 自查用：COLLAGE_SAMPLE="画板名" 在现有资料库里再放一份示例画板并打开它，看示例摆得怎样
@@ -386,7 +401,7 @@ final class AppModel {
     func resortUnplaced() {
         perform { [self] in
             guard let count = try await store?.resortUnplaced() else { return }
-            notify(count == 0 ? String(localized: "这里没有卡") : keysReady ? String(localized: "交给分拣：\(count) 张") : String(localized: "填好密钥后开始分拣"))
+            notify(count == 0 ? String(localized: "这里没有卡") : sortingUnavailable ?? (cloudReady ? String(localized: "交给分拣：\(count) 张") : String(localized: "完成云端模型设置后开始分拣")))
             sorter?.kick()
         }
     }
@@ -552,10 +567,42 @@ final class AppModel {
 
     private func refreshModelStates() {
         keyStates = Dictionary(uniqueKeysWithValues: cloud.map { ($0.name, $0.keyState) })
+        cloudReady = cloudAPI?.isReady == true
+        cloudFailure = cloudAPI?.lastFailure
         localModelReady = embedder?.isReady == true
     }
 
-    var keysReady: Bool { keyStates.values.allSatisfy { $0 == .ready } }
+    /// 换服务商：带出上次给这家填的模型和地址
+    func chooseVendor(_ vendor: Vendor) {
+        var setup = CloudSetup.saved(for: vendor)
+        setup.thinking = cloudSetup.thinking
+        setCloud(setup)
+    }
+
+    /// 改云端怎么接。模型名在 OpenRouter 的模型列表里查不到时提示一句，不拦着：断网时也查不到；别家没有列表可查
+    func setCloud(_ setup: CloudSetup) {
+        guard setup != cloudSetup, let cloudAPI else { return }
+        cloudSetup = setup
+        setup.save()
+        cloudAPI.configure(setup)
+        refreshModelStates()
+        // 换到能用的那家：等着的卡补上描述、开始分拣
+        understander?.kick()
+        sorter?.kick()
+        cloudModelUnknown = false
+        guard setup.vendor == .openRouter, !setup.model.isEmpty else { return }
+        Task {
+            let unknown = await cloudAPI.contextLength() == nil
+            if cloudSetup == setup { cloudModelUnknown = unknown }
+        }
+    }
+
+    /// 自动分拣为什么用不了；nil 表示能用。放不放进画板的线是按 Jev 报的概率定的，别的模型报的把握不能用同一条线比，
+    /// 而只有 OpenRouter 转接 Jev
+    var sortingUnavailable: String? {
+        if cloudSetup.vendor != .openRouter { return String(localized: "自动分拣需使用 OpenRouter") }
+        return cloudSetup.usesJev ? nil : String(localized: "自动分拣需使用默认的判断模型 Jev，清空判断模型即可恢复")
+    }
     var keyRejected: Bool { keyStates.values.contains(.rejected) }
 
     func setKey(_ key: String, for provider: any Keyed) {
@@ -618,7 +665,7 @@ final class AppModel {
         if try await store.setting(Self.onboardedKey, as: Bool.self) == true { offeredSteps.formUnion([OnboardingStep.keys, .model].map(\.rawValue)) }
         onboardingSteps = OnboardingStep.allCases.filter { step in
             let done = switch step {
-            case .keys: keysReady
+            case .keys: cloudReady
             case .model: localModelReady
             case .browser: browserExtension.status != .absent
             case .phone: phoneInbox.received != nil
@@ -786,6 +833,17 @@ final class AppModel {
         }
     }
 
+    /// 放大查看里改了文字卡的字：和画布上写完走同一条路，⌘Z 撤得回
+    func rewrite(_ card: Int64, to text: String) {
+        let here = location
+        perform { [self] in
+            guard let store, let old = try await store.notes([card]).first, old.text != text else { return }
+            let new = Note(card: card, text: text, tint: old.tint)
+            try await store.saveNotes([new])
+            await did(.written(old: [old], new: [new]), as: String(localized: "编辑文字"), on: here)
+        }
+    }
+
     /// 移出这个画板：只删摆放，卡片还在资料库里
     func removeFromBoard(_ items: [BoardItem]) {
         guard canvas?.isEditable == true, case .board(let board)? = location else { return }
@@ -809,6 +867,8 @@ final class AppModel {
             var names = Set<String>()
             for card in cards { for board in try await store.boards(containing: card) where board.id != current { names.insert(board.name) } }
             try await store.trash(cards)
+            // 扔掉的卡不再出声
+            if let playing = audio.track?.card, cards.contains(playing) { audio.stop() }
             let shown = names.sorted().prefix(3).map(quoted).formatted(.list(type: .and))
             post(Notice(text: String(localized: "放进了废纸篓") + (names.isEmpty ? "" : names.count > 3 ? String(localized: "，也移出了\(shown)等 \(names.count) 个画板") : String(localized: "，也移出了\(shown)")),
                         undo: .trashed(cards)))
@@ -996,6 +1056,12 @@ extension AppModel: CanvasDelegate {
         // ⌘Z、⌘⇧Z 之后，提示里的「撤销」对不上了：收掉，免得再撤一次
         if notice?.undo != nil { notice = nil }
         await refresh(after: edit)
+    }
+
+    /// 点了音频卡上的播放钮：在播它就暂停，否则播它（别的那段停）
+    func canvas(_ canvas: CanvasView, play item: BoardItem) {
+        guard case .card(let face) = item.face, let store, let track = AudioPlayer.Track(face, files: store.files) else { return }
+        audio.toggle(track)
     }
 
     func canvasDidEdit(_ canvas: CanvasView, error: Error?) {

@@ -255,7 +255,7 @@ struct GradingJudge: Judgment {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] != nil))
     func interpretsSentences() async throws {
         let store = try temporaryStore()
-        let cloud = OpenRouter(key: { ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] })
+        let cloud = Cloud(key: { _ in ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] })
         let searcher = Searcher(store: store, gateway: Gateway(embedder: FakeLocalEmbedder(), generators: [cloud], judges: [Jev(via: cloud)]))
         // 两可的句子接受两种理解：「视频网站怎么赚钱」「明白人说的话」当成找卡片、提问都行（提问时依据的卡也会聚拢过来）
         let cases: [(String, Set<Intent>)] = [

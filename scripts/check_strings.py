@@ -29,11 +29,13 @@ with tempfile.TemporaryDirectory() as out:
             for e in entries:
                 found.setdefault(e["key"], f"{source}:{e['location']['startingLine']}")
 
-# 存在数据里当标识用的中文名（格式、平台），显示时才翻（displayed），编译器提取不到：从抽取器里按写法找
+# 存在数据里当标识用的中文名（格式、平台、服务商），显示时才翻（displayed），编译器提取不到：从抽取器里按写法找
 label = re.compile(r'(?:\.format = |platform: |site: )"([^"]*[\u4e00-\u9fff][^"]*)"')
-for path in glob.glob(os.path.join(ROOT, "Sources/Library/Extract/*.swift")):
+vendor = re.compile(r'case \.\w+: "([^"]*[\u4e00-\u9fff][^"]*)"')  # 服务商的名字：密钥按它存
+sources = [(p, label) for p in glob.glob(os.path.join(ROOT, "Sources/Library/Extract/*.swift"))] + [(os.path.join(ROOT, "Sources/Intelligence/Models/Vendor.swift"), vendor)]
+for path, pattern in sources:
     for n, line in enumerate(open(path, encoding="utf-8"), 1):
-        for name in label.findall(line):
+        for name in pattern.findall(line):
             found.setdefault(name, f"{os.path.relpath(path, ROOT)}:{n}")
 
 plurals = set(plistlib.load(open(f"{EN}/Localizable.stringsdict", "rb")))

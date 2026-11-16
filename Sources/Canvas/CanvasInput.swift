@@ -62,19 +62,21 @@ extension CanvasView: NSDraggingSource {
         pointer = p
         setHovered(item(at: worldPoint(p)))
         // 控件跟着悬停换；旋转钮按鼠标离得多近展开、收回
-        if isEditable { updateOverlay() }
+        if isEditable { updateOverlay() } else { updatePlayButtons() }
         let shelf = shelf(at: p)
         if shelf != hotShelf { hotShelf = shelf; updateShelves() }
         if origin(at: p) != nil || shelf != nil { NSCursor.pointingHand.set(); return }
-        // 悬停在角标、旋转钮上时换成缩放、旋转的鼠标样式
-        handle(at: p).map(cursor)?.set() ?? NSCursor.arrow.set()
+        // 悬停在角标、旋转钮上时换成缩放、旋转的鼠标样式。它们排在播放钮前面：卡很小、两样叠在一起时，按下去是缩放、旋转
+        if let g = handle(at: p) { cursor(for: g).set(); return }
+        if playButton(at: p) != nil { NSCursor.pointingHand.set(); return }
+        NSCursor.arrow.set()
     }
 
     public override func mouseExited(with event: NSEvent) {
         pointer = nil
         setHovered(nil)
         if hotShelf != nil { hotShelf = nil; updateShelves() }
-        if isEditable { updateOverlay() }
+        if isEditable { updateOverlay() } else { updatePlayButtons() }
         NSCursor.arrow.set()
     }
 
@@ -130,6 +132,8 @@ extension CanvasView: NSDraggingSource {
             gesture = g
             return
         }
+        // 音频卡上的播放钮：只管播和停，不选中、不拿起这张卡
+        if let id = playButton(at: p), let item = items[id] { delegate?.canvas(self, play: item); return }
         let shift = event.modifierFlags.contains(.shift), additive = shift || event.modifierFlags.contains(.command)
         if let shelf = shelf(at: p) { selectShelf(shelf, adding: additive); return }
         guard let id = item(at: w) else {
@@ -551,9 +555,39 @@ extension CanvasView: NSDraggingSource {
         delegate?.canvas(self, accept: sender.draggingPasteboard, at: worldPoint(point(inWindow: sender.draggingLocation))) ?? false
     }
 
+    // MARK: 播放钮
+
+    /// 音频卡的播放钮画在哪（屏幕点）：悬停的那张，和正在出声的那张——它不在手底下也留着，看得出声音是哪张卡的。
+    /// 钮在声波那一块的正中，跟着卡片缩放；卡在屏幕上太小就不画
+    func playButtons() -> [(id: Int64, center: CGPoint, size: CGFloat, pause: Bool)] {
+        guard cropper == nil, outgoing == nil else { return [] }
+        var ids = sounding.map { card in live.keys.filter { items[$0]?.cardID == card } } ?? []
+        if let hovered, !ids.contains(hovered) { ids.append(hovered) }
+        return ids.compactMap { id in
+            guard case .card(let card)? = items[id]?.face, card.kind == .audio, card.original != nil,
+                  live[id]?.isHidden == false, let p = placement(id) else { return nil }
+            let size = min(p.width * camera.scale * CardType.playMark, Overlay.playKnob.upperBound)
+            guard size >= Overlay.playKnob.lowerBound else { return nil }
+            // 声波那一块的中心离卡片中心多远；上下翻过的卡在另一边
+            let rise = (CardArt.waveform.midY - 0.5) * (p.flipY ? -1 : 1)
+            let lift = CGPoint(x: 0, y: rise * p.height).applying(CGAffineTransform(rotationAngle: p.rotation))
+            return (id, screenPoint(CGPoint(x: p.frame.midX + lift.x, y: p.frame.midY + lift.y)), size, card.id == sounding)
+        }
+    }
+
+    /// 屏幕点 p 落在哪张卡的播放钮上
+    func playButton(at p: CGPoint) -> Int64? {
+        playButtons().first { hypot(p.x - $0.center.x, p.y - $0.center.y) <= $0.size / 2 + Overlay.slop }?.id
+    }
+
+    func updatePlayButtons() {
+        overlay.setPlayButtons(playButtons().map { ($0.center, $0.size, $0.pause) })
+    }
+
     // MARK: 浮层
 
     func updateOverlay() {
+        updatePlayButtons()
         if let cropper {
             overlay.setHandles([])
             overlay.setKnob(at: nil, open: false, owner: [])

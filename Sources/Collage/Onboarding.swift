@@ -8,7 +8,7 @@ enum OnboardingStep: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .keys: String(localized: "填云端服务方的密钥")
+        case .keys: String(localized: "接入云端模型")
         case .model: String(localized: "下载本机模型")
         case .browser: String(localized: "装上浏览器扩展")
         case .phone: String(localized: "从手机收集")
@@ -17,8 +17,8 @@ enum OnboardingStep: String, CaseIterable {
 
     var detail: String {
         switch self {
-        case .keys: String(localized: "用来给卡片起标题、写描述和标签。不填也能收集，卡片会停在「等待密钥」，填上后自动补上。")
-        case .model: String(localized: "用来在本机算向量，搜索要用它。只需下载一次。")
+        case .keys: String(localized: "用于生成标题、描述、标签和总结。可稍后填写，已收集的卡片会自动补全。")
+        case .model: String(localized: "用于搜索，离线可用。仅需下载一次。")
         case .browser: String(localized: "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，拼贴也交给它在后台打开。")
         case .phone: String(localized: "在 iPhone 上分享到「收集拼贴」，内容经 iCloud 云盘存入资料库。")
         }
@@ -67,7 +67,7 @@ struct Onboarding: View {
         VStack(alignment: .leading, spacing: 20) {
             StepHeader(step: step)
             switch step {
-            case .keys: VStack(spacing: 10) { ForEach(model.cloud, id: \.name) { KeyField(provider: $0, model: model) } }
+            case .keys: VStack(spacing: 10) { CloudAccess(model: model, labeled: false) }
             case .model: LocalModelRow(model: model)
             case .browser: ExtensionGuide(model: model)
             case .phone: PhoneGuide(inbox: model.phoneInbox)

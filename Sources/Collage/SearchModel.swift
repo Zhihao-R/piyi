@@ -51,13 +51,13 @@ final class SearchModel {
     /// 当前画板；在几种卡片视图里为 nil
     var currentBoard: Int64? { if case .board(let id) = model.location { id } else { nil } }
 
-    /// 模型能不能用：在线、有能用的密钥
-    var modelReady: Bool { model.online && model.keysReady }
+    /// 模型能不能用：在线、云端设置齐了
+    var modelReady: Bool { model.online && model.cloudReady }
 
     /// 灵感按钮为什么用不了；nil 表示能用
     var inspirationBlocked: String? {
         if !model.online { return String(localized: "离线时用不了灵感：要模型来说出卡片之间的联系") }
-        if !model.keysReady { return model.keyRejected ? String(localized: "密钥被拒绝了，换一把才能用灵感") : String(localized: "填上密钥才能用灵感") }
+        if !model.cloudReady { return model.keyRejected ? String(localized: "密钥无效，更换后才能用灵感") : String(localized: "完成云端模型设置后才能用灵感") }
         return nil
     }
 

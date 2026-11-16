@@ -15,6 +15,8 @@ public protocol CanvasDelegate: AnyObject {
     func canvas(_ canvas: CanvasView, copy items: [BoardItem])
     /// 拖进来的东西落在世界坐标 point；收下了返回 true
     func canvas(_ canvas: CanvasView, accept pasteboard: NSPasteboard, at point: CGPoint) -> Bool
+    /// 点了音频卡上的播放钮
+    func canvas(_ canvas: CanvasView, play item: BoardItem)
     /// 进出裁剪、选中变化、开始和结束拖卡
     func canvasStateChanged(_ canvas: CanvasView)
     /// 摆放改了（拖动、缩放、旋转、裁剪、整理）；error 不为空表示没存进资料库
@@ -107,6 +109,11 @@ public final class CanvasView: NSView {
     /// 几种卡片视图按什么分组；nil 是不分组，从新到旧排成一整片。换了就重排，卡片滑到新位置
     public var grouping: Grouping? {
         didSet { if case .collection? = content { Task { try? await reload() } } }
+    }
+
+    /// 正在出声的那张音频卡，由外壳告诉画布：它的播放钮一直留着，显示成暂停
+    public var sounding: Int64? {
+        didSet { if sounding != oldValue { updatePlayButtons() } }
     }
 
     public private(set) var content: CanvasContent?

@@ -22,7 +22,7 @@ struct SortSettings: View {
         VStack(alignment: .trailing, spacing: 0) {
             Form {
                 Section {
-                    Toggle("自动分拣", isOn: $autoSort)
+                    Toggle("自动分拣", isOn: $autoSort).disabled(model.sortingUnavailable != nil)
                     TextField("分拣规则", text: $rule, prompt: Text("比如：配色和字体相关的参考"), axis: .vertical)
                         .lineLimit(2...4)
                         .disabled(!autoSort)
@@ -49,6 +49,7 @@ struct SortSettings: View {
 
     private var footer: String {
         guard autoSort else { return String(localized: "关掉后，这个画板不再自动收卡。") }
+        if let unavailable = model.sortingUnavailable { return String(localized: "\(unavailable)。") }
         if empty, rule.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return String(localized: "放进一张卡或写一句规则后开始收卡。") }
         return String(localized: "新收的卡有把握属于这里时，会自动放进来。不写规则就按画板里已有的卡判断。")
     }

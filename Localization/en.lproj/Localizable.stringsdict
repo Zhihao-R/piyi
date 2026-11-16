@@ -98,6 +98,22 @@
 			<string>%lld cards couldn’t be read</string>
 		</dict>
 	</dict>
+	<key>%lld 张等待云端模型设置</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@n0@</string>
+		<key>n0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld card waiting for cloud model setup</string>
+			<key>other</key>
+			<string>%lld cards waiting for cloud model setup</string>
+		</dict>
+	</dict>
 	<key>%lld 张等待密钥</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
@@ -176,6 +192,22 @@
 			<string>%lld card isn’t on any other board. Links to this board on other boards will be removed.</string>
 			<key>other</key>
 			<string>%lld cards aren’t on any other board. Links to this board on other boards will be removed.</string>
+		</dict>
+	</dict>
+	<key>密钥无效，%lld 张等待更换</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@n0@</string>
+		<key>n0</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Invalid key; %lld card is waiting for a replacement</string>
+			<key>other</key>
+			<string>Invalid key; %lld cards are waiting for a replacement</string>
 		</dict>
 	</dict>
 	<key>密钥被拒绝，%lld 张等新密钥</key>

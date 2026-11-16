@@ -9,15 +9,16 @@ public struct Jev: Judgment {
     public let sureEnough = 0.85
     static let model = "typesafe/jev-1.13"
 
-    let openRouter: OpenRouter
+    let cloud: Cloud
 
-    public init(via openRouter: OpenRouter) { self.openRouter = openRouter }
+    public init(via cloud: Cloud) { self.cloud = cloud }
 
-    public var isReady: Bool { openRouter.isReady }
+    /// 只有 OpenRouter 转接它；设置里另填了判断模型就不用它
+    public var isReady: Bool { cloud.isReady && cloud.setup.usesJev }
 
     public func judge(_ facts: Facts, _ questions: [Question], images: [Data]) async throws -> [Verdict] {
         let ids = questions.indices.map { "q\($0)" }
-        let response = try await openRouter.post("systemone", [
+        let response = try await cloud.post("systemone", [
             "model": Self.model,
             "state": Dictionary(facts.map { ($0.name, $0.text) }, uniquingKeysWith: { a, _ in a }),
             "questions": Dictionary(uniqueKeysWithValues: zip(ids, questions.map(Self.body))),

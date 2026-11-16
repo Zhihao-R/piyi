@@ -35,8 +35,8 @@ public struct DiscussionEvent: Sendable, Equatable, Identifiable {
 public enum Happening: Sendable, Equatable {
     case question(String)
     case answer(Answer)
-    /// 模型要调用工具，一轮里可能同时要几个；said 是它同时说的话，不显示，下一轮原样交回给它
-    case calls(said: String, [ToolCall])
+    /// 模型要调用工具，一轮里可能同时要几个；said 是它同时说的话、thought 是它想的，都不显示，下一轮原样交回给它
+    case calls(said: String, thought: String? = nil, [ToolCall])
     case result(ToolResult)
     case placed(CardMention)
     case removed(CardMention)
@@ -47,9 +47,11 @@ public enum Happening: Sendable, Equatable {
 public struct Answer: Codable, Sendable, Equatable {
     public var text: String
     public var citations: [Citation]
+    /// 模型写这段回答前想的内容：不显示，接着聊时原样交回给它
+    public var thought: String?
 
-    public init(text: String, citations: [Citation]) {
-        (self.text, self.citations) = (text, citations)
+    public init(text: String, citations: [Citation], thought: String? = nil) {
+        (self.text, self.citations, self.thought) = (text, citations, thought)
     }
 }
 
@@ -81,9 +83,11 @@ public struct ToolCall: Codable, Sendable, Equatable {
     public var name: String
     /// 模型填的参数（JSON）
     public var arguments: String
+    /// 服务商附在这次调用上的东西（JSON），不解读，下一轮原样带回
+    public var extra: String?
 
-    public init(id: String, name: String, arguments: String) {
-        (self.id, self.name, self.arguments) = (id, name, arguments)
+    public init(id: String, name: String, arguments: String, extra: String? = nil) {
+        (self.id, self.name, self.arguments, self.extra) = (id, name, arguments, extra)
     }
 }
 
@@ -150,13 +154,13 @@ extension Happening {
     }
 
     private struct Said: Codable { var text: String }
-    private struct Calls: Codable { var said: String; var calls: [ToolCall] }
+    private struct Calls: Codable { var said: String; var thought: String?; var calls: [ToolCall] }
 
     func content() throws -> String {
         let data = switch self {
         case .question(let text), .renamed(let text): try JSONEncoder().encode(Said(text: text))
         case .answer(let answer): try JSONEncoder().encode(answer)
-        case .calls(let said, let calls): try JSONEncoder().encode(Calls(said: said, calls: calls))
+        case .calls(let said, let thought, let calls): try JSONEncoder().encode(Calls(said: said, thought: thought, calls: calls))
         case .result(let result): try JSONEncoder().encode(result)
         case .placed(let mention), .removed(let mention): try JSONEncoder().encode(mention)
         }
@@ -171,7 +175,7 @@ extension Happening {
         case "answer": self = .answer(try decoder.decode(Answer.self, from: data))
         case "calls":
             let calls = try decoder.decode(Calls.self, from: data)
-            self = .calls(said: calls.said, calls.calls)
+            self = .calls(said: calls.said, thought: calls.thought, calls.calls)
         case "result": self = .result(try decoder.decode(ToolResult.self, from: data))
         case "placed": self = .placed(try decoder.decode(CardMention.self, from: data))
         case "removed": self = .removed(try decoder.decode(CardMention.self, from: data))
