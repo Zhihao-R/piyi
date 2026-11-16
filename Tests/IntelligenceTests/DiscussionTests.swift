@@ -60,6 +60,7 @@ struct SlowTool: Tool {
         #expect(Citations.check("甲[c12·p1, c12·t1]", against: sources).text == "甲[c12·p1][c12·t1]")
         #expect(Citations.check("甲[c12·p1, c99]", against: sources).text == "甲")
         #expect(Citations.check("候选 c99（[c99]）。", against: sources).text == "候选 c99。")
+        #expect(Citations.check("压抑 [c99]。留着 [c13]。", against: sources).text == "压抑。留着 [c13]。")
         // 图片没有段落：标了段落号也按整张算
         #expect(Citations.check("图里写着[c13·p2]", against: sources).text == "图里写着[c13]")
     }

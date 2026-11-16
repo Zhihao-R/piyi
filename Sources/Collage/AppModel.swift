@@ -161,7 +161,7 @@ final class AppModel {
             self.canvas = canvas
             audio.soundingChanged = { [weak self] in self?.canvas?.sounding = self?.audio.sounding }
             if let view = try? await store.setting(Self.libraryViewKey, as: LibraryView.self) { libraryView = view }
-            // 第一次打开停在示例画板：它和「我的画布」同一刻建成，按最近打开排谁在前说不准。
+            // 第一次打开停在示例画板：它和「我的画板」同一刻建成，按最近打开排谁在前说不准。
             // 自查用：COLLAGE_SAMPLE="画板名" 在现有资料库里再放一份示例画板并打开它，看示例摆得怎样
             var landing: Int64?
             if try await store.boards().isEmpty { landing = try await firstLaunch(store) }
@@ -210,9 +210,9 @@ final class AppModel {
         }
     }
 
-    /// 第一次打开：建「我的画布」和「示例」画板，返回示例画板
+    /// 第一次打开：建「我的画板」和「示例」画板，返回示例画板
     private func firstLaunch(_ store: Store) async throws -> Int64 {
-        _ = try await store.createBoard(String(localized: "我的画布"))
+        _ = try await store.createBoard(String(localized: "我的画板"))
         let sample = try await addSample(store, named: String(localized: "示例"))
         Seed.board = sample
         return sample

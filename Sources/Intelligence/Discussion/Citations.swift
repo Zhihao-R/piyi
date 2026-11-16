@@ -8,6 +8,8 @@ public enum Citations {
     nonisolated(unsafe) static let strict = #/c(\d+)(?:·([pt])(\d+))?|r(\d+)·(\d+)/#
     /// 方括号里以 c 或 r 加数字开头的都算模型想写引用：对得上写法的留下，写坏的整个去掉
     nonisolated(unsafe) static let bracket = #/\[([cr]\d+[^\[\]\n]{0,40})\]/#
+    /// 连同前面的空格：去掉引用时空格一起去掉，不会剩下「压抑 。」
+    nonisolated(unsafe) static let spaced = #/([ \t]*)\[([cr]\d+[^\[\]\n]{0,40})\]/#
 
     /// 检查要对照的：桌上（不在废纸篓里）的卡，和每次工具调用读回的几项（下标是第几次调用，从 1 数）
     public struct Sources: Sendable {
@@ -23,12 +25,12 @@ public enum Citations {
     /// 通过的连同原话存下；一个方括号里写了几处（[c1·p2, c1·p3]）拆成几个
     public static func check(_ text: String, against sources: Sources) -> Answer {
         var citations: [Citation] = []
-        let checked = text.replacing(bracket) { match in
-            let refs = refs(in: match.1)
+        let checked = text.replacing(spaced) { match in
+            let refs = refs(in: match.2)
             let kept = refs.compactMap { resolve($0, sources) }
             guard kept.count == refs.count else { return "" }
             for c in kept where !citations.contains(where: { $0.ref == c.ref }) { citations.append(c) }
-            return kept.map { "[\($0.ref)]" }.joined()
+            return match.1 + kept.map { "[\($0.ref)]" }.joined()
         }
         // 去掉的引用原本写在括号里：空括号一起去掉
         return Answer(text: checked.replacing(#/[ \t]*[（(][ \t]*[)）]/#, with: ""), citations: citations)
@@ -91,6 +93,6 @@ public enum Citations {
 
     /// 去掉引用后的纯文字：收成文字卡、拷贝用
     public static func plain(_ text: String) -> String {
-        text.replacing(bracket, with: "")
+        text.replacing(spaced, with: "")
     }
 }

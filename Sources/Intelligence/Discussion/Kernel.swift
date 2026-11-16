@@ -189,7 +189,7 @@ public final class DiscussionKernel: Sendable {
 
     // MARK: 起名
 
-    /// 第一个回答出来后起一个 12 字以内的名字。起不出来就还叫「新讨论」，不打扰。
+    /// 第一个回答出来后起一个 12 字（英文 6 个词）以内的名字。起不出来就还叫「新讨论」，不打扰。
     /// 和跑一轮分开：答完就能接着问，不用等起名
     public func nameIfNeeded(_ discussion: Int64) async {
         guard (try? await store.discussion(discussion))??.name == nil, let events = try? await store.events(of: discussion),
@@ -204,7 +204,7 @@ public final class DiscussionKernel: Sendable {
             """
         let gateway = gateway
         guard let reply = await within(10, { try await gateway.generate(prompt, as: Reply.self) }) else { return }
-        let name = String(reply.name.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters)).prefix(12))
+        let name = Writing.clip(reply.name.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters)), to: 12)
         guard !name.isEmpty else { return }
         try? await store.renameDiscussion(discussion, to: name)
     }
