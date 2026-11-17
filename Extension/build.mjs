@@ -1,5 +1,5 @@
-// 打包扩展到 dist/：脚本用 esbuild 打成单文件，其余原样拷贝。
-// version_name 写成打包结果的指纹（写入之前算，manifest 本身也在内）：App 比对它，知道浏览器里跑的是不是最新一版
+// Builds the extension into dist/: scripts are bundled into single files with esbuild, everything else is copied as is.
+// version_name is set to a fingerprint of the build output (computed before writing, manifest included): the App compares it to know whether the browser is running the latest version
 import { build } from 'esbuild'
 import { createHash } from 'node:crypto'
 import { cpSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -12,10 +12,10 @@ const hash = createHash('sha256')
 const walk = dir => readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name < b.name ? -1 : 1).forEach(entry => {
   const path = `${dir}/${entry.name}`
   if (entry.isDirectory()) return walk(path)
-  hash.update(path).update(readFileSync(path))  // manifest 也算：只改权限也是新的一版
+  hash.update(path).update(readFileSync(path))  // the manifest counts too: a change to permissions alone is also a new version
 })
 walk('dist')
 const manifest = JSON.parse(readFileSync('dist/manifest.json', 'utf8'))
 manifest.version_name = hash.digest('hex').slice(0, 12)
 writeFileSync('dist/manifest.json', JSON.stringify(manifest, null, 2))
-console.log(`扩展已打包到 dist/，版本 ${manifest.version_name}`)
+console.log(`Extension bundled to dist/, version ${manifest.version_name}`)

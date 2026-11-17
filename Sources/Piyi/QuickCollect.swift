@@ -4,24 +4,24 @@ import SwiftUI
 import Library
 import Tokens
 
-/// 不切到片羽也能收：任何 App 里按 ⌃⌥C 收剪贴板里新复制的东西；选中文字、文件后右键「服务」→「收进片羽」收选中的。
-/// 和手机、浏览器收的一样先存进收件箱、只进资料库，等自动分拣。片羽在后台时，屏幕右上角弹一句提示，不把窗口拉到前面
+/// Collect without switching to Piyi: press ⌃⌥C in any App to collect what was newly copied to the clipboard; select text or files and right-click Services → "Collect to Piyi" to collect the selection.
+/// Like phone and browser collections, saved to the inbox first, library only, waiting for automatic sorting. When Piyi is in the background, a hint pops up at the top right of the screen without bringing the window forward
 @MainActor
 final class QuickCollect: NSObject {
-    /// 叫收集去看本机收件箱。资料库准备好之前是 nil：这时收到的在收件箱里等着
+    /// Asks collection to check the local inbox. nil before the library is ready: what arrives then waits in the inbox
     private var look: (() -> Void)?
-    /// 存进了收件箱、还没回话的几次
+    /// Collections saved to the inbox and not yet replied to
     private var pending: Set<String> = []
     private var tell: (String) -> Void = { _ in }
     private var hotKey: EventHotKeyRef?
-    /// 上次按快捷键时剪贴板的变化计数：没再复制过就不重复收
+    /// The clipboard's change count at the last shortcut press: if nothing was copied since, don't collect again
     private var lastTaken: Int?
     private let toast = Toast()
 
-    /// App 一启动就接：从「服务」菜单把没开的片羽叫起来时，请求马上就到，等不到资料库打开
+    /// Catch it as soon as the App launches: when the Services menu wakes Piyi when it's not running, the request arrives immediately, before the library opens
     func listen() {
         NSApp.servicesProvider = self
-        // 系统级快捷键：不用辅助功能权限，别的 App 在前台也收得到
+        // System-wide hotkey: no Accessibility permission needed, works while another App is in front
         var pressed = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, me in
             MainActor.assumeIsolated { Unmanaged<QuickCollect>.fromOpaque(me!).takeUnretainedValue().takeClipboard() }
@@ -31,7 +31,7 @@ final class QuickCollect: NSObject {
                             GetApplicationEventTarget(), 0, &hotKey)
     }
 
-    /// 资料库准备好了：收件箱里等着的收进去。tell 在片羽是前台时用窗口里的提示
+    /// The library is ready: collect what's waiting in the inbox. tell uses the in-window hint when Piyi is in front
     func start(look: @escaping () -> Void, tell: @escaping (String) -> Void) {
         self.look = look
         self.tell = tell
@@ -39,12 +39,12 @@ final class QuickCollect: NSObject {
         if hotKey == nil { tell(String(localized: "⌃⌥C 被别的 App 占用了，按它收不了东西")) }
     }
 
-    /// 「服务」菜单里的「收进片羽」：名字和 Info.plist 里 NSServices 的 NSMessage 对应
+    /// "Collect to Piyi" in the Services menu: the name matches the NSMessage of NSServices in Info.plist
     @objc func collect(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
         take(Collector.sources(in: pasteboard), empty: String(localized: "选中的内容收不了"))
     }
 
-    /// 快捷键收的是剪贴板，不一定是刚复制的：密码管理器标了隐藏、临时的不收，上次收过之后没再复制过的不收
+    /// The shortcut collects the clipboard, which isn't necessarily freshly copied: skip items password managers mark as concealed or transient, and skip if nothing was copied since the last collection
     private func takeClipboard() {
         let clipboard = NSPasteboard.general
         let types = Set(clipboard.types ?? [])
@@ -57,7 +57,7 @@ final class QuickCollect: NSObject {
         take(sources, empty: String(localized: "剪贴板里没有能收的东西"))
     }
 
-    /// 先存进收件箱；等收集查过重（heard）才说「收下了」
+    /// Save to the inbox first; say "collected" only after collection has deduplicated it (heard)
     private func take(_ sources: [Source], empty: String) {
         guard !sources.isEmpty else { return say(empty) }
         let id = UUID().uuidString
@@ -73,22 +73,22 @@ final class QuickCollect: NSObject {
         }
     }
 
-    /// 收集查过重了：是这里存的就说一声（一样都没存好时不响）。交回是不是说了
+    /// Collection has deduplicated: if it was saved here, say so (no sound when nothing was saved). Returns whether it spoke
     func heard(_ id: String?, _ receipt: Receipt) -> Bool {
         guard let id, pending.remove(id) != nil else { return false }
         say(receipt.text, collected: receipt.kept)
         return true
     }
 
-    /// 收下了响一声：眼睛不在屏幕角上也知道；没收的不响
+    /// A sound when collected: you know even if your eyes aren't on the screen corner; no sound if nothing was collected
     private func say(_ text: String, collected: Bool = false) {
         if collected { NSSound(named: "Pop")?.play() }
         if NSApp.isActive { tell(text) } else { toast.show(text, collected: collected) }
     }
 }
 
-/// 屏幕右上角的一句提示：和窗口里的提示同一种玻璃胶囊，但要在整个桌面上看得见，所以字大一号、带图标。
-/// 点不到、不抢焦点，停一会儿淡出
+/// A hint at the top right of the screen: the same glass capsule as the in-window hint, but visible over the whole desktop, so the text is one size larger with an icon.
+/// Not clickable, doesn't steal focus, fades out after a moment
 @MainActor
 private final class Toast {
     private var panel: NSPanel?

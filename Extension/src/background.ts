@@ -1,12 +1,12 @@
-// 扩展后台：一启动就连上中转程序并一直保持连接（连接开着时浏览器不会让后台休眠）。
-// 做三件事：
-// 1. 你点工具栏上的图标，把眼前这个页面收进片羽；在网页上右键「收进片羽」，收右键的那张图、选中的那段话，或者整页；
-// 2. App 要读一个需要登录、靠脚本加载的网页时，在一个常驻的最小化窗口里开标签页读出来；
-// 3. App 要调一个要登录的接口时（B 站的字幕地址），带着浏览器里的登录状态请求，不开标签页。
+// Extension background: connects to the relay as soon as it starts and keeps the connection open (the browser won't suspend the background while a connection is open).
+// It does three things:
+// 1. Click the toolbar icon to collect the current page into Piyi; right-click a web page and choose "Collect to Piyi" to collect the image you right-clicked, the selected text, or the whole page;
+// 2. When the App needs to read a page that requires sign-in or loads with scripts, it opens a tab in a persistent minimized window and reads it there;
+// 3. When the App needs to call an API that requires sign-in (Bilibili subtitle URLs), it makes the request with the browser's sign-in state, without opening a tab.
 import { HOST, type Message } from './wire'
 import { toast } from './toast'
 
-/** 界面文字：按浏览器语言取 _locales 里的那一份 */
+/** Interface text: picks the _locales entry matching the browser language */
 const t = (key: string, ...subs: string[]) => chrome.i18n.getMessage(key, subs)
 
 const version = chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version
@@ -21,7 +21,7 @@ function connect() {
     port = null
     for (const settle of acks.values()) settle(null)
     acks.clear()
-    setTimeout(connect, 5000)  // 后台被回收时这个会丢，由下面的闹钟兜底
+    setTimeout(connect, 5000)  // this is lost when the background is shut down; the alarm below covers that
   })
   port.postMessage({ type: 'hello', version } satisfies Message)
   return port
@@ -29,16 +29,16 @@ function connect() {
 
 function onMessage(message: Message) {
   switch (message.type) {
-    case 'reload': return chrome.runtime.reload()  // App 装了新版
+    case 'reload': return chrome.runtime.reload()  // the App installed a new version
     case 'fetch': return void answer(message)
     case 'request': return void request(message)
     case 'collected': return acks.get(message.id!)?.(message)
   }
 }
 
-// MARK: 收进片羽
+// MARK: Collect to Piyi
 
-/// 等一声回话，按收集的编号对上。先后两声：中转程序说存进收件箱了，App 说查过重了。要显示的话都由它们给（say），这里只管显示
+/// Waits for a reply, matched by the collect ID. Two replies in turn: the relay says it's saved in the inbox, the App says it has checked for duplicates. They supply the text to show (say); this only shows it
 const acks = new Map<string, (reply: Message | null) => void>()
 
 function reply(id: string, limit: number) {
@@ -48,7 +48,7 @@ function reply(id: string, limit: number) {
   }).finally(() => acks.delete(id))
 }
 
-/// 右键菜单只有一项，由右键的位置决定收什么：落在图上收这张图，否则有选中的文字收这段话，否则收整页
+/// The context menu has a single item; where you right-click decides what to collect: on an image, that image; otherwise the selected text if any; otherwise the whole page
 const MENU = 'collect'
 chrome.contextMenus.removeAll(() => chrome.contextMenus.create({
   id: MENU, title: t('collect'), contexts: ['page', 'frame', 'selection', 'link', 'editable', 'image', 'video', 'audio'],
@@ -63,7 +63,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.action.onClicked.addListener(tab => collect(tab, page))
 
-/// take 交回要发给片羽的内容：整页、选中的话，或者一张图
+/// take returns what to send to Piyi: the whole page, the selected text, or an image
 async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, page: string) => Promise<Partial<Message>>) {
   if (!tab?.id || !/^https?:/.test(tab.url ?? '')) return flag(t('cannotCollectPage'))
   const tabId = tab.id
@@ -78,13 +78,13 @@ async function collect(tab: chrome.tabs.Tab | undefined, take: (tabId: number, p
   }
   const id = crypto.randomUUID()
   const saved = reply(id, 4000)
-  // url 是所在的网页：收图、收文字时记作出处
+  // url is the page it's on: recorded as the source when collecting an image or text
   connect().postMessage({ type: 'collect', id, url: tab.url, ...content } satisfies Message)
   const ack = await saved
   if (!ack) return say(t('notConnected'), 'fail')
   if (ack.ok === false) return say(ack.say ?? t('notSaved'), 'fail')
   if (ack.queued) return say(ack.say ?? t('savedQueued'), 'done')
-  // 到这里已经落在片羽的收件箱里，不会丢；等 App 查过重，说收下的是什么、是不是收过。它一时没回话，东西也在收件箱里
+  // By now it's in Piyi's inbox and won't be lost; wait for the App to check for duplicates and say what was collected and whether it was already there. If it doesn't reply for a while, the item is still in the inbox
   const verdict = await reply(id, 8000)
   await say(verdict?.say ?? t('savedLater'), verdict?.ok === false ? 'fail' : 'done')
 }
@@ -93,28 +93,28 @@ function page(tabId: number): Promise<Partial<Message>> {
   return read(tabId, { settle: false, scroll: false }).catch(() => { throw new Error(t('unreadable')) })
 }
 
-/// 选中的文字从页面里读：浏览器随右键给的那份会丢掉换行，它只作读不到时的退路
+/// Reads the selected text from the page: the copy the browser passes with the right-click drops line breaks, so it's only a fallback when reading fails
 async function selection(tabId: number, frameId: number, given: string): Promise<Partial<Message>> {
   const injections = await chrome.scripting.executeScript({ target: { tabId, frameIds: [frameId] }, func: () => getSelection()?.toString() ?? '' }).catch(() => [])
   return { text: injections[0]?.result || given }
 }
 
-/// 图片最大取这么多：再加上 base64 的膨胀，仍在浏览器发给中转程序的单条上限（64 MB）以内
+/// The largest image to fetch: even with base64 overhead, it stays within the browser's per-message limit to the relay (64 MB)
 const IMAGE_LIMIT = 32 * 1024 * 1024
-/// 每次取图用自己的规则编号：连着收两张图时各管各的，不互相顶掉
+/// Each image fetch numbers its own rule: when two images are collected back to back, each keeps its own and they don't replace each other
 let lastRule = 0
 
-/// 图片在这里取：带着浏览器里的登录状态，来源写成所在的网页，图床的防盗链才放行。取不到（或者太大）就只交地址，由 App 去下载
+/// Images are fetched here: with the browser's sign-in state and the page as the source, so image hosts' hotlink protection lets them through. If it can't be fetched (or is too large), only the URL is passed and the App downloads it
 async function image(src: string, from: string): Promise<Partial<Message>> {
   const bytes = await imageBytes(src, from).catch(() => null)
   if (bytes) return { image: bytes }
-  if (!/^https?:/.test(src)) throw new Error(t('imageUnavailable'))  // 页面临时生成的图（blob:）离开页面就没有了
+  if (!/^https?:/.test(src)) throw new Error(t('imageUnavailable'))  // images the page generates on the fly (blob:) are gone once you leave the page
   return { imageURL: src }
 }
 
 async function imageBytes(src: string, from: string) {
   const rule = ++lastRule
-  // 后台发的请求本来不带来源：加一条只管这个地址、只管后台自己的请求的规则，把来源（Referer）写成所在的网页，取完就撤
+  // Requests from the background carry no source by default: add a rule that applies only to this URL and only to the background's own requests, setting the source (Referer) to the page, and remove it once done
   await chrome.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [rule],
     addRules: [{
@@ -125,11 +125,11 @@ async function imageBytes(src: string, from: string) {
       },
       condition: { urlFilter: '|' + src, tabIds: [chrome.tabs.TAB_ID_NONE], resourceTypes: [chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST] },
     }],
-  }).catch(() => {})  // 规则没加上就不带来源去取，多数图床也给
+  }).catch(() => {})  // if the rule wasn't added, fetch without a source; most image hosts still serve it
   try {
     const response = await fetch(src, { credentials: 'include', signal: AbortSignal.timeout(REQUEST_LIMIT) })
     const blob = await response.blob()
-    // 被拦下时回来的常是一页说明，不是图
+    // when blocked, what comes back is usually an explanation page, not an image
     if (!response.ok || !blob.type.startsWith('image/') || blob.size > IMAGE_LIMIT) return null
     const url = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
@@ -143,7 +143,7 @@ async function imageBytes(src: string, from: string) {
   }
 }
 
-/// 页面里放不了提示时（浏览器自己的页面），在图标上标一下
+/// When the page can't show a toast (the browser's own pages), mark the icon instead
 function flag(text: string) {
   chrome.action.setBadgeBackgroundColor({ color: '#1c1c1a' })
   chrome.action.setBadgeText({ text: '!' })
@@ -154,9 +154,9 @@ function flag(text: string) {
   }, 2500)
 }
 
-// MARK: 替 App 读网页
+// MARK: Reading web pages for the App
 
-/// 一页最多读这么久。App 那边一次只发一个、等 75 秒，比这里长：超时由这里先报，标签页也由这里关
+/// The longest a page may take to read. The App sends one at a time and waits 75 seconds, longer than this: the timeout is reported here first, and the tab is closed here too
 const READ_LIMIT = 60_000
 
 async function answer(request: Message) {
@@ -169,10 +169,10 @@ async function answer(request: Message) {
   chrome.alarms.create('close-reader', { delayInMinutes: READER_IDLE_MINUTES })
 }
 
-/// 一次请求最多等这么久。App 那边等 20 秒，比这里长：超时由这里先报
+/// The longest a request may wait. The App waits 20 seconds, longer than this: the timeout is reported here first
 const REQUEST_LIMIT = 15_000
 
-/// 扩展有全部网站的权限，后台发的请求会带上这个网站的登录状态（Cookie）
+/// The extension has permission for all sites, so requests from the background carry that site's sign-in state (cookies)
 async function request(message: Message) {
   try {
     const response = await fetch(message.url!, { credentials: 'include', signal: AbortSignal.timeout(REQUEST_LIMIT) })
@@ -188,7 +188,7 @@ async function fetchPage(url: string, scroll: boolean) {
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(t('readTimeout'))), READ_LIMIT) })
   try {
-    // 加载完之后还可能跳转（登录检查、短链），注入的页面被换掉时再来一次
+    // It may still redirect after loading (sign-in checks, short links); when the injected page is replaced, try again
     const attempt = async () => {
       await loaded(tabId)
       return read(tabId, { settle: true, scroll })
@@ -196,15 +196,15 @@ async function fetchPage(url: string, scroll: boolean) {
     return await Promise.race([attempt().catch(attempt), timeout])
   } finally {
     clearTimeout(timer)
-    // 超时也关：标签页一关，里面还在等的加载和读取都跟着失败结束，不会拖到下一页
-    await chrome.tabs.remove(tabId).catch(() => {})  // 你可能已经手动关掉了
+    // Close it on timeout too: once the tab closes, any loading and reading still pending in it fails and ends, rather than dragging into the next page
+    await chrome.tabs.remove(tabId).catch(() => {})  // you may have closed it already
   }
 }
 
 async function openTab(url: string) {
   const create = async () => chrome.tabs.create({ windowId: await readerWindow(), url, active: true })
   return create().catch(async () => {
-    // 窗口刚好被闲置的闹钟关掉了：重开一个
+    // The window was just closed by the idle alarm: open a new one
     await chrome.storage.session.remove('reader')
     return create()
   })
@@ -220,7 +220,7 @@ async function read(tabId: number, options: { settle: boolean; scroll: boolean }
   return injection.result as { url: string; html: string }
 }
 
-/// 等标签页加载完；标签页被关掉（超时、你手动关）就失败
+/// Waits for the tab to finish loading; fails if the tab is closed (timeout, or you closed it)
 function loaded(tabId: number) {
   return new Promise<void>((resolve, reject) => {
     const updated = (id: number, change: chrome.tabs.OnUpdatedInfo) => { if (id === tabId && change.status === 'complete') done() }
@@ -236,9 +236,9 @@ function loaded(tabId: number) {
   })
 }
 
-// MARK: 常驻的最小化窗口
+// MARK: Persistent minimized window
 
-/// 抓取都在这一个窗口里开标签页，窗口只在第一次抓取时闪一下。闲了几分钟就关掉，不一直占着程序坞
+/// All fetches open tabs in this one window, which only flashes on the first fetch. It closes after a few idle minutes rather than staying in the Dock
 const READER_IDLE_MINUTES = 5
 const READER_PAGE = chrome.runtime.getURL('reader.html')
 
@@ -247,11 +247,11 @@ async function readerWindow(): Promise<number> {
   const { reader } = await chrome.storage.session.get('reader')
   const existing = reader ? await chrome.windows.get(reader as number).catch(() => null) : null
   if (existing) {
-    // 你把它点开过：缩回去
+    // You opened it: minimize it again
     if (existing.state !== 'minimized') await chrome.windows.update(existing.id!, { state: 'minimized' })
     return existing.id!
   }
-  // macOS 上浏览器不理会创建时的 minimized，窗口照样全屏弹出来，只能创建后马上再缩一次：屏幕上闪不到半秒
+  // On macOS the browser ignores minimized at creation and the window pops up full size, so it has to be minimized again right after: it shows on screen for under half a second
   const window = (await chrome.windows.create({ url: READER_PAGE, state: 'minimized', focused: false }))!
   await chrome.windows.update(window.id!, { state: 'minimized' })
   await chrome.storage.session.set({ reader: window.id })
@@ -264,7 +264,7 @@ async function closeReader() {
   await chrome.storage.session.remove('reader')
 }
 
-/// 后台中途被回收：窗口里读到一半的标签页关掉，只留说明页
+/// The background was shut down midway: close tabs left half-read in the window, keeping only the explanation page
 async function tidyReader() {
   const { reader } = await chrome.storage.session.get('reader')
   if (!reader) return
@@ -273,7 +273,7 @@ async function tidyReader() {
 }
 
 chrome.alarms.onAlarm.addListener(alarm => {
-  // 每次开始抓取都会取消关窗口的闹钟，响了就说明这几分钟一直闲着
+  // Every fetch cancels the close-window alarm, so if it fires, the window has been idle the whole time
   if (alarm.name === 'close-reader') closeReader()
   else connect()
 })

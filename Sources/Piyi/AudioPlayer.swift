@@ -2,35 +2,35 @@ import AVFoundation
 import Observation
 import Library
 
-/// 全应用只有一个声音。听是背景里的事：切画板、开关放大查看都不打断，所以播放器归 App，不归哪块界面。
-/// 点另一段，前一段就停；放完了自己收起
+/// The whole app has only one sound. Listening is a background thing: switching boards or opening/closing the detail view doesn't interrupt it, so the player belongs to the App, not to any part of the interface.
+/// Clicking another clip stops the previous one; it dismisses itself when finished
 @MainActor @Observable
 final class AudioPlayer {
-    /// 一段能播的声音：哪张卡、叫什么、文件在哪
+    /// A playable clip: which card, what it's called, where the file is
     struct Track {
         var card: Int64
         var title: String
         var url: URL
-        /// 秒；收的时候没读出来是 nil，播的时候再问文件
+        /// Seconds; nil if it couldn't be read at collection time, then the file is asked at play time
         var duration: Double?
     }
 
     private(set) var track: Track?
     private(set) var isPlaying = false
-    /// 播到第几秒、一共多少秒
+    /// Current second and total seconds
     private(set) var time: Double = 0
     private(set) var duration: Double = 0
-    /// 出声的卡换了（换了一段、播了、停了）：画布上的播放钮跟着换
+    /// The card making sound changed (another clip, played, stopped): the play buttons on the canvas follow
     @ObservationIgnored var soundingChanged: (() -> Void)?
     @ObservationIgnored private let player = AVPlayer()
     @ObservationIgnored private var ticking: Any?
     @ObservationIgnored private var ending: NSObjectProtocol?
     @ObservationIgnored private var status: NSKeyValueObservation?
 
-    /// 正在出声的那张卡；暂停、没在播是 nil
+    /// The card currently making sound; nil when paused or not playing
     var sounding: Int64? { isPlaying ? track?.card : nil }
 
-    /// 播这一段（已经是它就接着播）；seconds 不为空时从那一秒播
+    /// Play this clip (continue if it already is); when seconds isn't nil, play from that second
     func play(_ track: Track, at seconds: Double? = nil) {
         if track.card != self.track?.card { load(track) }
         if let seconds { seek(to: seconds) }
@@ -39,7 +39,7 @@ final class AudioPlayer {
         soundingChanged?()
     }
 
-    /// 正在播这一段就暂停，否则播它
+    /// Pause if this clip is playing, otherwise play it
     func toggle(_ track: Track) {
         if track.card == self.track?.card, isPlaying { pause() } else { play(track) }
     }
@@ -52,12 +52,12 @@ final class AudioPlayer {
     }
 
     func seek(to seconds: Double) {
-        // 进度马上落到新位置，不等播放器跳完，拖动条松手不往回弹
+        // Progress jumps to the new position at once, without waiting for the player to finish seeking, so the slider doesn't snap back on release
         time = seconds
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
     }
 
-    /// 停下并收起：全局的播放条跟着消失
+    /// Stop and dismiss: the global playback bar disappears with it
     func stop() {
         player.pause()
         player.replaceCurrentItem(with: nil)
@@ -94,7 +94,7 @@ final class AudioPlayer {
         }
     }
 
-    /// 播放器自己停了（文件读不了、被系统打断）：界面跟着回到没在播的样子，不停在「正在播」上
+    /// The player stopped on its own (file unreadable, interrupted by the system): the interface returns to not playing instead of staying on "playing"
     private func settle() {
         guard isPlaying, player.timeControlStatus == .paused else { return }
         isPlaying = false
@@ -107,7 +107,7 @@ final class AudioPlayer {
 }
 
 extension AudioPlayer.Track {
-    /// 音频卡、原文件还在才播得了
+    /// Only playable if it's an audio card and the original file still exists
     init?(_ card: Card, files: FileStore) {
         guard card.kind == .audio, let id = card.id else { return nil }
         self.init(card: id, title: card.displayTitle, original: card.original, duration: card.duration, files: files)

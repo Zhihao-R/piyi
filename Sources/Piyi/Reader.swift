@@ -3,36 +3,36 @@ import Library
 import Canvas
 import Tokens
 
-/// 一张卡的文字，放大查看里只有这一种版式，从上到下越来越细：出处和时间、标题、一句描述、要点、全文、转录、标签。
-/// 没有画面的卡整块是它；有画面的卡，它是画面旁边的窄栏（compact），字小一号，不排配图
+/// A card's text; the detail view has only this one layout, getting finer top to bottom: source and time, title, a one-line description, key points, full text, transcript, tags.
+/// For cards without visuals it's the whole thing; for cards with visuals it's the narrow column beside the visual (compact), one size smaller, without inline images
 struct Reader: View {
     let store: Store
     let card: Card
-    /// 其余图片（不含封面）
+    /// Other images (excluding the cover)
     let images: [String]
     var compact = false
-    /// 排好的全文和转录（见 DetailView.bodyText）。文章的正文不在这里：它带着配图一段段排
+    /// Laid-out full text and transcript (see DetailView.bodyText). An article's body isn't here: it's laid out paragraph by paragraph with its images
     let bodyText: NSAttributedString?
     let transcriptText: NSAttributedString?
-    /// 讨论里点了引用：滚到这一段闪一下
+    /// A citation clicked in the discussion: scroll to this passage and flash it
     let highlight: LongText.Highlight?
-    /// 出处那一行右端的按钮：讨论、放上桌
+    /// Buttons at the right end of the source row: discuss, put on the table
     let discuss: DetailView.Action
     let follow: (URL) -> Void
-    /// 点了简介、转录里的时间点：从那一秒播
+    /// A timestamp clicked in the description or transcript: play from that second
     let seek: (Int) -> Void
-    /// 点了一条要点：滚到它依据的那一段，视频从那一秒播
+    /// A key point clicked: scroll to the passage it's based on, video plays from that second
     let jump: (Passage) -> Void
     let refetch: () -> Void
-    /// 你写的文字卡改了字：存下来
+    /// The text of a note you wrote changed: save it
     let rewrite: (String) -> Void
-    /// 文字卡正改到的样子；nil 是还没动过
+    /// The note's text as currently edited; nil means not touched yet
     @State private var draft: String?
 
     private var type: Reading.Scale { compact ? Reading.narrow : Reading.wide }
-    /// 文章：正文里记着配图位置，图回到原文那一段之后
+    /// Article: the body records image positions, images go back after their passage in the original
     private var isArticle: Bool { !compact && DetailView.isArticle(card) }
-    /// 你写的短句：这句话本身就是内容，不再配模型起的标题和转述
+    /// A short line you wrote: the line itself is the content, no model-written title or paraphrase added
     private var isQuote: Bool { card.kind == .text && (card.text ?? "").count <= CardType.shortTextLimit }
 
     var body: some View {
@@ -40,7 +40,7 @@ struct Reader: View {
             if compact {
                 ScrollView { column }
             } else {
-                // 放得下就收到内容那么高（只有几行字的卡不撑成一整面空白），放不下才滚
+                // Shrink to the content's height if it fits (a card with only a few lines doesn't stretch into a whole blank page); scroll only if it doesn't
                 ViewThatFits(in: .vertical) {
                     column
                     ScrollView { column }
@@ -59,18 +59,18 @@ struct Reader: View {
                     Text(card.displayTitle).font(.system(size: type.title, weight: .bold, design: .serif)).lineSpacing(4).textSelection(.enabled)
                     if let caption = card.caption { Text(caption).font(.system(size: type.lead)).lineSpacing(5).foregroundStyle(.secondary) }
                 }
-                // 收的时候你自己随手写的那句话：比模型的描述更说明你为什么收它
+                // The line you jotted down when collecting: says better than the model's description why you collected it
                 if let note = card.note { Text(note).font(.system(size: type.lead)).lineSpacing(5).textSelection(.enabled) }
                 status
             }
             if let summary = card.summary { Points(summary: summary, sources: sources, size: type.lead, jump: jump) }
-            // 你写的文字卡在这里也能改：从资料库、搜索、讨论里点开的，不用回到它所在的画板。废纸篓里的不改
+            // Notes you wrote can be edited here too: opened from the library, search or discussion, no need to go back to their board. Not ones in Trash
             if card.form == .note, card.trashedAt == nil {
                 NoteField(text: Binding(get: { draft ?? card.text ?? "" }, set: { draft = $0 }), type: type, highlight: highlight, commit: rewrite)
             } else if isArticle { article } else if let bodyText { LongText(bodyText, highlight: highlight, onLink: link) }
             if let transcriptText {
                 VStack(alignment: .leading, spacing: type.gap / 2) {
-                    // 平台的字幕和本机转出来的，可信程度不同
+                    // Platform subtitles and local transcription differ in reliability
                     Text(card.original == nil ? "字幕" : "转录").font(.caption).tracking(2).foregroundStyle(.tertiary)
                     LongText(transcriptText, highlight: highlight, onLink: link)
                 }
@@ -82,8 +82,8 @@ struct Reader: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// 每条要点依据的那一段，按存下的原话在现在的原文里找回；原文改过、找不回的那条不能点。
-    /// 要把原文切一遍，在后台算一次存着，不在每次重画时算
+    /// The passage each key point is based on, found again in the current original by its saved wording; a key point whose original changed and can't be found isn't clickable.
+    /// This requires splitting the original, so compute it once in the background and keep it, not on every redraw
     @State private var sources: [Passage?] = []
 
     private func locate() async {
@@ -94,10 +94,10 @@ struct Reader: View {
         }.value
     }
 
-    /// 文章的正文：封面、署名，然后文字和配图按原文的顺序
+    /// An article's body: cover, byline, then text and images in the original order
     @ViewBuilder private var article: some View {
         let (credits, body) = Passages.credits(in: card.body ?? "", for: card)
-        // 没有单独封面的文章，封面就是第一张配图，在正文里会出现
+        // For articles without a separate cover, the cover is the first image, which appears in the body
         if let cover = card.cover, cover != images.first { Picture(store: store, name: cover) }
         if !credits.isEmpty { Text(credits.joined(separator: "　")).font(.caption).foregroundStyle(.tertiary) }
         ForEach(Array(Article.segments(body, images: images.count).enumerated()), id: \.offset) { _, segment in
@@ -109,7 +109,7 @@ struct Reader: View {
         }
     }
 
-    /// 公众号 · 出处（点了打开原文或原文件） · 收藏的日子，右端是「讨论」
+    /// WeChat account · source (click to open the original or the original file) · date collected, with "Discuss" at the right end
     private var eyebrow: some View {
         let url = card.url.flatMap(URL.init(string:)), file = card.original.map(store.files.url(of:))
         let source = card.source ?? url?.host() ?? (file == nil ? nil : String(localized: "原文件"))
@@ -134,7 +134,7 @@ struct Reader: View {
         .foregroundStyle(.tertiary)
     }
 
-    /// 这张卡不完整时说一句为什么：没抓全（可以重新抓取）、理解失败、等密钥
+    /// When this card is incomplete, say why: not fully fetched (can fetch again), understanding failed, waiting for a key
     @ViewBuilder private var status: some View {
         if let partial = card.partial {
             HStack(spacing: 8) {
@@ -149,7 +149,7 @@ struct Reader: View {
         }
     }
 
-    /// 标签降成一行灰字，主色缩成小圆点，都放在文末
+    /// Tags reduced to a line of gray text, main colors shrunk to small dots, both at the end
     @ViewBuilder private var footer: some View {
         let swatches = DetailView.swatches(card.colors) ?? []
         if !card.tags.isEmpty || !swatches.isEmpty {
@@ -165,7 +165,7 @@ struct Reader: View {
         }
     }
 
-    /// 时间点的链接是 seek:秒数；别的链接照常用浏览器打开
+    /// Timestamp links are seek:seconds; other links open in the browser as usual
     private func link(_ url: URL) -> Bool {
         guard url.scheme == "seek", let seconds = Int(url.absoluteString.dropFirst("seek:".count)) else { return false }
         seek(seconds)
@@ -173,8 +173,8 @@ struct Reader: View {
     }
 }
 
-/// 你写的文字卡的正文，能直接改。文本框里是原文，标记变淡、标题变大，和画布上写字时同一种样子（见 NoteEditor）。
-/// 点到别处、按 Esc、关掉放大查看时存
+/// The body of a note you wrote, directly editable. The text field holds the source, with markup faded and headings enlarged, the same look as writing on the canvas (see NoteEditor).
+/// Saved on clicking elsewhere, pressing Esc, or closing detail view
 private struct NoteField: NSViewRepresentable {
     @Binding var text: String
     let type: Reading.Scale
@@ -205,7 +205,7 @@ private struct NoteField: NSViewRepresentable {
         }
     }
 
-    /// 写多了往下长：量法和 LongText 一样
+    /// Grows downward as you write more: measured the same way as LongText
     func sizeThatFits(_ proposal: ProposedViewSize, nsView view: NSTextView, context: Context) -> CGSize? {
         guard let width = proposal.width, width.isFinite, let container = view.textContainer, let layout = view.layoutManager else { return nil }
         container.size = NSSize(width: width, height: .greatestFiniteMagnitude)
@@ -223,13 +223,13 @@ private struct NoteField: NSViewRepresentable {
         let style: Markdown.Style
         var edited: ((String) -> Void)?
         var commit: ((String) -> Void)?
-        /// 已经存下的那一版：没变就不再存
+        /// The version already saved: don't save again if unchanged
         var saved = ""
         var flashed: UUID?
 
         init(style: Markdown.Style) { self.style = style }
 
-        /// 每改一个字重新上一遍样式。拼音还没选字时不动，免得打断输入法
+        /// Restyle on every character change. Leave it alone while pinyin is still being chosen so the input method isn't interrupted
         func restyle(_ view: NSTextView) {
             guard let storage = view.textStorage, !view.hasMarkedText() else { return }
             let styled = Markdown.styled(storage.string, style: style)
@@ -251,7 +251,7 @@ private struct NoteField: NSViewRepresentable {
             if let view = notification.object as? NSTextView { save(view) }
         }
 
-        /// 写空了不存：删卡是画布上的事，在这里字一删光卡就没了太突然
+        /// Don't save when emptied: deleting cards belongs to the canvas, and having the card vanish here the moment all text is deleted would be too abrupt
         func save(_ view: NSTextView) {
             let text = view.string.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty, text != saved else { return }
@@ -259,7 +259,7 @@ private struct NoteField: NSViewRepresentable {
             commit?(text)
         }
 
-        /// Esc：写完（再按一次才关放大查看）
+        /// Esc: done writing (press again to close detail view)
         func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
             guard selector == #selector(NSResponder.cancelOperation(_:)) else { return false }
             textView.window?.makeFirstResponder(nil)
@@ -268,11 +268,11 @@ private struct NoteField: NSViewRepresentable {
     }
 }
 
-/// 要点：浅底方块里一行一条，「· 」开头的行画成圆点，其余的行（如「仅根据简介」）当小字说明。
-/// 找得到依据的那条是个按钮，点了跳到原文那一段；转录里的依据在末尾标出时间
+/// Key points: one per line in a light-background block; lines starting with "· " are drawn as bullets, other lines (like "Based on the description only") as small explanatory text.
+/// A key point whose basis can be found is a button that jumps to that passage in the original; a basis in the transcript shows its time at the end
 private struct Points: View {
     let summary: String
-    /// 和「· 」开头的行一一对应
+    /// One-to-one with the lines starting with "· "
     let sources: [Passage?]
     let size: Double
     let jump: (Passage) -> Void
@@ -309,12 +309,12 @@ private struct Points: View {
     }
 }
 
-/// 1:02:03、12:30：要点末尾的时间、播放条上的进度
+/// 1:02:03, 12:30: the time at the end of key points, the progress on the playback bar
 func clockText(_ seconds: Int) -> String {
     seconds >= 3600 ? String(format: "%d:%02d:%02d", seconds / 3600, seconds % 3600 / 60, seconds % 60) : String(format: "%d:%02d", seconds / 60, seconds % 60)
 }
 
-/// 正文里的一张图：铺满栏宽，在后台解码，没到之前留一块底色
+/// An image in the body: fills the column width, decoded in the background, a block of background color until it arrives
 private struct Picture: View {
     let store: Store
     let name: String

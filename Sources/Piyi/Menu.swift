@@ -3,7 +3,7 @@ import Library
 import Canvas
 import Tokens
 
-/// 画布上的右键菜单
+/// The context menu on the canvas
 @MainActor
 enum Menu {
     static func build(for items: [BoardItem], model: AppModel) -> NSMenu? {
@@ -31,7 +31,7 @@ enum Menu {
             }
             menu.addItem(.separator())
         }
-        // 聚拢的结果是临时摆法：不裁剪、不移动、不删除；来自别处的卡可以留下
+        // A gathered result is a temporary layout: no cropping, moving or deleting; cards from elsewhere can be kept
         if canvas.isGathered {
             let visiting = Set(canvas.visitingCards)
             let keep = cards.compactMap(\.placement.cardID).filter(visiting.contains)
@@ -55,21 +55,21 @@ enum Menu {
         return menu
     }
 
-    /// 对几张卡做的事。右键菜单和资料库底部的操作栏都从这里取，叫法、内容只在这一处定
+    /// Actions on a set of cards. The context menu and the action bar at the bottom of the library both take them from here; labels and contents are defined only here
     struct Actions {
-        /// 讨论栏收起时开一段新讨论，展开时放上当前的桌
+        /// With the discussion bar collapsed, start a new discussion; when expanded, put on the current table
         var discuss: NSMenuItem?
-        /// 放进画板（画板里叫「移到」）：各画板，和用它们新建一个
+        /// Put into a board (called "Move To" in a board): each board, and a new one made from them
         var place: NSMenuItem?
-        /// 画板里才有：也放进别的画板，这里留着
+        /// Only in a board: also put into another board, keeping it here
         var copy: NSMenuItem?
-        /// 颜色、重新理解
+        /// Color, Read Again
         var more: [NSMenuItem] = []
-        /// 删除；废纸篓里是恢复、彻底删除。会删东西的 tag 是 destructive
+        /// Delete; in Trash, restore and delete permanently. The tag for actions that delete things is destructive
         var last: [NSMenuItem] = []
     }
 
-    /// 操作栏把这一项画成红字
+    /// The action bar draws this item in red
     static let destructive = 1
 
     static func actions(for cards: [BoardItem], model: AppModel) -> Actions {
@@ -82,19 +82,19 @@ enum Menu {
         }
         let onBoard = model.canvas?.board != nil
         let ids = cards.compactMap(\.placement.cardID)
-        // 都已在桌上：菜单和操作条里不出这一项（放大查看里显示灰的「在桌上」）
+        // All already on the table: this item doesn't appear in menus or the action bar (the detail view shows a gray "On the Table")
         let entry = model.discussions.entry(for: ids)
         if entry.enabled { actions.discuss = item(entry.title) { model.discussions.discuss(ids) } }
         if cards.contains(where: \.isNote) { actions.more.append(tints(for: cards.filter(\.isNote), model: model)) }
         actions.more.append(item(String(localized: "重新理解")) { model.reunderstand(cards) })
         actions.place = boardMenu(onBoard ? String(localized: "移到") : String(localized: "放进画板"), cards: cards, keepingHere: false, model: model)
         if onBoard { actions.copy = boardMenu(String(localized: "也放进"), cards: cards, keepingHere: true, model: model) }
-        // 画板里还有「移出这个画板」，所以说清是从资料库删
+        // A board also has "Remove from This Board", so make clear this deletes from the library
         actions.last = [item(onBoard ? String(localized: "从资料库删除") : String(localized: "删除"), destructive: true) { model.trash(cards) }]
         return actions
     }
 
-    /// 一项带子菜单：各画板，和用它们新建一个
+    /// An item with a submenu: each board, and a new one made from them
     private static func boardMenu(_ title: String, cards: [BoardItem], keepingHere: Bool, model: AppModel) -> NSMenuItem {
         let sub = NSMenu()
         for board in model.boards where board.id != model.canvas?.board { sub.add(board.name) { model.put(cards, into: board.id!, keepingHere: keepingHere) } }
@@ -113,14 +113,14 @@ enum Menu {
 }
 
 extension Menu {
-    /// 底色名在菜单里的叫法，顺序跟 Palette.tints
+    /// What background colors are called in menus, in the order of Palette.tints
     private static let tintNames = ["yellow": String(localized: "黄"), "pink": String(localized: "粉"), "blue": String(localized: "蓝"), "green": String(localized: "绿"), "purple": String(localized: "紫")]
 
-    /// 「颜色」子菜单：每种底色一个色块，当前的打勾（选了几张、颜色不一样时不打勾）
+    /// The "Color" submenu: a swatch per background color, the current one checked (no check when several cards with different colors are selected)
     private static func tints(for notes: [BoardItem], model: AppModel) -> NSMenuItem {
         let current = Set(notes.map { item -> String? in if case .card(let card) = item.face { card.tint } else { nil } })
         let sub = NSMenu()
-        // 色块是卡片眼下会有的样子：深色外观下是压暗的那一档
+        // The swatch is how the card would look right now: the dimmed shade in dark appearance
         let dark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         for (name, color) in [(String?.none, Palette.card)] + Palette.tints.map({ (Optional($0.name), $0.color) }) {
             sub.add(name.flatMap { tintNames[$0] } ?? String(localized: "默认")) { model.tint(notes, name) }
@@ -133,7 +133,7 @@ extension Menu {
         return item
     }
 
-    /// 菜单里的小色块：圆点描一圈淡边，浅色在浅色菜单上也看得见
+    /// A small swatch in menus: a dot with a faint outline, so light colors are visible on a light menu
     private static func swatch(_ c: RGBA) -> NSImage {
         NSImage(size: NSSize(width: 12, height: 12), flipped: false) { rect in
             let dot = NSBezierPath(ovalIn: rect.insetBy(dx: 0.5, dy: 0.5))
@@ -148,14 +148,14 @@ extension Menu {
 }
 
 extension NSMenu {
-    /// 加一项，点了执行 action
+    /// Add an item that runs action when clicked
     func add(_ title: String, action: @escaping () -> Void) {
         addItem(NSMenuItem(title, action: action))
     }
 }
 
 extension NSMenuItem {
-    /// 点了执行 action 的一项
+    /// An item that runs action when clicked
     convenience init(_ title: String, action: @escaping () -> Void) {
         self.init(title: title, action: #selector(ClosureTarget.run), keyEquivalent: "")
         let target = ClosureTarget(action)
@@ -163,11 +163,11 @@ extension NSMenuItem {
         representedObject = target
     }
 
-    /// 不经过菜单直接执行（操作栏上的按钮用）
+    /// Run directly without going through the menu (for buttons on the action bar)
     func perform() { (target as? ClosureTarget)?.run() }
 }
 
-/// 让菜单项直接执行一段代码
+/// Make a menu item run a block of code directly
 final class ClosureTarget: NSObject {
     let action: () -> Void
     init(_ action: @escaping () -> Void) { self.action = action }

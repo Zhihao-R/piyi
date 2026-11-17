@@ -4,26 +4,26 @@ import ImageIO
 import Library
 import Tokens
 
-/// 不带隐式动画的图层
+/// A layer without implicit animations
 class QuietLayer: CALayer {
     override func action(forKey event: String) -> CAAction? { nil }
 }
 
-/// 一张卡：外层只负责阴影（给定阴影形状，显卡不必逐像素推算轮廓），内层放画好的位图并切圆角。
-/// 平时它只是一张图，不是控件；悬停时只把这一张轻轻拿起来。
+/// A card: the outer layer only handles the shadow (given a shadow path, so the GPU doesn't have to work out the outline pixel by pixel); the inner layer holds the drawn bitmap and clips the rounded corners.
+/// Normally it's just an image, not a control; on hover only this one gets gently lifted.
 final class CardLayer: QuietLayer {
     let content = QuietLayer()
     private(set) var item: BoardItem?
-    /// 当前位图是按哪个倍率画的
+    /// The scale the current bitmap was drawn at
     private(set) var scale: CGFloat = 0
-    /// 悬停时拿起来了
+    /// Lifted up on hover
     private(set) var lifted = false
     private var shadowOn = false
     private var loading: Task<Void, Never>?
-    /// 下一张图到了要和旧图交叉淡化
+    /// When the next image arrives, cross-fade from the old one
     private var blends = false
     private var framing: Task<Void, Never>?
-    /// 悬停预览的本机视频：等着开始的那一下，和正在放的
+    /// Local video for hover preview: the one waiting to start and the one playing
     private var previewWait: Task<Void, Never>?
     private var previewing: (player: AVQueuePlayer, looper: AVPlayerLooper, layer: AVPlayerLayer, marks: CALayer)?
 
@@ -43,18 +43,18 @@ final class CardLayer: QuietLayer {
         self.item = item
         content.contents = nil
         blends = false
-        // 文字类卡片拉大时旧图不拉伸，钉在左上角，新排的图到了再换；空出来的地方是卡片底色
+        // When a text card is stretched, the old image isn't stretched but pinned to the top left until the newly laid-out one arrives; the space left over shows the card color
         content.contentsGravity = CardArt.reflows(item.face) ? .topLeft : .resize
         tintBackground()
         place(item.placement)
     }
 
-    /// 同一张卡、同样大小，只是内容变了（理解完了、抽取完了）：旧图留着，新图画好再交叉淡化过去，中间不露底色
+    /// Same card, same size, only the content changed (understanding done, extraction done): keep the old image, cross-fade to the new one once drawn, without showing the background in between
     func revise(_ item: BoardItem) {
         self.item = item
         content.contentsGravity = CardArt.reflows(item.face) ? .topLeft : .resize
         tintBackground()
-        // 圆角跟着卡的种类走，种类可能变了
+        // Corner radius follows the card kind, which may have changed
         place(item.placement)
         blends = content.contents != nil
     }
@@ -65,13 +65,13 @@ final class CardLayer: QuietLayer {
         content.backgroundColor = (CardArt.reflows(item.face) ? paper : Palette.placeholder.now).cg
     }
 
-    /// 外观换了深浅：底色马上换，位图按新颜色重画
+    /// The appearance switched between light and dark: the background changes immediately and the bitmap is redrawn in the new colors
     @MainActor func repaint(files: FileStore) {
         tintBackground()
         render(at: scale, files: files)
     }
 
-    /// 按摆放定位置、大小、角度。尺寸变了要重画，由调用方决定
+    /// Sets position, size, and angle from the placement. Redrawing when the size changes is the caller's decision
     func place(_ p: Placement) {
         item?.placement = p
         setAffineTransform(.identity)
@@ -80,7 +80,7 @@ final class CardLayer: QuietLayer {
         setAffineTransform(transform(for: p))
         zPosition = p.z
         content.frame = bounds
-        // 预览着的视频跟着卡片变大小
+        // The previewing video resizes along with the card
         previewing?.layer.frame = content.bounds
         previewing?.marks.frame = content.bounds
         let r = radius
@@ -88,19 +88,19 @@ final class CardLayer: QuietLayer {
         shadowPath = CGPath(roundedRect: bounds, cornerWidth: r, cornerHeight: r, transform: nil)
     }
 
-    /// 图片本身有边，不切圆角；纸样的卡（文字、网页、文档、音频）和画板入口切圆角
+    /// Images have their own edges and aren't rounded; paper-style cards (text, web pages, documents, audio) and board entries get rounded corners
     private var radius: CGFloat {
         if case .card(let card)? = item?.face, card.kind == .image || card.kind == .video { return 0 }
         return CGFloat(CardShape.corner)
     }
 
-    /// 旋转、镜像，拿起来时再放大一点
+    /// Rotation, mirroring, and a little extra scale when lifted
     func transform(for p: Placement) -> CGAffineTransform {
         let lift = lifted ? CardShape.lift.scale : 1
         return CGAffineTransform(rotationAngle: p.rotation).scaledBy(x: (p.flipX ? -1 : 1) * lift, y: (p.flipY ? -1 : 1) * lift)
     }
 
-    /// 悬停时轻轻拿起来：放大一点、阴影加深，用「拿起」那种短弹簧
+    /// Gently lifted on hover: scaled up a little, shadow deepened, using the short "lift" spring
     func setLifted(_ on: Bool) {
         guard on != lifted, let p = item?.placement else { return }
         lifted = on
@@ -124,7 +124,7 @@ final class CardLayer: QuietLayer {
         shadowOffset = CGSize(width: 0, height: offset)
     }
 
-    /// 屏幕上现在的样子：位置、尺寸、变换。飞行中途取动画里的那一帧，接着飞不会跳
+    /// How it looks on screen now: position, size, transform. Mid-flight it takes the current animation frame, so continuing the flight won't jump
     struct Pose {
         var position: CGPoint, size: CGSize, transform: CATransform3D
     }
@@ -138,7 +138,7 @@ final class CardLayer: QuietLayer {
         Pose(position: CGPoint(x: p.frame.midX, y: p.frame.midY), size: p.frame.size, transform: CATransform3DMakeAffineTransform(transform(for: p)))
     }
 
-    /// 换位置的动画（FLIP）：图层已经放到终点，从 start 那个样子开始只动画变换，位图和阴影跟着走，不会变形错位
+    /// Move animation (FLIP): the layer is already at its destination; only the transform animates from the start look, and the bitmap and shadow follow without distorting or misaligning
     func fly(from start: Pose) {
         guard let p = item?.placement else { return }
         lifted = false
@@ -156,7 +156,7 @@ final class CardLayer: QuietLayer {
         add(a, forKey: "transform")
     }
 
-    /// 新来的卡：从稍小、透明长到原样
+    /// A newly arrived card: grows from slightly smaller and transparent to its normal look
     func appear() {
         let grow = CASpringAnimation(perceptualDuration: Motion.place.response, bounce: 1 - Motion.place.damping)
         grow.keyPath = "transform"
@@ -171,7 +171,7 @@ final class CardLayer: QuietLayer {
         add(fade, forKey: "opacity")
     }
 
-    /// 换内容时新换上来的卡：只淡入
+    /// A card newly swapped in when switching content: fades in only
     func fadeIn() {
         let fade = CABasicAnimation(keyPath: "opacity")
         fade.fromValue = 0
@@ -179,15 +179,15 @@ final class CardLayer: QuietLayer {
         add(fade, forKey: "opacity")
     }
 
-    /// 换内容时同一张卡飞过来、自己的图还没画好：先用旧图层那张顶着，免得飞过来的是一块底色。
-    /// 裁剪不同的图不借，拉伸着会错
+    /// When switching content, the same card flies over before its own image is drawn: borrow the old layer's image in the meantime, so what flies over isn't a blank patch of color.
+    /// Images with a different crop aren't borrowed; stretched, they'd be wrong
     func borrow(_ other: CardLayer) {
         guard isPainting, content.contents == nil, other.item?.placement.crop == item?.placement.crop else { return }
         content.contents = other.content.contents
         content.contentsScale = other.content.contentsScale
     }
 
-    /// 离开的卡：淡出，稍微缩小；做完回调
+    /// A departing card: fades out and shrinks slightly; calls back when done
     func vanish(_ done: @escaping @MainActor () -> Void) {
         CATransaction.begin()
         CATransaction.setCompletionBlock { MainActor.assumeIsolated { done() } }
@@ -209,7 +209,7 @@ final class CardLayer: QuietLayer {
         CATransaction.commit()
     }
 
-    /// 淡出途中被叫回来：停下淡出，回到原样
+    /// Called back mid fade-out: stop fading and return to normal
     func stay() {
         removeAnimation(forKey: "opacity")
         removeAnimation(forKey: "transform")
@@ -231,18 +231,18 @@ final class CardLayer: QuietLayer {
         item = nil
     }
 
-    /// 缩得很小时阴影看不清，却会让系统合成画面每帧多花十几毫秒，所以关掉
+    /// When zoomed far out the shadow can't be seen, yet costs the system over ten milliseconds of compositing per frame, so turn it off
     func setShadow(_ on: Bool) {
         shadowOn = on
         shadowOpacity = on ? Float(lifted ? CardShape.lift.opacity : CardShape.shadow.opacity) : 0
     }
 
-    /// 位图还在画
+    /// The bitmap is still being drawn
     var isPainting: Bool { loading != nil }
-    /// 图在这么短的时间里到，算是马上就有，不淡入
+    /// An image arriving within this short a time counts as immediate and doesn't fade in
     private static let instant = 1.0 / 30
 
-    /// 新请求取代旧请求；卡被回收时 unbind 会取消它。新图到之前继续显示旧图
+    /// A new request replaces the old one; unbind cancels it when the card is recycled. Keeps showing the old image until the new one arrives
     @MainActor func render(at s: CGFloat, files: FileStore) {
         guard let item else { return }
         loading?.cancel()
@@ -252,9 +252,9 @@ final class CardLayer: QuietLayer {
             let image = await Painter.bitmap(for: item, scale: s, files: files)
             guard !Task.isCancelled, let self else { return }
             if let image {
-                // 第一次拿到图、又等了一阵才到：淡进来，灰底不突然换成图。
-                // 一两帧内就画好的不淡（灰底还没被看见）；换清晰度时已有旧图，也不淡。
-                // 内容变了的（revise）从旧图慢一点化过去：字和角标在眼前换，快了晃眼
+                // The first image arrives after a while: fade it in so the gray background doesn't abruptly become the image.
+                // No fade if it's drawn within a frame or two (the gray hasn't been seen yet), nor when switching resolution with an old image already there.
+                // When the content changed (revise), transition from the old image a bit more slowly: text and badges change right in front of you, and fast is jarring
                 let arrives = content.contents == nil && CACurrentMediaTime() - asked > Self.instant
                 if arrives || blends {
                     let fade = CATransition()
@@ -263,22 +263,22 @@ final class CardLayer: QuietLayer {
                     content.add(fade, forKey: "contents")
                 }
                 blends = false
-                // 不拉伸（文字类卡片钉在左上角）时按图的实际清晰度显示，否则高倍率画的图会按像素原样放大
+                // When not stretched (text cards pinned to the top left), show at the image's actual resolution; otherwise an image drawn at a high scale would be enlarged pixel for pixel
                 content.contentsScale = CGFloat(image.width) / max(content.bounds.width, 1)
                 content.contents = image
             }
-            // 画完就放掉：做完的任务还被引用着，它的运行内存就一直不还（5000 张卡时上百 MB）
+            // Let go once drawn: a finished task that's still referenced never gives back its memory (hundreds of MB with 5000 cards)
             loading = nil
         }
     }
 
-    /// 悬停时会动的卡动起来，移开就停：动图逐帧播，本机视频静音预览
+    /// Cards that can move do so on hover and stop when the pointer leaves: animated images play frame by frame, local videos preview muted
     @MainActor func hover(_ on: Bool, files: FileStore) {
         animate(on, files: files)
         preview(on, files: files)
     }
 
-    /// 动图悬停时才动：在后台解出各帧，按原来的节奏循环播放；移开就停
+    /// Animated images only move on hover: decode the frames in the background and loop them at their original pace; stop when the pointer leaves
     @MainActor private func animate(_ on: Bool, files: FileStore) {
         framing?.cancel()
         guard on else { content.removeAnimation(forKey: "frames"); return }
@@ -296,8 +296,8 @@ final class CardLayer: QuietLayer {
         }
     }
 
-    /// 本机视频悬停时静音预览，和动图悬停才动是同一个习惯：停留一小会儿才开始（鼠标路过不算），
-    /// 画面出来了才淡到封面上，移开就停。网上的视频不预览：要联网加载。裁过的卡也不预览：视频画面和裁出来的那一块对不上
+    /// Local videos preview muted on hover, the same habit as animated images only moving on hover: starts after a short dwell (passing over doesn't count),
+    /// fades in over the cover once the picture appears, and stops when the pointer leaves. Online videos don't preview: they'd need loading from the network. Cropped cards don't either: the video picture wouldn't match the cropped part
     @MainActor private func preview(_ on: Bool, files: FileStore) {
         stopPreview()
         guard on, let item, case .card(let card) = item.face, card.kind == .video, let name = card.original, item.placement.crop == nil else { return }
@@ -311,7 +311,7 @@ final class CardLayer: QuietLayer {
             screen.frame = content.bounds
             screen.videoGravity = .resizeAspectFill
             screen.opacity = 0
-            // 角标另画一层压在画面上面，跟着画面一起显、一起撤：预览时时长、平台、状态照样看得见
+            // Badges are drawn on a separate layer over the picture, shown and removed along with it: duration, platform, and status stay visible during preview
             let marks = QuietLayer()
             marks.frame = content.bounds
             screen.addSublayer(marks)
@@ -320,7 +320,7 @@ final class CardLayer: QuietLayer {
             player.play()
             marks.contents = await Painter.marks(for: item, scale: scale)
             if Task.isCancelled { return }
-            // 第一帧解出来之前是黑的：等它出来再显
+            // It's black until the first frame is decoded: wait for it before showing
             while !screen.isReadyForDisplay {
                 try? await Task.sleep(for: .milliseconds(30))
                 if Task.isCancelled { return }

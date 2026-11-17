@@ -1,8 +1,8 @@
 import SwiftUI
 import Tokens
 
-/// 无边框的小按钮：悬停铺一层浅底，按下深一档，让人知道点得到。图标按钮用圆，文字按钮用胶囊
-/// filled 的平时就铺着浅底（建议问题这种胶囊），悬停、按下各深一档
+/// A small borderless button: hovering lays a light background, pressing goes one shade darker, so people know it's clickable. Icon buttons are circles, text buttons capsules
+/// filled ones have the light background all the time (capsules like suggested questions); hover and press each go one shade darker
 struct HoverButton<S: Shape>: ButtonStyle {
     let shape: S
     var filled = false
@@ -18,7 +18,7 @@ struct HoverButton<S: Shape>: ButtonStyle {
         @State private var hovering = false
         @Environment(\.isEnabled) private var enabled
 
-        /// 平时、悬停、按下，一档比一档深
+        /// Normal, hover, pressed, each darker than the last
         private var fill: AnyShapeStyle {
             let level = (filled ? 1 : 0) + (hovering && enabled ? 1 : 0) + (configuration.isPressed ? 1 : 0)
             return [AnyShapeStyle(.clear), AnyShapeStyle(.quaternary), AnyShapeStyle(.tertiary), AnyShapeStyle(.secondary)][level]
@@ -35,21 +35,21 @@ struct HoverButton<S: Shape>: ButtonStyle {
 }
 
 extension ButtonStyle where Self == HoverButton<Capsule> {
-    /// 文字按钮
+    /// Text button
     static var hover: HoverButton<Capsule> { HoverButton(shape: Capsule()) }
 }
 
 extension ButtonStyle where Self == HoverButton<Capsule> {
-    /// 平时就铺着浅底的胶囊：建议问题
+    /// Capsule with a light background all the time: suggested questions
     static var chip: HoverButton<Capsule> { HoverButton(shape: Capsule(), filled: true) }
 }
 
 extension ButtonStyle where Self == HoverButton<Circle> {
-    /// 图标按钮
+    /// Icon button
     static var hoverIcon: HoverButton<Circle> { HoverButton(shape: Circle()) }
 }
 
 extension ButtonStyle where Self == HoverButton<RoundedRectangle> {
-    /// 列表里的一行
+    /// A row in a list
     static var hoverRow: HoverButton<RoundedRectangle> { HoverButton(shape: RoundedRectangle(cornerRadius: 8)) }
 }

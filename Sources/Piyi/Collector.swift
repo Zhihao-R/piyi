@@ -4,22 +4,22 @@ import Canvas
 import Wire
 
 extension Inbox {
-    /// 本机收件箱：快捷键、服务菜单收的由 App 存进来，浏览器扩展收的由中转程序存进来
+    /// Local inbox: shortcut and Services menu collections are stored by the App, browser extension collections by the relay
     static let local = Inbox(folder: Bridge.inbox(in: Bridge.directory))
 }
 
-/// 收集协调者：收件箱里的东西（拖入、粘贴、快捷键、服务菜单、扩展、手机收的都先存在那里）和示例数据，都按同一个顺序调各块
-/// 1. 收的是网址，先按网址查重；收过的提到最前，查到的是残缺卡就借这次重新抓取
-/// 2. 画布按落点给占位卡找空位，资料块写入占位卡和摆放，卡片马上出现
-/// 3. 资料块抽取内容，按内容指纹、最终地址查重，存文件；每张填完就显示
-/// 4. 画布按抽到的内容定最终尺寸，一批卡排成整齐的几行，资料块一次写入这批摆放
-/// 5. 补全正文（图中文字识别），然后进入理解队列；理解完由分拣决定还放进哪些画板
-/// 1～3 步不碰画布，在资料块的 Intake 里
+/// Collection coordinator: inbox items (drag-in, paste, shortcut, Services menu, extension, phone all land there first) and sample data call each part in the same order
+/// 1. If it's a URL, deduplicate by URL first; already-collected ones move to the front, and if it's an incomplete card this collection is used to refetch it
+/// 2. The canvas finds free spots for placeholder cards by drop point, the data layer writes the placeholder cards and placements, cards appear at once
+/// 3. The data layer extracts content, deduplicates by content fingerprint and final URL, stores files; each card shows as soon as it's filled
+/// 4. The canvas sets final sizes from the extracted content, a batch is arranged in neat rows, the data layer writes the batch's placements at once
+/// 5. Complete the body text (text recognition in images), then enter the understanding queue; after understanding, sorting decides which other boards it goes into
+/// Steps 1–3 don't touch the canvas; they're in the data layer's Intake
 @MainActor
 final class Collector {
     private unowned let model: AppModel
     private let extractor: Extractor
-    /// 同时抽取几样
+    /// How many to extract at once
     private static let parallel = 4
 
     init(model: AppModel, extractor: Extractor) {
@@ -27,10 +27,10 @@ final class Collector {
         self.extractor = extractor
     }
 
-    /// 收进 board 这个画板，nil 表示只进资料库；point 是落点（世界坐标），nil 表示当前视野中央。
-    /// done 报这一批的内容是不是都存进了资料库：收件箱据此决定删不删原件。
-    /// heard 在每一样是新的还是收过的都清楚之后调用，入口这时才说「收下了」；给了它，这里就不另外提示「已经收过」
-    /// presets：和 sources 一一对应、事先定好的位置和理解结果（示例画板用）；没指定位置的自动排
+    /// Collect into the board `board`, nil means library only; point is the drop point (world coordinates), nil means the center of the current view.
+    /// done reports whether all of this batch's content was saved to the library: the inbox uses it to decide whether to delete the originals.
+    /// heard is called once it's clear whether each item is new or already collected; only then does the entry point say "collected". If given, this doesn't separately hint "Already collected"
+    /// presets: positions and understanding results fixed in advance, one-to-one with sources (for the sample board); ones without a position are arranged automatically
     func collect(_ sources: [Source], into board: Int64?, at point: CGPoint? = nil, presets: [Seed.Preset] = [],
                  then done: @escaping (Bool) -> Void = { _ in }, heard: (@MainActor (Receipt) -> Void)? = nil) {
         guard let canvas = model.canvas, !sources.isEmpty else { return done(sources.isEmpty) }
@@ -64,20 +64,20 @@ final class Collector {
             }
             saved = Intake.saved(outcomes)
 
-            // 事先生成好的理解结果直接写进去，按卡片现在的内容记上依据：理解时就不再调模型
+            // Write pre-generated understanding results directly, with the basis recorded against the card's current content: understanding then won't call the model
             for (i, outcome) in outcomes.enumerated() {
                 guard case .created(let id, _) = outcome, let understood = preset(i).understood, let card = try await store.card(id) else { continue }
                 try await store.saveUnderstanding(id, basis: card.contentBasis, generated: understood, colors: nil)
             }
 
-            // 4. 最终尺寸，一批排成整齐的几行，一次写入
+            // 4. Final sizes; a batch arranged in neat rows, written at once
             let filled = outcomes.enumerated().compactMap { i, outcome -> (id: Int64, size: CGSize, transcribes: Bool, spot: Seed.Spot?, understood: Generated?)? in
                 guard case .created(let id, let m) = outcome else { return nil }
                 let aspect = m.images.first.flatMap(Self.aspect)
                 return (id, CardSize.initial(kind: m.kind, coverAspect: aspect, text: m.text, hasBody: !(m.body ?? "").isEmpty),
                         Self.transcribes(m.kind, hasFile: m.original != nil), preset(i).spot, preset(i).understood)
             }
-            // 已经收过、这次放进本画板的：有指定位置的也照着摆，比例按它已有的封面算
+            // Already collected and added to this board this time: lay out ones with a given position as given, aspect ratio from its existing cover
             let reused = outcomes.enumerated().compactMap { i, outcome -> (id: Int64, size: CGSize, spot: Seed.Spot)? in
                 guard case .existing(let card, _, true) = outcome, let spot = preset(i).spot else { return nil }
                 let aspect = card.cover.flatMap { CardSize.coverAspect($0, files: store.files) }
@@ -105,7 +105,7 @@ final class Collector {
                 model.reload()
             }
 
-            // 5. 补全正文
+            // 5. Complete the body text
             completeBodies(filled.map { ($0.id, $0.transcribes, $0.understood) })
         } catch {
             model.notify(String(localized: "收集没完成：\(error.localizedDescription)"))
@@ -113,14 +113,14 @@ final class Collector {
         }
     }
 
-    /// 指定位置的外框：宽度照指定的，高度没指定就按卡片自己的比例
+    /// Frame for a given position: width as given; height, if not given, from the card's own aspect ratio
     nonisolated private static func frame(of spot: Seed.Spot?, size: CGSize, origin: CGPoint) -> CGRect? {
         guard let spot, size.width > 0 else { return nil }
         return CGRect(x: origin.x + spot.origin.x, y: origin.y + spot.origin.y, width: spot.width,
                       height: spot.height ?? (size.height * spot.width / size.width).rounded())
     }
 
-    /// 收到已经收过的（资料块已经把它提到最前、放进了画板、从废纸篓恢复）：记一次回看，告诉你
+    /// Received something already collected (the data layer already moved it to the front, put it in the board, restored it from Trash): record a revisit and tell you
     private func met(_ existing: Card, restored: Bool, placed: Bool, on board: Int64?, quietly: Bool) async {
         defer { model.reload() }
         if placed, let board { model.record(.placed, [existing.id!], board: board) }
@@ -132,10 +132,10 @@ final class Collector {
         model.notify(notice)
     }
 
-    // MARK: 收件箱
+    // MARK: Inbox
 
-    /// 收件箱里还没收的收进来，一次收的一份。从画布收的落回原来的画板和位置（画板已经删了就只进资料库），照旧在窗口里提示；
-    /// 别的入口只进资料库（收的那一刻开着哪个画板只是碰巧，等以后自动分拣），查过重后把这一份和回话交给 heard
+    /// Collect what's not yet collected in the inbox, one item per collect. Those collected from the canvas land back on their original board and position (library only if the board was deleted), with hints in the window as before;
+    /// other entry points go into the library only (which board was open at the moment of collection is just chance; sort automatically later), and after deduplication hand this item and the reply to heard
     func drain(_ inbox: Inbox, heard: @escaping @MainActor (Inbox.Arrival, Receipt) -> Void) {
         Task {
             await inbox.drain { @MainActor [weak self] arrival in
@@ -152,11 +152,11 @@ final class Collector {
         }
     }
 
-    /// 快捷键、服务菜单存的由它自己回话
+    /// Shortcut and Services menu items reply on their own
     private var quick: QuickCollect?
 
-    /// 本机收件箱：查过重后按各入口存的时候起的编号回话。扩展的回给浏览器；快捷键、服务菜单的由它自己说；
-    /// 都不是（上次没收完、这次补收的）且不止一样时在窗口里说一声
+    /// Local inbox: after deduplication, reply using the ID each entry point assigned when storing. Extension items reply to the browser; shortcut and Services menu items speak for themselves;
+    /// if none of these (left uncollected last time, collected now) and more than one, mention it in the window
     func drainLocal(quick: QuickCollect) {
         self.quick = quick
         drain(.local) { [weak self] arrival, receipt in
@@ -165,8 +165,8 @@ final class Collector {
         }
     }
 
-    /// 拖进、粘贴到画布上的：和别的入口一样先存进收件箱（记着落在哪个画板、哪个位置），卡存好才删；
-    /// 抽取到一半退出，下次打开接着收，落回原处
+    /// Dragged or pasted onto the canvas: stored in the inbox first like other entry points (noting which board and position), deleted only once the card is saved;
+    /// if the app quits mid-extraction, collection continues on next launch and lands back in place
     func receive(_ sources: [Source], into board: Int64?, at point: CGPoint) {
         guard !sources.isEmpty, let quick else { return }
         Task {
@@ -179,9 +179,9 @@ final class Collector {
         }
     }
 
-    /// 补全正文：在后台、较低的优先级识别图中文字、转录、取平台字幕，每张补完就进入理解队列。
-    /// 要在本机转录的排到最后：长视频转录要几分钟，别让同一批的图片、平台视频陪着等
-    /// understood：事先生成好的理解结果。补完正文（图中文字、转录）卡片内容就变了，按新内容重新记上依据，免得再调模型
+    /// Complete the body text: in the background at lower priority, recognize text in images, transcribe, fetch platform subtitles; each card enters the understanding queue once done.
+    /// Local transcription goes last: long videos take minutes to transcribe, so images and platform videos in the same batch shouldn't wait on it
+    /// understood: pre-generated understanding results. Completing the body text (image text, transcripts) changes the card content, so re-record the basis against the new content to avoid calling the model again
     private func completeBodies(_ cards: [(id: Int64, transcribes: Bool, understood: Generated?)]) {
         guard let store = model.store else { return }
         let (extractor, understander) = (extractor, model.understander)
@@ -197,7 +197,7 @@ final class Collector {
         }
     }
 
-    /// 上次退出时没做完的补全正文，这次接着做：分拣要等它
+    /// Body-text completion unfinished at last quit continues this time: sorting waits for it
     func completeUnfinishedBodies() {
         Task {
             let cards = (try? await model.store?.bodiesToComplete()) ?? []
@@ -205,17 +205,17 @@ final class Collector {
         }
     }
 
-    /// 要在本机转录：有文件的视频、音频
+    /// Needs local transcription: videos and audio with a file
     private static func transcribes(_ kind: Kind, hasFile: Bool) -> Bool { (kind == .video || kind == .audio) && hasFile }
 
-    // MARK: 重新抓取
+    // MARK: Fetch again
 
-    /// 正在重新抓的卡：同一张同时只抓一份
+    /// Cards being refetched: only one fetch per card at a time
     private var refetching: Set<Int64> = []
-    /// 这次运行里扩展连上时已经自动补抓过的卡：没登录的网站浏览器每次重连都会再失败，只自动试一次，之后靠右键「重新抓取」
+    /// Cards auto-refetched in this run when the extension connected: sites you're not logged into fail on every reconnect, so auto-try only once, after that rely on the context menu "Fetch Again"
     private var triedWithBrowser: Set<Int64> = []
 
-    /// 残缺卡重新抓一次（这次收来的就是它时，用这次收来的内容）；还是没抓全就留着，原因更新
+    /// Refetch an incomplete card once (if this collection is that card, use the content just collected); if still incomplete, keep it and update the reason
     func refetch(_ card: Card, from source: Source? = nil) {
         guard let store = model.store, let id = card.id, let url = card.url.flatMap(URL.init(string:)),
               refetching.insert(id).inserted else { return }
@@ -231,14 +231,14 @@ final class Collector {
         }
     }
 
-    /// 打开时、联网后：断网时收的、上次没抓完的残缺卡自动补抓
+    /// On launch and once online: auto-refetch incomplete cards collected offline or left unfinished last time
     func refetchOffline() {
         Task {
             for card in (try? await model.store?.partialCards()) ?? [] where card.partial?.waitsForNetwork == true { refetch(card) }
         }
     }
 
-    /// 扩展连上后：等浏览器打开的、要登录的残缺卡自动补抓（浏览器里可能已经登录过）
+    /// After the extension connects: auto-refetch incomplete cards waiting for the browser or needing login (you may have logged in in the browser already)
     func refetchForBrowser() {
         Task {
             for card in (try? await model.store?.partialCards()) ?? [] where card.partial?.waitsForBrowser == true {
@@ -248,9 +248,9 @@ final class Collector {
         }
     }
 
-    // MARK: 读剪贴板、拖放
+    // MARK: Reading the clipboard, drag and drop
 
-    /// 剪贴板或拖放里的东西：文件、图片（带所在页面的网址）、网址、文字。一串网址拆成一个个网址
+    /// Things on the clipboard or in a drop: files, images (with the URL of their page), URLs, text. A string of URLs is split into individual URLs
     static func sources(in pasteboard: NSPasteboard) -> [Source] {
         var out: [Source] = []
         for item in pasteboard.pasteboardItems ?? [] {
@@ -275,7 +275,7 @@ final class Collector {
         return nil
     }
 
-    /// 封面的高宽比，从文件头读
+    /// Cover aspect ratio (height/width), read from the file header
     nonisolated private static func aspect(_ data: Data) -> CGFloat? {
         FileExtractor.pixelSize(data).map { $0.height / $0.width }
     }

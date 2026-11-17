@@ -3,52 +3,52 @@ import QuartzCore
 import Library
 import Tokens
 
-/// 聚拢：搜索和灵感的结果飞到眼前，其余卡片退成背景；退出后恢复原来的摆法。
-/// 摆法都是临时的，不写资料库。来自别的画板的卡是「访客」：淡入，下面标出出处
+/// Gathering: search and inspiration results fly up front and the other cards recede into the background; on exit the original arrangement is restored.
+/// The arrangement is temporary and not written to the library. Cards from other boards are "visitors": they fade in, with their source marked below
 struct Gathering {
-    /// 聚拢的卡（摆放编号），按结果顺序
+    /// Gathered cards (placement IDs), in result order
     var members: [Int64] = []
-    /// 被挪过的本画板摆放：原来的样子，退出时飞回去
+    /// Placements on this board that were moved: their original state, to fly back to on exit
     var homes: [Int64: Placement] = [:]
     var visitors: [Int64: Visitor] = [:]
-    /// 飞完了才显示出处标签，免得标签先到、卡后到
+    /// Source labels show only after the flight finishes, so a label doesn't arrive before its card
     var landed = false
 }
 
-/// 访客：临时加进来的卡
+/// Visitors: cards temporarily added
 struct Visitor {
-    /// 它在别的画板里的摆法和画板名；哪个画板都没放的为 nil
+    /// Its placement on another board and that board's name; nil when it isn't on any board
     var home: Home?
-    /// 聚拢前的样子：比例、裁剪按它，文字类卡片的字号按它的宽度算放大倍数
+    /// How it looked before gathering: ratio and crop follow it, and for text cards the enlargement factor is computed from its width
     var natural: Placement
 }
 
 extension CanvasView {
     public var isGathered: Bool { gathering != nil }
 
-    /// 有卡在原地亮着
+    /// Some cards are lit up in place
     public var isSpotlit: Bool { !lit.isEmpty }
 
-    /// 来自别处、还没留在当前画板的卡（卡片编号）
+    /// Cards from elsewhere not yet kept on the current board (card IDs)
     public var visitingCards: [Int64] {
         guard let g = gathering else { return [] }
         return g.members.filter { g.visitors[$0] != nil }.compactMap { items[$0]?.cardID }
     }
 
-    /// 把这些卡聚拢到眼前，按给的顺序排；已经在聚拢时换成新的一组，留下的卡直接挪到新位置。
-    /// insets：视图四边被浮层（搜索栏、文字面板）占掉的宽度，卡片让开它们
+    /// Gathers these cards up front, in the given order; when already gathering, switches to the new set, and cards that remain move straight to their new positions.
+    /// insets: widths on each side of the view taken by overlays (search bar, text panel); cards keep clear of them
     public func gather(_ cards: [Int64], insets: NSEdgeInsets) async {
         guard let content else { return }
         endCrop(commit: false)
         let need = cards.filter { resident($0) == nil && items[Self.visitorID($0)] == nil }
         let faces = (try? await store.faces(need)) ?? []
         let homes = (try? await store.homes(of: need, excluding: board)) ?? [:]
-        // 等读库期间画布可能换了内容、访客可能淡出走了：以下都按等完之后的样子算，中间不再让出主线程
+        // While waiting on the library the canvas may have switched content and visitors may have faded out: everything below works from the state after the wait, without yielding the main thread again
         guard self.content == content else { return }
         if gathering == nil { selection = [] }
         lit = []
         var state = gathering ?? Gathering()
-        // 幕压在画板原有的卡上面：按它们原来的叠放顺序算，不算聚拢时临时抬高的
+        // The scrim sits above the board's existing cards: by their original stacking order, not the temporary raise from gathering
         veilZ = (items.values.filter { !Self.isVisitor($0.id) }.map { state.homes[$0.id]?.z ?? $0.placement.z }.max() ?? 0) + 1
 
         let faceByID = Dictionary(faces.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -56,7 +56,7 @@ extension CanvasView {
             if let item = resident(card) { return item.id }
             let id = Self.visitorID(card)
             if state.visitors[id] != nil { return id }
-            // 正在淡出又被要回来：停下淡出，接着当访客
+            // Was fading out and requested again: stop fading and carry on as a visitor
             if let back = departing.removeValue(forKey: id) {
                 state.visitors[id] = back
                 live[id]?.stay()
@@ -65,7 +65,7 @@ extension CanvasView {
             guard let face = faceByID[card] else { return nil }
             var p = homes[card]?.placement ?? Placement(boardID: 0, cardID: card, frame: CGRect(origin: .zero, size: initialSize(face)), z: 0)
             p.id = id
-            // 访客不是这个画板里的摆放：别的画板的「新」不带过来
+            // Visitors aren't placements on this board: "New" from other boards isn't carried over
             p.unseen = false
             items[id] = BoardItem(placement: p, face: .card(face))
             state.visitors[id] = Visitor(home: homes[card], natural: p)
@@ -78,7 +78,7 @@ extension CanvasView {
         let wasLive = Set(live.keys)
         let fresh = Set(members.filter { state.visitors[$0] != nil && live[$0] == nil })
         var from: [Int64: Placement] = [:]
-        // 不在新结果里的本画板卡：飞回原位
+        // Cards on this board not in the new results: fly back to their original positions
         for (id, home) in state.homes where !members.contains(id) {
             from[id] = items[id]?.placement
             items[id]?.placement = home
@@ -104,7 +104,7 @@ extension CanvasView {
         setVeil(Palette.recede)
     }
 
-    /// 退出聚拢：本画板的卡飞回原位，访客淡出
+    /// Exit gathering: this board's cards fly back to their original positions, visitors fade out
     public func scatter() {
         guard let state = gathering else { return }
         let wasLive = Set(live.keys)
@@ -125,8 +125,8 @@ extension CanvasView {
         if needsReload { needsReload = false; Task { try? await reload() } }
     }
 
-    /// 把访客留在当前画板：放在视野中央附近的空处，退出聚拢时飞过去。返回留下了几张。
-    /// 先把资料库写完，再一次性换掉屏幕上的状态：写库期间鼠标、Esc、新的一组结果都可能动到它
+    /// Keep the visitors on the current board: placed in free space near the center of the view, flying there when gathering ends. Returns how many were kept.
+    /// Finish writing to the library first, then swap the on-screen state all at once: during the write, the mouse, Esc, or a new set of results could all touch it
     @discardableResult
     public func keepVisitors(_ cards: [Int64]? = nil) async throws -> [Int64] {
         guard let state = gathering, let board else { return [] }
@@ -144,12 +144,12 @@ extension CanvasView {
         return homes.compactMap(\.cardID)
     }
 
-    /// 写进资料库的访客换成正式的摆放编号；图层原样留着，画好的位图不用重画
+    /// Visitors written to the library get proper placement IDs; the layers stay as they are and drawn bitmaps needn't be redrawn
     private func settle(_ placed: [(visitor: Int64, home: Placement)]) {
         guard !placed.isEmpty else { return }
         defer { delegate?.canvasDidEdit(self, error: nil) }
         record(.placed(added: placed.map(\.home), removed: []), as: String(localized: "放进当前画板"), on: .board(placed[0].home.boardID))
-        // 写库期间退出了聚拢：访客已经淡出，重读一遍让留下的卡出现在画板上
+        // Gathering was exited during the library write: visitors have already faded out, so reload to make the kept cards appear on the board
         guard var state = gathering else { Task { try? await reload() }; return }
         for (id, home) in placed {
             guard state.visitors.removeValue(forKey: id) != nil, var item = items.removeValue(forKey: id) else { continue }
@@ -166,7 +166,7 @@ extension CanvasView {
         updateOverlay()
     }
 
-    /// 打字时字面命中的卡原地亮起，不动位置：平时其余卡淡下去一档；聚拢时结果里没命中的淡一些。nil 或空集合表示不亮
+    /// While typing, cards that literally match light up in place without moving: normally the other cards dim one step; while gathering, results that don't match dim somewhat. nil or an empty set means nothing is lit
     public func spotlight(_ cards: Set<Int64>?) {
         let hits = cards ?? []
         let pool = gathering.map { Set($0.members) } ?? Set(items.keys)
@@ -176,7 +176,7 @@ extension CanvasView {
         updateVeil()
     }
 
-    /// 不在聚拢时，幕有两种用处：字面命中的卡原地亮起、多选时没选中的卡弱化；亮起优先
+    /// When not gathering, the scrim has two uses: lighting up literal matches in place, and de-emphasizing unselected cards during multi-select; lighting up takes priority
     func updateVeil() {
         if gathering == nil {
             veilZ = (items.values.map(\.placement.z).max() ?? 0) + 1
@@ -185,29 +185,29 @@ extension CanvasView {
         for (id, l) in live { raise(l, id) }
     }
 
-    /// 选了卡：它们排在幕上面，其余的弱化。画板里单选时有角标，多选才弱化；资料库里选中只靠弱化来看出
+    /// Cards are selected: they sit above the scrim and the rest are de-emphasized. On a board a single selection has badges and only multi-select de-emphasizes; in the library selection shows only through de-emphasis
     private var focusesSelection: Bool { isEditable ? selection.count > 1 : browses && !selection.isEmpty }
 
-    /// 出处标签上点了一下：返回那张卡和它来自的画板
+    /// A click on a source label: returns that card and the board it came from
     public func origin(at p: CGPoint) -> (card: Int64, board: Int64)? {
         guard let state = gathering, state.landed, let id = overlay.tag(at: p),
               let home = state.visitors[id]?.home, let card = items[id]?.cardID else { return nil }
         return (card, home.placement.boardID)
     }
 
-    /// 镜头对准某张卡（从出处标签跳过来时用）
+    /// Point the camera at a card (used when jumping from a source label)
     public func focus(card: Int64) {
         guard let item = resident(card) else { return }
         focus(item.id)
     }
 
-    // MARK: 内部
+    // MARK: Internal
 
-    /// 访客的临时编号：不和画板里的摆放（正数）、几种卡片视图的临时摆放（卡片编号的相反数）撞上
+    /// Temporary IDs for visitors: don't collide with placements on boards (positive) or temporary placements of the card views (negated card IDs)
     static func visitorID(_ card: Int64) -> Int64 { -(1 << 40) - card }
     static func isVisitor(_ id: Int64) -> Bool { id <= -(1 << 40) }
 
-    /// 这张卡在当前画布上本来就有的那一条（不算访客）；同一张卡摆了几次时取最上面的
+    /// The placement this card already has on the current canvas (not visitors); when the same card is placed several times, take the topmost
     private func resident(_ card: Int64) -> BoardItem? {
         items.values.filter { !Self.isVisitor($0.id) && $0.cardID == card }.max { $0.placement.z < $1.placement.z }
     }
@@ -217,8 +217,8 @@ extension CanvasView {
                          text: face.isOwnText ? face.excerpt : nil, hasBody: face.length > 0)
     }
 
-    /// 在屏幕上排好，换回世界坐标：卡片之间的空隙在屏幕上恒定，不随缩放变化。
-    /// 画布铺到侧边栏和标题栏底下，被它们盖住的部分也要让开
+    /// Lay out on screen, then convert back to world coordinates: gaps between cards stay constant on screen regardless of zoom.
+    /// The canvas extends under the sidebar and title bar, so the parts they cover must be kept clear too
     private func layout(_ members: [Int64], insets: NSEdgeInsets, state: Gathering) -> [CGRect] {
         let s = covered, m = CGFloat(Chrome.inset) * 2
         let area = CGRect(x: s.left + insets.left + m, y: s.top + insets.top + m,
@@ -238,8 +238,8 @@ extension CanvasView {
         invalidateRegion()
     }
 
-    /// 摆放变了的卡从原来的样子飞到新位置（FLIP：图层直接放到终点，只动画变换）；新来的访客淡入。
-    /// wasLive：改摆放之前就有图层的卡，从屏幕上现在的样子起飞；其余的（视野外飞进来的）从原来的摆法起飞
+    /// Cards whose placement changed fly from their original look to the new position (FLIP: the layer goes straight to its destination and only the transform animates); newly arrived visitors fade in.
+    /// wasLive: cards that had a layer before the placement change take off from how they look on screen now; the others (flying in from outside the view) take off from their original placement
     func stage(from: [Int64: Placement], fadeIn: Set<Int64>, wasLive: Set<Int64>) {
         for (id, old) in from {
             guard let item = items[id], let l = live[id] ?? adopt(id) else { continue }
@@ -261,7 +261,7 @@ extension CanvasView {
         }
     }
 
-    /// 访客离开：淡出后移走。淡出期间又被要回去时，gather 会把它从 departing 里取回
+    /// A visitor leaves: fades out and is then removed. If requested again during the fade, gather takes it back out of departing
     private func depart(_ id: Int64, _ visitor: Visitor) {
         guard let l = live[id] else { items[id] = nil; return }
         departing[id] = visitor
@@ -275,9 +275,9 @@ extension CanvasView {
         }
     }
 
-    /// 排在幕的上面：亮起的卡、多选中的卡、正在飞的卡（飞回原位途中幕在淡出，压在下面会跟着发灰）。
-    /// 悬停不改叠放次序：压在大卡上的小卡要一直点得到。
-    /// 聚拢时又打字：结果里没命中的淡一些；正拖去侧边栏的，原位上的更淡
+    /// Above the scrim: lit-up cards, multi-selected cards, cards in flight (the scrim fades out while they fly back, so beneath it they'd go gray with it).
+    /// Hover doesn't change stacking order: a small card on top of a large one must stay clickable.
+    /// Typing again while gathering: results that don't match dim somewhat; while being dragged to the sidebar, the one left in place dims more
     func raise(_ l: CardLayer, _ id: Int64) {
         guard let p = l.item?.placement ?? items[id]?.placement else { return }
         let above = flying.contains(id) || gathering == nil && (lit.isEmpty ? focusesSelection && selection.contains(id) : lit.contains(id))
@@ -297,7 +297,7 @@ extension CanvasView {
         veil.add(fade, forKey: "opacity")
     }
 
-    /// 出处标签：访客飞到位以后，在卡片左下角下方标出它来自哪个画板
+    /// Source label: once a visitor has flown into place, marks which board it came from below the card's bottom-left corner
     func updateTags() {
         guard let state = gathering, state.landed else { overlay.setTags([]); return }
         overlay.setTags(state.members.compactMap { id in

@@ -1,15 +1,15 @@
 import Foundation
 import Library
 
-/// 搜索：一句话 → 意图和条件 → 卡片、顺序，或一段文字。
-/// 摆在哪由画布决定，这里只给出「哪些卡片、什么顺序」。
-/// 模型都从出口走：意图和精排用判断能力，条件抽取、回答、解读用生成能力；离线或没填密钥时只用规则和本机向量，不等网络
+/// Search: a sentence → intent and conditions → cards and their order, or a passage of text.
+/// The canvas decides where they go; this only gives "which cards, in what order".
+/// All models go through the gateway: intent and reranking use judging; condition extraction, answers and interpretations use generation. Offline or without a key, only rules and local embeddings are used, without waiting on the network
 public actor Searcher {
     let store: Store
     let gateway: Gateway
     private var cards: [SearchCard] = []
     private var stale = true
-    /// 正在读的快照：同时来的几个调用者等同一次读取，不会拿到空的或半旧的
+    /// Snapshot being read: several callers arriving together wait on the same read, never getting an empty or half-stale one
     private var loading: Task<[SearchCard]?, Never>?
 
     public init(store: Store, gateway: Gateway) {
@@ -17,7 +17,7 @@ public actor Searcher {
         self.gateway = gateway
     }
 
-    /// 资料库变了（收了卡、理解完一批、删了卡）：下次用时重读
+    /// The library changed (card collected, a batch understood, card deleted): reread on next use
     public nonisolated func invalidate() { Task { await markStale() } }
 
     private func markStale() {
@@ -25,13 +25,13 @@ public actor Searcher {
         judging = []
     }
 
-    /// 测试用：直接换一份卡片，不读资料库
+    /// For tests: swap in a set of cards directly, without reading the library
     func replaceCards(_ cards: [SearchCard]) {
         self.cards = cards
         stale = false
     }
 
-    /// 当前的卡片快照；资料库变过就重读一遍（几千张卡几十毫秒）
+    /// Current snapshot of cards; reread if the library changed (tens of milliseconds for a few thousand cards)
     public func snapshot() async -> [SearchCard] {
         if let loading { return await loading.value ?? cards }
         guard stale else { return cards }
@@ -47,7 +47,7 @@ public actor Searcher {
 
     static func searchCard(_ row: SearchRow, model: String?) -> SearchCard {
         let card = row.card
-        // 字面匹配查全部正文和字幕：记得的那个词在第几千字、在视频的哪一句都找得到
+        // Literal matching searches all body text and subtitles: the word you remember is found whether it's thousands of characters in or in some sentence of a video
         let content = card.text ?? card.fullBody.map(Article.plain) ?? ""
         let text = [card.displayTitle, card.title, card.caption, card.detail, card.tags.joined(separator: " "), card.format, content, card.source]
             .compactMap { $0 }.joined(separator: " ").lowercased()
@@ -59,41 +59,41 @@ public actor Searcher {
                           boards: row.boards, brief: brief, cover: card.cover)
     }
 
-    /// 给模型看的一行：类型、标题、描述、详细描述、标签；没有描述时用正文开头
+    /// One line for the model: type, title, description, detailed description, tags; body text opening when there's no description
     static func brief(label: String, title: String, caption: String?, detail: String?, tags: [String], excerpt: String) -> String {
         var brief = "[\(label)] \(title)"
         if let caption { brief += "；\(caption)" }
-        // 详细描述写了画面里有什么：「白色的猫」「戴红头巾的女人」靠它才判断得了，不必看图
+        // The detailed description says what's in the image: "a white cat", "a woman in a red headscarf" can only be judged with it, without looking at the image
         if let detail { brief += "；\(detail.prefix(200))" }
         if !tags.isEmpty { brief += "；标签：\(tags.prefix(6).joined(separator: "、"))" }
         if caption == nil, !excerpt.isEmpty { brief += "；\(excerpt.prefix(120))" }
         return brief
     }
 
-    // MARK: 打字时
+    // MARK: While typing
 
-    /// 字面命中的卡：打字时原地亮起，不动位置
+    /// Cards with a literal hit: lit up in place while typing, without moving
     public func literal(_ q: Query) async -> [Int64] {
         Ranking.literal(await snapshot(), q)
     }
 
-    // MARK: 理解这句话
+    // MARK: Understanding the sentence
 
-    /// 判断能力能不能用：在线，并且有能用的服务方。理解一句话、精排靠它
+    /// Whether judging is usable: online, with a usable provider. Understanding a sentence and reranking rely on it
     func canJudge(online: Bool) async -> Bool {
         guard online else { return false }
         return gateway.canJudge
     }
 
-    /// 生成能力能不能用。抽一张的解读、回答提问靠它
+    /// Whether generation is usable. Interpreting a drawn card and answering questions rely on it
     func canGenerate(online: Bool) async -> Bool {
         guard online else { return false }
         return gateway.canGenerate
     }
 
-    /// 交给模型理解：一次请求问完意图，以及有没有限定时间、类型、颜色，要不要看图。
-    /// 判断模型写不出文字，要找的内容由规则按它的结论去掉条件词；没回来（模型不可用、超时）就全用规则的。
-    /// 等它的同时先按规则拆出的条件精排，理解完再补判新冒出来的候选：停手后交给它理解，按回车时多半已经判完
+    /// Hand to the model to understand: one request asks the intent, and whether time, type or color is limited and whether images need to be seen.
+    /// The judge model can't write text, so rules remove condition words based on its conclusions to get what to search for; if it doesn't return (model unavailable, timeout), the rules are used throughout.
+    /// While waiting, rerank by the conditions the rules split out, then judge any new candidates after understanding: it's handed off when you stop typing, so by the time you press Return judging is usually done
     public func interpret(_ text: String, filters: Filters, online: Bool) async -> Query {
         let rules = QueryRules.parse(text, filters: filters)
         guard await canJudge(online: online) else { return rules }
@@ -102,13 +102,13 @@ public actor Searcher {
         guard let verdicts = await within(Self.interpretTimeout, {
             try await gateway.judge([(Self.said, text)], Self.questions)
         }) else { return rules }
-        // 意图不设把握线：把握不够时改用规则的只会更差（选模型时的测试）
+        // No confidence threshold for intent: falling back to rules when unsure only does worse (tested when choosing models)
         let q = QueryRules.parse(text, filters: filters, judged: Self.judged(verdicts))
         prejudge(q)
         return q
     }
 
-    /// 在后台先把要找的卡精排掉，判过的记在 judging 里
+    /// Rerank the cards to find in the background first, recording judged ones in judging
     private func prejudge(_ q: Query) {
         guard q.intent == .find, !q.semantic.isEmpty else { return }
         Task { _ = await rerank(await coarse(q), for: q) }
@@ -116,8 +116,8 @@ public actor Searcher {
 
     static let said = "用户在收藏夹的搜索框里输入的一句话"
 
-    /// 理解一句话问的几道题：意图、时间、类型、颜色、要不要看图，顺序固定，judged 按这个顺序读。
-    /// 前四道的问法是选模型时在测试集上试过的，改了要重测
+    /// The questions asked to understand a sentence: intent, time, type, color, whether to see images, in a fixed order that judged is read in.
+    /// The wording of the first four was tried on the test set when choosing the model; retest if you change it
     static let questions: [Question] = [
         Question("这句话想做什么？", .choice([
             (Intent.find.rawValue, "找卡片：想从收藏里找出符合描述的卡片"),
@@ -133,7 +133,7 @@ public actor Searcher {
         ])),
         Question("这句话是否限定了画面的主要颜色？只是字面上带颜色字的（比如「明白」「红楼梦」）算没有限定。",
                  .choice([("none", "没有限定颜色")] + ColorName.allCases.map { ($0.rawValue, $0.aliases[0].replacingOccurrences(of: "色", with: "")) })),
-        // 选型时没测这一题。问法在 16 句上比过：问「是否必须看图」时 Jev 把「猫」「塔罗牌」也判成五五开，这样问分得开
+        // This question wasn't tested when choosing models. Wordings were compared on 16 sentences: asking "must the image be seen" made Jev call "cat" and "tarot cards" a coin toss too; asking this way separates them
         Question("这句话找的是画面「像什么」「构图」「画风」这类只有看图才判断得了的特征吗？画面里有什么人、物、颜色、场景，卡片的文字描述里都写了，不算。", .yesNo),
     ]
 
@@ -145,9 +145,9 @@ public actor Searcher {
 
     static let interpretTimeout = 3.0, rerankTimeout = 10.0, visualTimeout = 20.0, readingTimeout = 20.0
 
-    // MARK: 找卡片
+    // MARK: Finding cards
 
-    /// 粗找：向量和字面一起打分，按分数线截
+    /// Rough search: embedding and literal scores together, cut by threshold
     public func coarse(_ q: Query) async -> (shown: [Int64], ranked: [Int64]) {
         let cards = await snapshot()
         let vector = q.semantic.isEmpty ? nil : try? await gateway.embed(q.semantic, as: .query)
@@ -155,28 +155,28 @@ public actor Searcher {
         return (Ranking.shown(scored, semantic: vector != nil), scored.map(\.id))
     }
 
-    /// 粗找完还有没有云端精排：要有按意思找的内容，判断模型也用得上
+    /// Whether cloud reranking follows the rough search: there must be content to find by meaning, and the judge model must be usable
     private func refines(_ q: Query, online: Bool) async -> Bool {
         guard !q.semantic.isEmpty else { return false }
         return await canJudge(online: online)
     }
 
-    /// 精排的候选：分数线以上的，加上线下面紧挨着的一批，精排有机会把漏掉的捞回来
+    /// Candidates for reranking: those above the threshold, plus a batch just below it, so reranking can recover ones that were missed
     static func candidates(_ shown: [Int64], _ ranked: [Int64], limit: Int = 30) -> [Int64] {
         var seen = Set<Int64>()
         return (shown + ranked.prefix(limit)).filter { seen.insert($0).inserted }
     }
 
-    /// 找卡片：粗找，模型能用时再精排。返回要聚拢的卡，按顺序
+    /// Find cards: rough search, then reranking when the model is usable. Returns the cards to gather, in order
     public func find(_ q: Query, online: Bool) async -> [Int64] {
         let found = await coarse(q)
         guard await refines(q, online: online) else { return found.shown }
         return Array(await rerank(found, for: q).prefix(Ranking.maxResults))
     }
 
-    /// 找卡片，结果分批给，画面只在换了一批卡时才动：本机粗找的先给；云端精排回来，
-    /// 命中的还是同一批卡就不再给（保持本机的顺序），不是同一批才给新的。
-    /// gathered 是眼前已经聚拢着的（回车时先按规则找的那批）：云端精排马上要来时等它，不为中间结果多动一次
+    /// Find cards, delivering results in batches, with the view moving only when the set of cards changes: the local rough search comes first; when cloud reranking returns,
+    /// if the hits are the same set of cards nothing more is delivered (keeping the local order); only a different set is delivered.
+    /// gathered is what's already gathered in front of you (the batch found by rules on Return): if cloud reranking is about to arrive, wait for it rather than move once more for an intermediate result
     public nonisolated func finding(_ q: Query, online: Bool, over gathered: [Int64] = []) -> AsyncStream<[Int64]> {
         AsyncStream { continuation in
             let task = Task {
@@ -196,9 +196,9 @@ public actor Searcher {
         }
     }
 
-    /// 精排：候选逐张判断和这句话有多相关，留下「相关」以上的，先按相关程度、再按粗找的名次排。
-    /// 这句话早先判过的卡（理解它时按规则的条件先判的）只要符合现在的条件也算进来，模型改写了要找的内容时漏不掉。
-    /// 没判出来的卡：分数线以上的按粗找时的名次插回去
+    /// Reranking: judge how relevant each candidate is to the sentence, keep "relevant" and above, ordered by relevance and then by rough-search rank.
+    /// Cards judged earlier for this sentence (judged first by the rules' conditions while it was being understood) are included if they meet the current conditions, so none are missed when the model rewrites what to find.
+    /// Cards not judged: those above the threshold are inserted back by their rough-search rank
     func rerank(_ found: (shown: [Int64], ranked: [Int64]), for q: Query) async -> [Int64] {
         let order = Dictionary(uniqueKeysWithValues: found.ranked.enumerated().map { ($1, $0) })
         let choices = await judge(await judgeable(found), for: q)
@@ -208,30 +208,30 @@ public actor Searcher {
         return Self.restoring(found.shown, into: kept) { choices[$0] != nil }
     }
 
-    /// 交给判断模型的候选
+    /// Candidates handed to the judge model
     private func judgeable(_ found: (shown: [Int64], ranked: [Int64])) async -> [SearchCard] {
         let byID = Dictionary(uniqueKeysWithValues: await snapshot().map { ($0.id, $0) })
         return Self.candidates(found.shown, found.ranked).compactMap { byID[$0] }
     }
 
-    /// 没判出来的卡：分数线以上的按粗找时的名次插回去
+    /// Cards not judged: those above the threshold are inserted back by their rough-search rank
     static func restoring(_ shown: [Int64], into kept: [Int64], judged: (Int64) -> Bool) -> [Int64] {
         var result = kept
         for (i, id) in shown.enumerated() where !judged(id) { result.insert(id, at: min(i, result.count)) }
         return result
     }
 
-    /// 一句话、看不看图：精排问模型的问题只由这两样决定，和时间、类型这些条件无关
+    /// The sentence and whether to see images: the question reranking asks the model depends only on these two, not on conditions like time and type
     private struct Asked: Equatable {
         var text: String
         var visual: Bool
     }
 
-    /// 最近几句话里每张卡的判断（问完的或正在问的）。边打边停会先后理解好几句，各记各的，互不覆盖
+    /// Each card's judgment for the last few sentences (finished or in progress). Typing with pauses understands several sentences in turn; each is recorded separately without overwriting
     private var judging: [(asked: Asked, tasks: [Int64: Task<[Int64: Int], Never>])] = []
 
-    /// 逐张判断（选项见 relevance），和这句话早先判过的合在一起返回；没判出来（超时、出错）的不在里面。
-    /// 正在问的等它，没问过的马上另问一次，两边同时进行，不排队
+    /// Judge card by card (options in relevance), returned together with earlier judgments for this sentence; ones not judged (timeout, error) are left out.
+    /// Ones in progress are waited on, ones never asked are asked again right away, both at the same time, without queuing
     func judge(_ cards: [SearchCard], for q: Query) async -> [Int64: Int] {
         let asked = Asked(text: q.text, visual: q.visual)
         var tasks = judging.first { $0.asked == asked }?.tasks ?? [:]
@@ -247,14 +247,14 @@ public actor Searcher {
         }
         var known: [Int64: Int] = [:]
         for task in Set(tasks.values) { known.merge(await task.value) { $1 } }
-        // 没判出来的忘掉，下次再问
+        // Forget the ones not judged; ask again next time
         for (i, entry) in judging.enumerated() where entry.asked == asked {
             judging[i].tasks = entry.tasks.filter { known[$0.key] != nil || tasks[$0.key] != $0.value }
         }
         return known
     }
 
-    /// 问一次模型。要看图才判断得了的查询附上小图
+    /// Ask the model once. Queries that need the image to judge attach small images
     static func ask(_ cards: [SearchCard], for q: Query, gateway: Gateway, files: FileStore) async -> [Int]? {
         var pictures: [Data] = []
         let items = cards.map { card in
@@ -264,20 +264,20 @@ public actor Searcher {
         }
         let question = Question("这张卡片和这次搜索有多相关？" + (pictures.isEmpty ? "" : "有附图的请看图判断。"), .grade(relevance))
         let attached = pictures
-        // 看图慢得多（实测 4～11 秒）：给它更长的限时。Jev 不能看图，有附图时出口交给能看图的生成模型
+        // Seeing images is much slower (4–11 seconds measured): give it a longer time limit. Jev can't see images; with images attached the gateway hands it to a generation model that can
         return await within(q.visual ? visualTimeout : rerankTimeout) {
             try await gateway.judge(each: items, question, about: [("搜索", q.text)], images: attached).map(\.choice)
         }
     }
 
-    /// 相关程度，由低到高。留下「相关」以上的
+    /// Relevance, from low to high. Keep "relevant" and above
     static let relevance = ["无关", "沾点边", "相关", "正是要找的"]
-    /// 精排最多附几张图
+    /// At most how many images to attach for reranking
     static let pictures = 12
 
-    /// 和主题相关的卡（带主题的灵感从这里挑）：粗找，模型能用时逐张问「和主题直接相关吗」。
-    /// 判断能力里只有这里分流：灵感在后台备着、不用人等，把握不够的交给生成模型仔细判（选型数据：主题筛选从 0.771 升到 0.903，App 实测 0.886）。
-    /// 仔细判由出口逐条限时，超时的留着第一遍的结论
+    /// Cards related to a topic (inspiration with a topic picks from here): rough search, then when the model is usable ask card by card "is this directly related to the topic".
+    /// This is the only place judging splits off: inspiration is prepared in the background with nobody waiting, so unconfident ones go to the generation model for a careful judgment (selection data: topic filtering rose from 0.771 to 0.903, 0.886 measured in the app).
+    /// The gateway limits careful judgments item by item; ones that time out keep the first-pass conclusion
     func related(_ q: Query) async -> [Int64] {
         let found = await coarse(q)
         let open = await judgeable(found)
@@ -288,18 +288,18 @@ public actor Searcher {
         return Self.restoring(found.shown, into: zip(open, verdicts).filter { $1.yes }.map(\.0.id)) { judged.contains($0) }
     }
 
-    /// 问法是选模型时在测试集上试过的，改了要重测
+    /// The wording was tried on the test set when choosing the model; retest if you change it
     static let themed = Question("这张卡片的内容和这个主题直接相关吗？只能牵强联想到的不算。", .yesNo)
 
-    // MARK: 文字面板
+    // MARK: Text panel
 
-    /// 抽一张、提问的结果：一段文字和它依据的卡
+    /// Result of drawing a card or asking a question: a passage of text and the cards it's based on
     public struct Reading: Sendable, Equatable {
         public var text: String?
         public var cards: [Int64]
     }
 
-    /// 随机抽一张当「牌」，模型能用时给出解读。句子里的主题只用来写解读，不缩小卡池；时间、类型、颜色、范围照常筛
+    /// Draw one card at random as the "card", with an interpretation when the model is usable. The topic in the sentence is only used for writing the interpretation, not to narrow the pool; time, type, color and scope filter as usual
     public func draw(_ q: Query, online: Bool) async -> Reading? {
         var conditions = q
         conditions.semantic = ""
@@ -324,7 +324,7 @@ public actor Searcher {
         return Reading(text: reply?.text, cards: [card.id])
     }
 
-    /// 提问：找出相关的卡，让模型据此回答，并说出依据了哪几张
+    /// Question: find related cards, have the model answer based on them, and say which ones it relied on
     public func ask(_ q: Query, online: Bool) async -> Reading {
         var search = q
         search.lookFor(q.semantic.isEmpty ? q.text : q.semantic)
@@ -354,7 +354,7 @@ public actor Searcher {
     }
 }
 
-/// 限时做一件事：超时、出错都返回 nil，并取消还没做完的
+/// Do one thing with a time limit: returns nil on timeout or error, and cancels what isn't finished
 func within<T: Sendable>(_ seconds: Double, _ work: @escaping @Sendable () async throws -> T) async -> T? {
     await withTaskGroup(of: T?.self) { group in
         group.addTask { try? await work() }

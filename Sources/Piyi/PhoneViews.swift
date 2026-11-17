@@ -3,7 +3,7 @@ import CoreImage.CIFilterBuiltins
 import Library
 import Tokens
 
-/// 设置里的一行：从手机收到过没有，没收到过时给设置指引
+/// A row in settings: whether anything has been received from the phone, with setup instructions if not
 struct PhoneRow: View {
     let inbox: PhoneInbox
     @State private var guiding = false
@@ -29,8 +29,8 @@ struct PhoneRow: View {
     }
 }
 
-/// 扫码添加快捷指令、分享一张照片，收到后换成「已收到」。引导和设置共用。
-/// 片羽看不到手机上装了什么，收到第一样东西才算连好
+/// Scan to add the shortcut, share a photo, and once received it turns into "Received". Shared by onboarding and settings.
+/// Piyi can't see what's installed on the phone; it counts as connected only once the first thing arrives
 struct PhoneGuide: View {
     let inbox: PhoneInbox
 
@@ -68,7 +68,7 @@ struct PhoneGuide: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
-                    // 账户不同不会报错，只是一直收不到，先说在前面
+                    // Different accounts don't raise an error, things just never arrive, so say it up front
                     Label("iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到", systemImage: "exclamationmark.icloud")
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(Palette.warning.color)
@@ -96,7 +96,7 @@ struct PhoneGuide: View {
     }
 }
 
-/// 白底黑码，放大时不糊
+/// Black code on white, stays sharp when enlarged
 private struct QRCode: View {
     let url: URL
 

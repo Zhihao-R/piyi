@@ -1,10 +1,10 @@
 import Foundation
 
-/// 比较用网址：同一个网页的不同写法得到同一串字符。
-/// 去掉追踪参数（按明确的清单），统一大小写、`www.`、结尾斜杠，丢掉 `#` 后面的部分。
-/// 原始网址另外保存：小红书的链接去掉参数就打不开，补抓时要用原始的。
+/// URL for comparison: different spellings of the same web page give the same string.
+/// Drops tracking parameters (from an explicit list), normalizes case, `www.` and trailing slashes, and drops everything after `#`.
+/// The original URL is saved separately: Xiaohongshu links don't open without their parameters, so refetching needs the original.
 public enum URLKey {
-    /// 只用来追踪来源、不改变页面内容的参数
+    /// Parameters that only track the source and don't change the page content
     static let trackingParameters: Set<String> = [
         "fbclid", "gclid", "dclid", "msclkid", "igshid", "mc_cid", "mc_eid", "ref_src", "spm", "spm_id_from",
         "share_source", "share_medium", "share_plat", "share_session_id", "share_tag", "share_from", "share_id",
@@ -16,7 +16,7 @@ public enum URLKey {
               let scheme = parts.scheme?.lowercased(), ["http", "https"].contains(scheme),
               var host = parts.host?.lowercased(), !host.isEmpty else { return nil }
         if host.hasPrefix("www.") { host.removeFirst(4) }
-        // http 和 https 指同一个网页
+        // http and https mean the same page
         parts.scheme = "https"
         parts.host = host
         parts.fragment = nil
@@ -30,8 +30,8 @@ public enum URLKey {
         return parts.string
     }
 
-    /// 收的网址跳转到了 final，final 还指着收的那样东西吗（两个都是比较用网址）。失效的链接常被转到首页、上一级栏目，
-    /// 那是比它更泛的地方，不能当成它：根路径不算；同一个站里路径比收的那个短也不算。短链接跳到别的站的具体页面算
+    /// The collected URL redirected to final; does final still point to the collected thing (both are comparison URLs)? Dead links are often redirected to the home page or a parent section,
+    /// somewhere broader that can't stand in for it: the root path doesn't count; on the same site, a shorter path than the collected one doesn't count either. A short link redirecting to a specific page on another site counts
     static func lands(_ final: String, from requested: String?) -> Bool {
         let segments = { (key: String) in URLComponents(string: key)?.path.split(separator: "/").count ?? 0 }
         guard segments(final) > 0 else { return false }

@@ -6,12 +6,12 @@ import Synchronization
 import Library
 @testable import Wire
 
-/// 假浏览器像 Chrome 一样启动中转程序、按浏览器协议收发，扮演扩展；
-/// App 这一端用真的 Hub。目录换成临时的，不碰正在用的 App
+/// A fake browser launches the relay like Chrome does, sends and receives over the browser protocol, and plays the extension;
+/// the App side uses the real Hub. Directories are temporary, so the App in use isn't touched
 @Suite(.serialized) struct RelayTests {
     let directory = URL.temporaryDirectory.appending(path: "bridge-\(UUID().uuidString.prefix(8))")
 
-    /// 收集都先落进收件箱再回话；App 没开时等它打开，中转程序一连上就叫它去看。文件由收的一方存好才删，这里不删
+    /// Everything collected lands in the inbox before replying; if the App isn't open, wait for it, and tell it to look as soon as the relay connects. Files are deleted by the collecting side once saved, not here
     @Test func collectsLandInInboxBeforeTheAck() async throws {
         let browser = try FakeBrowser(directory)
         defer { browser.close() }
@@ -29,14 +29,14 @@ import Library
         try await events.wait { $0.arrivals == 2 }
         #expect(inbox().count == 2)
 
-        // App 查过重，按编号把要显示的那句话回给扩展
+        // The App has checked for duplicates and replies to the extension with the text to show, by ID
         hub.send(Message(.collected, id: "c2", ok: true, say: "已经收过，提到了最前"))
         #expect(try await browser.next(.collected).say == "已经收过，提到了最前")
     }
 
-    /// 收件箱写不进：照实回没存下，不能让扩展说「已存下」
+    /// The inbox can't be written: honestly reply that it wasn't saved; the extension must not say "Saved"
     @Test func failedSaveIsReportedAsFailure() async throws {
-        // 收件箱的位置上是个文件，写不进去
+        // Where the inbox should be there's a file, so it can't be written
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try Data().write(to: URL(fileURLWithPath: Bridge.inbox(in: directory).path))
         let browser = try FakeBrowser(directory)
@@ -46,8 +46,8 @@ import Library
         #expect(ack.ok == false && ack.queued == nil && ack.say?.hasPrefix("没存下") == true)
     }
 
-    /// 头号链路：在网页上右键一张图 → 扩展发来图和所在网页 → 中转程序存进收件箱 → App 收进资料库 → 删掉暂存。
-    /// 扩展由假浏览器扮演，其余都是真的：中转程序、Hub、收件箱、收集（Intake）、资料库
+    /// The main path: right-click an image on a web page → the extension sends the image and its page → the relay saves it to the inbox → the App collects it into the library → the staged copy is deleted.
+    /// The extension is played by the fake browser; everything else is real: the relay, Hub, inbox, collecting (Intake), library
     @Test func imageFromExtensionBecomesACard() async throws {
         let events = Events()
         let hub = Hub(directory: directory, onEvent: events.record)
@@ -90,15 +90,15 @@ import Library
         defer { a.close(); b.close() }
         try await events.wait { $0.browsers.count == 2 && $0.browsers.allSatisfy { $0.version != nil } }
 
-        // 约 2 MB 的整页 HTML 原路回来
+        // About 2 MB of whole-page HTML comes back the same way
         let started = Date()
         let page = try await hub.fetch(URL(string: "https://www.xiaohongshu.com/explore/demo")!, scroll: false)
         #expect(page.html?.utf8.count ?? 0 > 2_000_000)
-        // 单独跑约 0.1 秒；和别的测试一起跑时机器忙，留足余量。要防的是大消息越读越慢（早先的写法要 2.7 秒）
+        // About 0.1 s on its own; when run with other tests the machine is busy, so leave plenty of margin. What this guards against is large messages reading slower and slower (an earlier approach took 2.7 s)
         #expect(Date().timeIntervalSince(started) < 5)
         #expect(a.fetches.count + b.fetches.count == 1)
 
-        // App 退出再打开：中转程序自己重连，并重发扩展的招呼
+        // The App quits and reopens: the relay reconnects by itself and resends the extension's hello
         hub.stop()
         hub = Hub(directory: directory, onEvent: events.record)
         try hub.start()
@@ -108,7 +108,7 @@ import Library
         #expect(a.fetches.count + b.fetches.count == 2)
         #expect((a.fetches + b.fetches).contains { $0.url == "https://example.com/second" && $0.scroll == true })
 
-        // 超过 1 MB 的请求：中转程序拦下、回一条失败，扩展收不到，连接不断
+        // A request over 1 MB: the relay blocks it and replies with a failure, the extension never gets it, and the connection stays up
         await #expect(throws: Hub.Failure.self) {
             try await hub.fetch(URL(string: "https://example.com/" + String(repeating: "x", count: 1_100_000))!, scroll: false)
         }
@@ -148,7 +148,7 @@ import Library
     }
 }
 
-/// 一张小图
+/// A small image
 func png() -> Data {
     let context = CGContext(data: nil, width: 40, height: 30, bitsPerComponent: 8, bytesPerRow: 0,
                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -165,12 +165,12 @@ extension Hub.Failure: Equatable {
     public static func == (a: Self, b: Self) -> Bool { a.errorDescription == b.errorDescription }
 }
 
-/// Hub 报上来的事
+/// Events reported by the Hub
 final class Events: Sendable {
     private let state = Mutex<(browsers: [Hub.Browser], arrivals: Int)>(([], 0))
 
     var browsers: [Hub.Browser] { state.withLock { $0.browsers } }
-    /// 被叫去看收件箱的次数
+    /// How many times it was told to look at the inbox
     var arrivals: Int { state.withLock { $0.arrivals } }
 
     func record(_ event: Hub.Event) {
@@ -182,20 +182,20 @@ final class Events: Sendable {
         }
     }
 
-    /// 等到条件成立，最多 5 秒（中转程序每秒重连一次）
+    /// Waits until the condition holds, at most 5 seconds (the relay reconnects once a second)
     func wait(_ condition: (Events) -> Bool) async throws {
         for _ in 0..<50 where !condition(self) { try await Task.sleep(for: .milliseconds(100)) }
         try #require(condition(self))
     }
 }
 
-/// 像浏览器一样启动中转程序，扮演扩展：打招呼，收到抓取请求就回一份约 2 MB 的页面
+/// Launches the relay like a browser and plays the extension: says hello, and answers fetch requests with a page of about 2 MB
 final class FakeBrowser: @unchecked Sendable {
     private let relay = Process()
     private let input = Pipe(), output = Pipe()
     private let received = Mutex<[Message]>([])
     let failing: Bool
-    /// 收到抓取请求不回答（模拟抓到一半）
+    /// Doesn't answer fetch requests (simulates a fetch cut off midway)
     var mute: Bool { get { muted.withLock { $0 } } set { muted.withLock { $0 = newValue } } }
     private let muted = Mutex(false)
 
@@ -218,7 +218,7 @@ final class FakeBrowser: @unchecked Sendable {
 
     func send(_ message: Message) { writer.writeFrame(message.encoded) }
 
-    /// 等中转程序发来某种消息
+    /// Waits for the relay to send a certain kind of message
     func next(_ type: Message.Kind) async throws -> Message {
         for _ in 0..<50 {
             if let found = received.withLock({ list in list.firstIndex { $0.type == type }.map { list.remove(at: $0) } }) { return found }
@@ -242,7 +242,7 @@ final class FakeBrowser: @unchecked Sendable {
         }
     }
 
-    /// 编译出来的中转程序和测试包在同一个目录
+    /// The built relay is in the same directory as the test bundle
     static func relayBinary() throws -> URL {
         let dirs = [Bundle(for: FakeBrowser.self), Bundle.main].map { $0.bundleURL.deletingLastPathComponent() }
         return try #require(dirs.map { $0.appending(path: "PiyiRelay") }.first { FileManager.default.isExecutableFile(atPath: $0.path) })

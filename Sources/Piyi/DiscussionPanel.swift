@@ -4,8 +4,8 @@ import Intelligence
 import Canvas
 import Tokens
 
-/// 讨论栏：窗口右边常驻、可收起。从上到下是标题行、桌、对话、建议问题、输入框。
-/// 文案极简：操作提示不写，次要按钮只放图标，悬停才出说明
+/// Discussion bar: docked at the window's right, collapsible. Top to bottom: title row, table, conversation, suggested questions, input field.
+/// Minimal copy: no usage hints, secondary buttons are icons only with explanations on hover
 struct DiscussionPanel: View {
     let model: AppModel
     @State private var targeted = false
@@ -22,7 +22,7 @@ struct DiscussionPanel: View {
         }
         .background(RoundedRectangle(cornerRadius: 12).fill(targeted ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.clear)).padding(6))
         .animation(.spring(Motion.lift), value: targeted)
-        // 从画布拖来的卡：放上桌
+        // Cards dragged from the canvas: put on the table
         .dropDestination(for: String.self) { strings, _ in
             guard let cards = model.draggedCards(strings) else { return false }
             discussions.place(cards)
@@ -45,7 +45,7 @@ struct DiscussionPanel: View {
     }
 }
 
-/// 桌：卡片小条，进了废纸篓的半透明；悬停出现拿下桌的叉，点了打开放大查看。「+」是 @ 挑卡
+/// Table: small card strips, translucent if in Trash; hover shows an x to take it off the table, click opens detail view. "+" is the @ card pick
 private struct DeskStrip: View {
     let model: AppModel
 
@@ -98,7 +98,7 @@ private struct DeskChip: View {
     }
 }
 
-// MARK: 对话
+// MARK: Conversation
 
 private struct ChatList: View {
     let model: AppModel
@@ -141,7 +141,7 @@ private struct ChatList: View {
         .frame(maxHeight: .infinity)
     }
 
-    /// 还没说话：桌上有卡时写一句规矩，列出这几张卡之前的讨论；空桌只写一句
+    /// Nothing said yet: with cards on the table, write one line of ground rules and list earlier discussions about these cards; an empty table gets just one line
     @ViewBuilder private var empty: some View {
         let d = model.discussions
         VStack(alignment: .leading, spacing: 10) {
@@ -202,14 +202,14 @@ private struct ChatList: View {
     }
 }
 
-/// 对话里的灰字：放上桌、拿下桌、用了什么工具
+/// Gray text in the conversation: put on the table, taken off the table, which tool was used
 private struct Line: View {
     let text: String
     init(_ text: String) { self.text = text }
     var body: some View { Text(text).font(.system(size: 12)).foregroundStyle(.tertiary) }
 }
 
-/// 一段回答：鼠标停在上面出现「收成文字卡」和「拷贝」；拷贝了换成勾停一会儿
+/// An answer: hovering shows "Save as Note" and "Copy"; after copying it turns into a check for a moment
 private struct AnswerView: View {
     let answer: Answer
     let discussions: DiscussionModel
@@ -242,7 +242,7 @@ private struct AnswerView: View {
     }
 }
 
-/// 回答的正文：Markdown 排好，引用画成灰色小数字。悬停浮出原话和出处，点了在画布上打开那一段
+/// The answer body: rendered Markdown, citations drawn as small gray numbers. Hover shows the original wording and source; click opens that passage on the canvas
 private struct AnswerBody: View {
     let text: String
     let citations: [Citation]
@@ -268,7 +268,7 @@ private struct AnswerBody: View {
         }
     }
 
-    /// 引用先换成占位的私用字符，Markdown 排完再换回小数字：排版不会碰到它们，编号也不进 Markdown 的规则
+    /// Citations are first replaced with private-use placeholder characters and swapped back to small numbers after Markdown rendering: layout never touches them, and the numbers don't fall under Markdown rules
     static func attributed(_ text: String, citations: [Citation], streaming: Bool, title: (Int64) -> String?) -> NSAttributedString {
         var order: [String] = [], source = ""
         for piece in Citations.pieces(text, streaming: streaming) {
@@ -292,20 +292,20 @@ private struct AnswerBody: View {
                 attributes[.link] = URL(string: "cite:\(i)")!
                 attributes[.toolTip] = tip(citations[i], title: title)
             }
-            // 数字前是不断行的窄空格：数字不会单独掉到下一行
+            // A non-breaking narrow space before the number: the number never wraps to the next line alone
             out.replaceCharacters(in: match.range, with: NSAttributedString(string: "\u{202F}\(number)", attributes: attributes))
         }
         return out
     }
 
-    /// 悬停浮出：存下的原话，和出处（卡名、时间点）
+    /// Hover popup: the saved original wording and the source (card name, timestamp)
     static func tip(_ c: Citation, title: (Int64) -> String?) -> String {
         let source = [c.card.flatMap(title), c.seconds.map { Transcript.stamp(Double($0)) }].compactMap { $0 }.joined(separator: " · ")
         return quoted(c.quote) + (source.isEmpty ? "" : "\n\(source)")
     }
 }
 
-// MARK: 输入
+// MARK: Input
 
 private struct InputBar: View {
     @Bindable var discussions: DiscussionModel
@@ -313,7 +313,7 @@ private struct InputBar: View {
     @State private var matches: [Card] = []
     @FocusState private var focused: Bool
 
-    /// 输入框里最后一个 @ 后面打的字：在挑卡
+    /// Text typed after the last @ in the input field: picking cards
     private var atQuery: String? {
         guard let at = text.lastIndex(of: "@") else { return nil }
         let query = text[text.index(after: at)...]
@@ -383,7 +383,7 @@ private struct InputBar: View {
         }
     }
 
-    /// 讨论栏里方块的圆角只有这一种：问题、@ 挑卡的列表、输入框
+    /// The only corner radius for blocks in the discussion bar: questions, the @ card pick list, the input field
     static let corner: CGFloat = 12
 
     private func submit() {

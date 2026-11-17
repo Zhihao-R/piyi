@@ -4,7 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 @testable import Library
 
-/// 手机竖拍的照片常常横着存、另记「转 90°」：卡片的宽高按显示出来的算，不然竖图被放进横卡片、上下被裁掉
+/// Portrait phone photos are often stored landscape with a separate "rotate 90°" note: card width and height go by how it displays, otherwise portrait images land in landscape cards with the top and bottom cropped
 @Suite struct ImageSizeTests {
     private func jpeg(width: Int, height: Int, orientation: Int) throws -> Data {
         let source = try #require(CGImageSourceCreateWithData(png(gray: 0.5, width: width, height: height) as CFData, nil))

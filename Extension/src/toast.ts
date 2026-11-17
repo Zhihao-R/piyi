@@ -1,6 +1,6 @@
-// 页面上的一句提示：底部居中的一枚玻璃胶囊。位置、淡入淡出（0.3 秒）、停留时长（3 秒）、底色都和 App 里的提示一样；
-// 多一个小记号，因为这里有「正在收」这一段等待，App 的提示没有。
-// 这个函数会被整段注入到网页里执行，所以不能引用外面的任何东西
+// A one-line toast on the page: a glass capsule centered at the bottom. Position, fade in/out (0.3 s), duration (3 s) and background all match the App's toasts;
+// plus a small indicator, because here there's a "collecting" wait that the App's toasts don't have.
+// This function is injected into the page and run as a whole, so it can't reference anything outside it
 
 export function toast(text: string, state: 'busy' | 'done' | 'fail') {
   const TAG = 'piyi-toast'

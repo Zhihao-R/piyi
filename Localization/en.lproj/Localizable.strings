@@ -1,4 +1,4 @@
-/* 界面文字的英文翻译。键是代码里的中文原文；带数量的句子在 Localizable.stringsdict 里 */
+/* English translations of the interface text. Keys are the original Chinese in the code; sentences with counts are in Localizable.stringsdict */
 
 "%@ 密钥" = "%@ Key";
 "%@没成功" = "%@ failed";

@@ -1,30 +1,30 @@
 import SwiftUI
 import Tokens
 
-/// 设计数值转成 SwiftUI 的写法
+/// Design values converted to SwiftUI form
 extension RGBA {
     var color: Color { Color(.sRGB, red: r, green: g, blue: b, opacity: a) }
 }
 
 extension Animation {
-    /// 淡入淡出：浮层、面板、提示
+    /// Fade in and out: overlays, panels, hints
     static let fade = Animation.easeOut(duration: Motion.fade)
-    /// 换内容：放大查看按方向键换卡、飞过来的图换成真图
+    /// Content change: switching cards with arrow keys in detail view, the flown-in image swapped for the real one
     static let swap = Animation.easeOut(duration: Motion.swap)
-    /// 当作旧画面的一部分淡出：跟画布的旧画面一样晚半拍开始、匀速淡完（见 Swap.swift 的 liftCurtain）
+    /// Fade out as part of the old view: like the canvas's old view, start half a beat late and fade at a constant rate (see liftCurtain in Swap.swift)
     static let swapOut = Animation.linear(duration: Motion.swap).delay(Motion.swap / 2)
-    /// 跟着画布换内容一起变：同起同止
+    /// Changes along with the canvas content: starting and ending together
     static let swapSpan = Animation.easeInOut(duration: Motion.swapSpan)
 
-    /// 一张图飞过去：落地干脆
+    /// An image flies over: lands crisply
     static let fly = Animation.timingCurve(0.45, 0, 0.15, 1, duration: Motion.fly)
 
-    /// 设计数值里的弹簧
+    /// The spring from the design values
     static func spring(_ s: Motion.Spring) -> Animation { .spring(response: s.response, dampingFraction: s.damping) }
 }
 
 extension Themed where Value == RGBA {
-    /// 跟着窗口深浅色变的颜色
+    /// Colors that follow the window's light/dark appearance
     var color: Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             let c = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light

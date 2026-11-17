@@ -1,7 +1,7 @@
 import Foundation
 import CoreGraphics
 
-/// 收了一批之后的回话：几样是新的，几样已经收过，几样没存进去。各入口的说法都在这里定，浏览器扩展显示的也是 App 发过去的这一句
+/// The reply after collecting a batch: how many are new, how many already collected, how many weren't saved. The wording for every entry point is set here; the browser extension also shows the line the app sends it
 public struct Receipt: Sendable, Equatable {
     public var new = 0
     public var existing = 0
@@ -9,12 +9,12 @@ public struct Receipt: Sendable, Equatable {
 
     public init(new: Int = 0, existing: Int = 0, failed: Int = 0) { (self.new, self.existing, self.failed) = (new, existing, failed) }
 
-    /// 至少有一样在资料库里了；一样都没存好时不能说「收下了」，也不响那一声
+    /// At least one is in the library; if none were saved it can't say "collected", and doesn't play the sound either
     public var kept: Bool { new + existing > 0 }
 
     public var text: String { text(new: new > 1 ? String(localized: "已收进片羽 \(new) 条") : String(localized: "已收进片羽")) }
 
-    /// 在浏览器里右键收的这一样，说出收的是什么：图片站的图常被透明层盖住，浏览器不认为右键在图上，会收成整页，看提示当场就知道
+    /// For one thing collected via right-click in the browser, say what was collected: images on image sites are often covered by a transparent layer, so the browser doesn't think the right-click was on an image and collects the whole page; the message makes that clear right away
     public func text(taking source: Source) -> String {
         let said = switch source.kind {
         case .image: String(localized: "已收下这张图")
@@ -36,14 +36,14 @@ public struct Receipt: Sendable, Equatable {
     }
 }
 
-/// 收集流程里不碰画布的几步，收集协调者和测试都走这里：
-/// 1. 收的是网址，先按网址查重；收过的提到最前
-/// 2. 没收过的写入占位卡（和它在画板上的摆放）
-/// 3. 抽取内容，填进占位卡（按内容指纹、最终地址再查重），每一样填完就报一次
+/// The steps of collecting that don't touch the canvas; the collect coordinator and tests both go through here:
+/// 1. For a URL, check duplicates by URL first; ones already collected are brought to the front
+/// 2. Ones not yet collected get placeholder cards written (with their placements on the board)
+/// 3. Extract content and fill it into the placeholder (checking duplicates again by content fingerprint and final address), reporting each as it's filled
 public struct Intake: Sendable {
     let store: Store
     let extractor: Extractor
-    /// 同时抽取几样
+    /// How many to extract at once
     static let parallel = 4
 
     public init(store: Store, extractor: Extractor) {
@@ -51,33 +51,33 @@ public struct Intake: Sendable {
         self.extractor = extractor
     }
 
-    /// 一样东西的去向
+    /// Where one thing ended up
     public enum Outcome: Sendable {
-        /// 新收的，内容已经填进这张卡
+        /// Newly collected, content already filled into this card
         case created(card: Int64, Material)
-        /// 已经收过：提到了最前。restored 表示它原来在废纸篓里，placed 表示这次放进了目标画板
+        /// Already collected: brought to the front. restored means it was in the trash, placed means it was put on the target board this time
         case existing(Card, restored: Bool, placed: Bool)
-        /// 抽取期间占位卡被删了：不用再收
+        /// The placeholder was deleted during extraction: no need to collect it
         case gone
-        /// 没存进资料库
+        /// Not saved to the library
         case failed
     }
 
     public enum Event: Sendable {
-        /// 占位卡都写进去了
+        /// All placeholders have been written
         case admitted
-        /// 一样东西有了去向
+        /// One thing has ended up somewhere
         case settled(Source, Outcome)
-        /// 每一样是新的还是收过的都清楚了，这时才好说「收下了」：收网址的在查重之后（占位卡已经带着网址存进资料库），其余的在内容填进去之后
+        /// Whether each one is new or already collected is now clear, so it's time to say "collected": for URLs that's after the duplicate check (the placeholder is already saved to the library with its URL), for the rest after content is filled in
         case judged(Receipt)
     }
 
-    /// 收一批，board 为 nil 时只进资料库。frames 给去掉重复网址之后的每一样定一个落点；report 按发生的先后报进展。
-    /// 交回每一样的去向
+    /// Collect a batch; with board nil it only goes into the library. frames gives each thing (after dropping duplicate URLs) a landing spot; report reports progress as it happens.
+    /// Returns where each one ended up
     public func collect(_ sources: [Source], on board: Int64? = nil,
                         frames: @Sendable ([Source]) -> [CGRect] = { $0.map { _ in .zero } },
                         report: @Sendable (Event) async -> Void = { _ in }) async throws -> [Outcome] {
-        // 这一批里重复的网址只留一个
+        // Keep only one of each duplicate URL in this batch
         var seen = Set<String>()
         let sources = sources.filter { source in source.url.flatMap { URLKey.of($0.absoluteString) }.map { seen.insert($0).inserted } ?? true }
         let frames = frames(sources)
@@ -101,7 +101,7 @@ public struct Intake: Sendable {
                                                    note: source.note, title: source.url?.host(), on: board, frame: frames[i]))
         }
         if !fresh.isEmpty { await report(.admitted) }
-        // 网址没查到就是新的；其余的要等内容填进去、按指纹查过才知道
+        // A URL not found is new; the rest are only known after content is filled in and checked by fingerprint
         var unjudged = fresh.count { sources[$0].url == nil }
         receipt.new = fresh.count - unjudged
         if unjudged == 0 { await report(.judged(receipt)) }
@@ -134,7 +134,7 @@ public struct Intake: Sendable {
         return outcomes
     }
 
-    /// 这一批都存进了资料库：收件箱里的原件可以删了
+    /// The whole batch was saved to the library: the originals in the inbox can be deleted
     public static func saved(_ outcomes: [Outcome]) -> Bool {
         !outcomes.contains { if case .failed = $0 { true } else { false } }
     }
@@ -143,7 +143,7 @@ public struct Intake: Sendable {
         let m = await extractor.material(for: source)
         switch try? await store.fill(id, with: m) {
         case .filled?: return .created(card: id, m)
-        // 占位卡的摆放已经转给已有那张时，不再放一份
+        // When the placeholder's placement was already handed to the existing card, don't place another copy
         case .duplicate(let existing, let placed)?:
             guard case .existing(let card, let restored, let placedNow)? = try? await reused(existing, on: placed ? nil : board, frame: frame) else { return .failed }
             return .existing(card, restored: restored, placed: placed || placedNow)

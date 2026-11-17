@@ -1,12 +1,12 @@
 import Foundation
 import GRDB
 
-/// 资料库：卡片、画板、摆放记录和文件的唯一持有者。
-/// 读写都走数据库自己的队列，调用方用 async 版本时不会占住主线程。
+/// The library: sole owner of cards, boards, placements and files.
+/// Reads and writes go through the database's own queue, so callers using the async versions don't block the main thread.
 public final class Store: Sendable {
     public let db: DatabasePool
     public let files: FileStore
-    /// 资料库目录：数据库、文件、缩略图、本机模型都在这里
+    /// Library folder: the database, files, thumbnails and local models all live here
     public let root: URL
 
     /// ~/Library/Application Support/Piyi
@@ -23,7 +23,7 @@ public final class Store: Sendable {
     }
 
     public enum Failure: Error, Equatable {
-        /// 往画板里放的入口会让画板嵌套成环
+        /// The entry put on a board would make boards nest in a cycle
         case cycle
     }
 }

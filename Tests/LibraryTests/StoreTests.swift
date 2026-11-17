@@ -6,12 +6,12 @@ import UniformTypeIdentifiers
 import GRDB
 @testable import Library
 
-/// 每个测试一个临时资料库
+/// A temporary library per test
 func temporaryStore() throws -> Store {
     try Store(root: FileManager.default.temporaryDirectory.appending(path: "piyi-test-\(UUID().uuidString)"))
 }
 
-/// 一张纯色 PNG，颜色不同内容就不同
+/// A solid-color PNG; different colors mean different content
 func png(gray: CGFloat, width: Int = 40, height: Int = 30) -> Data {
     let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
                         space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
@@ -36,7 +36,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         page.url = "http://example.com/post/1"
         let second = try await store.collect(page, into: board, frame: someFrame)
         guard case .created(let id) = first else { Issue.record("第一次应新建"); return }
-        // 同一画板再收一次：还是那张卡，画板里再放一份
+        // Collected again to the same board: still the same card, with another copy placed on the board
         #expect(second == .existing(card: id, restored: false, placed: true))
         #expect(try await store.db.read { try Card.fetchCount($0) } == 1)
         #expect(try await store.items(on: board).count == 2)
@@ -150,7 +150,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         let removed = try await store.removePlacements(before.compactMap(\.id))
         #expect(removed == before)
         #expect(try await store.items(on: board).isEmpty)
-        // 拿走后又放进一张：新摆放不占用拿走的编号
+        // Removed and then another added: the new placement doesn't reuse the removed ID
         try await store.place(card: removed[0].cardID!, on: board, frame: someFrame)
         try await store.exchangePlacements(adding: removed, removing: [])
         #expect(try await store.items(on: board).map(\.placement).contains(before[0]))
@@ -207,7 +207,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         try await store.placeEntry(c, on: b, frame: someFrame)
         await #expect(throws: Store.Failure.cycle) { try await store.placeEntry(a, on: c, frame: someFrame) }
         await #expect(throws: Store.Failure.cycle) { try await store.placeEntry(a, on: a, frame: someFrame) }
-        // 同一个画板放进两个画板不算环
+        // Putting the same board into two boards isn't a cycle
         try await store.placeEntry(c, on: a, frame: someFrame)
     }
 
@@ -226,7 +226,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         #expect(try await store.items(on: b).map(\.placement.frame) == [CGRect(x: 60, y: 80, width: 100, height: 100)])
     }
 
-    /// 粘贴前挑出还没进废纸篓的
+    /// Before pasting, pick out the ones not in the trash
     @Test func liveSkipsTrashedCards() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -243,7 +243,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
         let cover = png(gray: 0.3)
-        // 两张网页卡用了同一张封面图
+        // Two web cards use the same cover image
         var ids: [Int64] = []
         for n in 1...2 {
             var page = Material(kind: .web)
@@ -274,7 +274,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
             ids.append(id)
         }
         try await store.trash([ids[0], ids[1]])
-        // 第三张不在废纸篓里，点名也不删
+        // The third card isn't in the trash, so it isn't deleted even when named
         try await store.purge([ids[0], ids[2]])
         #expect(try await store.card(ids[0]) == nil)
         #expect(try await store.card(ids[1]) != nil)
@@ -295,7 +295,7 @@ let someFrame = CGRect(x: 0, y: 0, width: 200, height: 150)
         try await store.deleteBoard(b, trashingOrphans: true)
         #expect(try await store.card(onlyID)?.trashedAt != nil)
         #expect(try await store.card(sharedID)?.trashedAt == nil)
-        // A 里只剩那张共有的卡，指向 B 的入口没了
+        // A has only the shared card left, and the entry pointing to B is gone
         #expect(try await store.items(on: a).count == 1)
     }
 }

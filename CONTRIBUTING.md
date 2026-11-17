@@ -1,98 +1,100 @@
-# 参与开发
+# Contributing
 
-## 从源码编译
+[中文](CONTRIBUTING.zh-CN.md)
 
-要求：macOS 26 以上，Xcode 26 的 Command Line Tools（带 Swift 6 工具链），Node.js（编译浏览器扩展）。完整的 Xcode 可选：有它时 App 图标由 actool 编译成玻璃版，没有时 `scripts/flat_icon.swift` 把同样的图层叠成普通的 AppIcon.icns。改了图标后两种都要看一眼。
+## Building from source
+
+Requirements: macOS 26 or later, the Xcode 26 Command Line Tools (with the Swift 6 toolchain), and Node.js (for the browser extension). The full Xcode is optional: with it, actool compiles the app icon into the glass version; without it, `scripts/flat_icon.swift` stacks the same layers into a plain AppIcon.icns. After changing the icon, check both.
 
 ```sh
-./scripts/build_app.sh             # 正式版，生成 build/Piyi.app
-swift build && swift run Piyi   # 调试版（先 build，扩展的中转程序才会一起编译出来）
-swift test                         # 自动测试
+./scripts/build_app.sh             # release build, produces build/Piyi.app
+swift build && swift run Piyi   # debug build (build first so the extension relay is compiled too)
+swift test                         # automated tests
 ```
 
-资料库在 `~/Library/Application Support/Piyi/`。启动时设环境变量 `PIYI_ROOT=<目录>` 可以换一个资料库目录，试「新装用户第一次打开」时用。
+The library lives in `~/Library/Application Support/Piyi/`. Set the environment variable `PIYI_ROOT=<directory>` at launch to use a different library directory, for example to try the first launch of a fresh install.
 
-## 用到的模型
+## Models
 
-- **生成和判断**：调用户在设置里选的云端服务商，服务商列表和各家的默认模型在 `Intelligence/Models/Vendor.swift`，Anthropic 走它自己的接口（`Claude.swift`），其余走兼容 OpenAI 的接口（`Cloud.swift`）。写标题、描述、要点、灵感、回答用通用的大模型；判断（登录页还是正文、一句话想做什么）可以另配一个更快的模型；用 OpenRouter 时默认交给专做判断、直接给出各选项概率的模型（`Jev.swift`），比让通用模型写答案快一倍。自动分拣只能用 Jev：放不放进画板的那条线是按它给的概率定的，别的模型报的把握不能用同一条线比。
-- **搜索向量**：Qwen3-Embedding-0.6B，用 llama.cpp 在本机跑，用户在设置里下载。
-- **转录**：系统自带的语音识别，在本机跑；中文、英文两个模型同时听，留把握大的那份。
+- **Generation and judgment**: calls the cloud provider the user picks in Settings. The provider list and each provider's default models are in `Intelligence/Models/Vendor.swift`; Anthropic uses its own API (`Claude.swift`), the others use the OpenAI-compatible API (`Cloud.swift`). Titles, descriptions, key points, inspiration, and answers use a general-purpose model; judgments (login page or article body, what a sentence is asking for) can use a separate, faster model. With OpenRouter, judgments go by default to a model built for judging that returns the probability of each option directly (`Jev.swift`), twice as fast as having a general model write an answer. Automatic sorting works only with Jev: the threshold for placing a card on a board is set against its probabilities, and confidence reported by other models can't be compared against the same threshold.
+- **Search embeddings**: Qwen3-Embedding-0.6B, run locally with llama.cpp; the user downloads it in Settings.
+- **Transcription**: the system's built-in speech recognition, run locally. Chinese and English models listen at the same time, and the more confident result is kept.
 
-所有模型调用只走 `Intelligence/Models/Gateway.swift` 一个出口。
+All model calls go through a single gateway, `Intelligence/Models/Gateway.swift`.
 
-## 代码分块
+## Code layout
 
-| 块 | 负责 | 可以调用 |
+| Module | Responsible for | May call |
 |---|---|---|
-| `Library` | 资料库、内容抽取 | 无 |
-| `Intelligence` | 模型接入、理解、搜索、灵感、分拣、讨论 | `Library` |
-| `Canvas` | 画布、卡片呈现 | `Library`、`Tokens` |
-| `Piyi` | App：界面外壳、收集入口、放大查看 | 以上全部 |
-| `Tokens` | 设计数值：间距、动效时长、颜色、字号，只有数字 | 无 |
-| `Wire` | App、扩展中转程序、扩展之间的消息格式和连接 | 无 |
+| `Library` | Library storage, content extraction | none |
+| `Intelligence` | Model access, understanding, search, inspiration, sorting, discussion | `Library` |
+| `Canvas` | Canvas, card rendering | `Library`, `Tokens` |
+| `Piyi` | The app: interface shell, collection entry points, detail view | all of the above |
+| `Tokens` | Design values: spacing, animation durations, colors, font sizes — numbers only | none |
+| `Wire` | Message format and connections between the app, the extension relay, and the extension | none |
 
-另有两个独立的程序：扩展的中转程序 `PiyiRelay`（由浏览器启动，只用 `Wire`），浏览器扩展本身 `Extension/`（TypeScript，`npm run build` 打包，正式版打包脚本会自动做）。
+There are two separate programs as well: the extension relay `PiyiRelay` (launched by the browser, uses only `Wire`), and the browser extension itself in `Extension/` (TypeScript, bundled with `npm run build`; the release build script does this automatically).
 
-`Package.swift` 按上表写明依赖，编译器会挡住反方向的调用。三处特意的安排：
+`Package.swift` declares the dependencies in the table above, so the compiler blocks calls in the other direction. Three deliberate arrangements:
 
-- **画布和智能互相看不见。** 搜索给出一串卡片编号，由 App 交给画布去聚拢。
-- **抽取要用模型，但 `Library` 不能调 `Intelligence`。** `Library` 只写明它需要的能力（判断抓回来的是不是登录页、抓不到时让模型兜底、转录音视频），App 启动时把 `Intelligence` 的实现交给它。需要反方向的能力时都这样做：在下层写协议，由 App 注入实现。
-- **设计数值单独成块，只放数字。** 画布用 Core Animation 画卡片，其余界面用 SwiftUI，两边用同一套数值。
+- **Canvas and Intelligence can't see each other.** Search returns a list of card IDs, and the app hands them to the canvas to gather.
+- **Extraction needs models, but `Library` can't call `Intelligence`.** `Library` declares only the capabilities it needs (telling whether a fetched page is a login page, falling back to a model when fetching fails, transcribing audio and video), and the app passes in the `Intelligence` implementations at launch. Whenever a capability is needed in the other direction, do the same: declare a protocol in the lower module and have the app inject the implementation.
+- **Design values are a separate module that holds only numbers.** The canvas draws cards with Core Animation and the rest of the interface uses SwiftUI; both share the same values.
 
-**收集流程**由 App 里的收集协调者（`Collector`）按这个顺序调各块：
+**Collecting** is coordinated by the app's `Collector`, which calls the modules in this order:
 
-1. 收的是网址，先按网址查重。
-2. 画布按落点给占位卡找空位，`Library` 写入占位卡，卡片马上出现。
-3. `Library` 抽取内容，按内容指纹查重，存文件。
-4. 按抽到的内容定最终尺寸，一次写入这批摆放。
-5. 卡片进入理解队列。
+1. If it's a URL, check for duplicates by URL first.
+2. The canvas finds a free spot for a placeholder card near the drop point, `Library` writes the placeholder, and the card appears right away.
+3. `Library` extracts the content, checks for duplicates by content fingerprint, and stores the files.
+4. Final sizes are set from the extracted content, and the placements in the batch are written at once.
+5. The cards join the understanding queue.
 
-## 写代码的规矩
+## Coding rules
 
-- **画布上不给每张卡配真控件。** 卡片平时是一张画好的图层，只有正在编辑文字的那一张临时盖一个文本框；悬停、选中只改那一张的边框。
-- **主线程只做界面。** 解码图片、画卡片位图、读写数据库、算向量、调模型都在后台。视野内马上要显示的用 `.userInitiated`，算向量、调模型、生成缩略图用 `.utility`。
-- **测试写在逻辑容易错、又不靠肉眼判断的地方**：数据库操作、查重、网格吸附、查询解析、抽取器的输出。用 Swift Testing。
+- **No real controls per card on the canvas.** A card is normally a pre-drawn layer; only the card whose text is being edited temporarily gets a text field on top. Hover and selection change only that card's border.
+- **The main thread does interface work only.** Decoding images, drawing card bitmaps, database reads and writes, computing embeddings, and calling models all happen in the background. Work for what's about to appear in view uses `.userInitiated`; embeddings, model calls, and thumbnails use `.utility`.
+- **Write tests where logic is easy to get wrong and can't be judged by eye**: database operations, duplicate checks, grid snapping, query parsing, extractor output. Use Swift Testing.
 
-## 界面语言
+## Interface language
 
-系统是中文时显示中文，其余语言显示英文。代码里写中文原文，英文翻译在 `Localization/en.lproj/`：
+The interface is in Chinese when the system language is Chinese, and in English otherwise. Code holds the Chinese source text; English translations are in `Localization/en.lproj/`:
 
-- SwiftUI 里直接写的文字（`Text`、`Button`、`Label`、`.help`…）自动翻；其余显示给人看的写成 `String(localized: "…")`。
-- 同一句中文在不同地方要翻成不同英文时，用 `String(localized: "键名", defaultValue: "中文")`。
-- 带数量、要分单复数的句子写进 `Localizable.stringsdict`（中英两份都要有，否则中文会退回英文）。
-- 存在数据里、代码拿来当标识的中文名（格式、平台，如「公众号」）不翻数据本身，显示时用 `displayed(_:)`。
-- AI 写的标题、描述、回答跟界面语言走（`Intelligence/Writing.swift`），提示词本身保持中文。
-- 浏览器扩展的文字在 `Extension/static/_locales/`。
+- Text written directly in SwiftUI (`Text`, `Button`, `Label`, `.help`, …) is translated automatically; any other user-facing text is written as `String(localized: "…")`.
+- When the same Chinese phrase needs different English in different places, use `String(localized: "key", defaultValue: "中文")`.
+- Sentences with counts that need singular and plural forms go in `Localizable.stringsdict` (both Chinese and English entries are required, or the Chinese interface falls back to English).
+- Chinese names stored in data and used by code as identifiers (formats and platforms, such as 公众号, shown as "WeChat") are not translated in the data; use `displayed(_:)` when showing them.
+- AI-written titles, descriptions, and answers follow the interface language (`Intelligence/Writing.swift`); the prompts themselves stay in Chinese.
+- The browser extension's text is in `Extension/static/_locales/`.
 
-加了界面文字后跑一遍，列出没翻译的：
+After adding interface text, run this to list anything untranslated:
 
 ```sh
 python3 scripts/check_strings.py
 ```
 
-调试版（`swift run`）不是打包好的 App，界面总是显示代码里的中文；要看英文，用 `./scripts/build_app.sh` 打包后，加 `-AppleLanguages "(en)"` 启动。
+The debug build (`swift run`) isn't a bundled app, so its interface always shows the Chinese from the code. To see English, bundle with `./scripts/build_app.sh` and launch with `-AppleLanguages "(en)"`.
 
-## 联网和真实模型的检查
+## Checks that use the network or real models
 
-平时的 `swift test` 不联网、不调模型。下面几项要手动打开：
-
-```sh
-OPENROUTER_API_KEY=… swift test --filter RealCloud   # 用真实云端理解一张图，确认请求格式没坏
-SUBTITLE_CHECK=1 swift test --filter SubtitleCheck    # 取一条 YouTube 视频的字幕，平台改版时它先失败
-SPEECH_CHECK=1 swift test --filter SpeechLanguage     # 用系统朗读做一段中文、一段英文，看转录是不是跟音频的语言走
-```
-
-## 示例画板
-
-新装时放进「示例」画板的素材在 `Sources/Piyi/Resources/Seed/`，清单是 `manifest.json`，每项可以带位置、宽高和旋转，引文和中文文件另带一份英文版（`en`），界面不是中文时换上。想重新摆：在 App 里把示例画板摆好，再运行
+The regular `swift test` doesn't go online or call models. Turn these on manually:
 
 ```sh
-python3 scripts/seed_export.py "画板名"
+OPENROUTER_API_KEY=… swift test --filter RealCloud   # understand an image with a real cloud model to confirm the request format still works
+SUBTITLE_CHECK=1 swift test --filter SubtitleCheck    # fetch a YouTube video's subtitles; fails first when the platform changes
+SPEECH_CHECK=1 swift test --filter SpeechLanguage     # speak a Chinese and an English passage with system text-to-speech and check that transcription follows the audio's language
 ```
 
-把位置写回清单。
+## Sample board
 
-示例卡的标题、描述、标签、要点也是事先生成好、随 App 发的，新用户不用填密钥就能看到完整的卡。换了素材后重新生成：用一份全新的资料库、带着密钥，分别以中文和英文界面打开打包好的 App，等示例卡都理解完，再把两份结果写回清单：
+The material placed on the "Sample" board for new installs is in `Sources/Piyi/Resources/Seed/`, listed in `manifest.json`. Each item can carry a position, size, and rotation; quotes and Chinese files also carry an English version (`en`) that's swapped in when the interface isn't Chinese. To rearrange it, lay out the sample board in the app, then run
+
+```sh
+python3 scripts/seed_export.py "Board name"
+```
+
+to write the positions back to the manifest.
+
+The sample cards' titles, descriptions, tags, and key points are also generated in advance and shipped with the app, so new users see complete cards without entering an API key. After changing the material, regenerate them: with a fresh library and an API key, open the bundled app once with the Chinese interface and once with the English one, wait until all sample cards are understood, then write both results back to the manifest:
 
 ```sh
 PIYI_ROOT=/tmp/seed-zh OPENROUTER_API_KEY=… build/Piyi.app/Contents/MacOS/Piyi -AppleLanguages "(zh-Hans)"
@@ -101,4 +103,4 @@ python3 scripts/seed_understood.py /tmp/seed-zh/library.sqlite zh
 python3 scripts/seed_understood.py /tmp/seed-en/library.sqlite en
 ```
 
-素材的许可见 `THIRD_PARTY_NOTICES.md`，新加的素材必须能随 App 自由分发。
+Licenses for the material are in `THIRD_PARTY_NOTICES.md`. Any new material must be freely redistributable with the app.

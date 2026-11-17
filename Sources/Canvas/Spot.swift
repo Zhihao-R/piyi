@@ -2,21 +2,21 @@ import AppKit
 import Library
 import Tokens
 
-/// 一张卡此刻在屏幕上的样子：放大查看从它长出来、关掉时缩回它
+/// How a card looks on screen right now: detail view grows out of it and shrinks back into it when closed
 public struct Spot {
-    /// 在窗口里的位置和大小（左上为原点、y 向下，跟 SwiftUI 的全局坐标一致），不含旋转
+    /// Position and size in the window (origin at top left, y down, matching SwiftUI's global coordinates), without rotation
     public let frame: CGRect
     public let rotation: Double
-    /// 画布上显示的就是整张画面（图片、视频，没裁、没翻、不是长图）时，那张画面的文件；放大查看能拿它整张飞
+    /// When the canvas shows the whole picture (image or video, not cropped, not flipped, not a long image), that picture's file; detail view can fly the whole picture
     public let cover: String?
-    /// 飞不了整张画面的卡（文字、网页……）此刻在画布上的样子：放大查看从它展开成面板
+    /// For cards that can't fly as a whole picture (text, web pages…), how they look on the canvas right now: detail view expands from it into a panel
     public let face: CGImage?
-    /// 是哪一份摆放：同一张卡放了几份时，关的时候回到打开的那份
+    /// Which placement it is: when the same card is placed several times, closing returns to the one it was opened from
     public let placement: Int64
 }
 
 extension CanvasView {
-    /// 这一份摆放在眼前时的样子
+    /// How this placement looks when in front of you
     public func spot(_ placement: Int64) -> Spot? {
         guard let window, let height = window.contentView?.bounds.height,
               let layer = live[placement], let item = items[placement] else { return nil }
@@ -26,7 +26,7 @@ extension CanvasView {
         let size = CGSize(width: p.width * k, height: p.height * k)
         let rect = CGRect(x: c.x - size.width / 2, y: c.y - size.height / 2, width: size.width, height: size.height)
         guard rect.intersects(viewport) else { return nil }
-        // 视图坐标 y 向下 → 窗口坐标（y 向上）→ SwiftUI 全局坐标（y 向下）
+        // View coordinates (y down) → window coordinates (y up) → SwiftUI global coordinates (y down)
         let inWindow = convert(CGRect(x: rect.minX, y: bounds.height - rect.maxY, width: size.width, height: size.height), to: nil)
         var cover: String?
         if case .card(let card) = item.face, card.kind == .image || card.kind == .video, card.form != .long,
@@ -38,25 +38,25 @@ extension CanvasView {
                     rotation: p.rotation, cover: cover, face: face, placement: placement)
     }
 
-    /// 这张卡在眼前的那一份：选中的优先，否则按摆放编号取，每次取到的是同一份
+    /// The placement of this card that's in front of you: the selected one first, otherwise picked by placement ID, so it's the same one every time
     public func spot(ofCard card: Int64) -> Spot? {
         let copies = live.keys.filter { items[$0]?.cardID == card }
         return (copies.first(where: selection.contains) ?? copies.min()).flatMap { spot($0) }
     }
 
-    /// 这张卡在不在眼前这块画布上（不论有没有滚到视野里）
+    /// Whether this card is on the canvas in front of you (whether or not it's scrolled into view)
     public func holds(card: Int64) -> Bool {
         items.values.contains { $0.cardID == card }
     }
 
-    /// 卡被拿进放大查看：画布上这张连同选中框一起不见，像是被拿走了
+    /// The card is taken into detail view: this one on the canvas disappears along with its selection frame, as if it had been picked up
     public func hide(_ spot: Spot) {
         live[spot.placement]?.isHidden = true
         live[spot.placement]?.hover(false, files: store.files)
         overlay.isHidden = true
     }
 
-    /// 放回来
+    /// Put it back
     public func reveal(_ spot: Spot) {
         live[spot.placement]?.isHidden = false
         overlay.isHidden = false

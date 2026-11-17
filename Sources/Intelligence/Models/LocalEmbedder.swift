@@ -1,25 +1,25 @@
 import Foundation
 import llama
 
-/// 本机向量：llama.cpp 跑 Qwen3-Embedding-0.6B（8 位量化）。
-/// llama.cpp 的上下文不能多线程同时用，所有调用在锁里串行做；调用方放在 utility 优先级的后台任务里，不和界面抢
+/// Local embeddings: llama.cpp running Qwen3-Embedding-0.6B (8-bit quantized).
+/// A llama.cpp context can't be used by several threads at once, so all calls run serially inside a lock; callers put them in utility-priority background tasks so they don't compete with the interface
 public final class LocalEmbedder: Embedding, @unchecked Sendable {
     public static let name = String(localized: "本机")
     public var name: String { Self.name }
     public var isReady: Bool { FileManager.default.fileExists(atPath: file.path) }
     public var model: String { LocalModel.name }
 
-    /// 查询前面加的任务说明，和选模型时测试的写法一致
+    /// Task instruction added before queries, matching how it was written when testing during model selection
     static let task = "Given a search query, retrieve relevant cards from a personal collection of images, notes, web pages and videos"
-    /// 一段最多 1024 个词元，超出截断
+    /// At most 1024 tokens per piece; longer is truncated
     static let maxTokens: Int32 = 1024
 
     let file: URL
-    /// 为 true 时先等着再算：模型在显卡上算，和画面绘制抢显卡，你正在拖动、缩放画布时让一让
+    /// When true, wait before computing: the model runs on the GPU and competes with drawing, so it yields while you're dragging or zooming the canvas
     let yields: @Sendable () -> Bool
     private let lock = NSLock()
     private var loaded: (model: OpaquePointer, context: OpaquePointer, vocab: OpaquePointer, dims: Int)?
-    /// 退出前释放过了：之后排队等锁的计算不再把模型加载回来
+    /// Already released before quitting: computations queued for the lock afterwards won't load the model back
     private var closed = false
 
     public init(file: URL, yields: @escaping @Sendable () -> Bool = { false }) {
@@ -27,12 +27,12 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
         self.yields = yields
     }
 
-    /// App 启动后空闲时先加载：新装后第一次要现场编译显卡程序，约 6 秒，不能等到第一次搜索
+    /// Load when idle after the app starts: right after install the GPU programs must be compiled on the spot, about 6 seconds, which can't wait until the first search
     public func load() throws {
         _ = try lock.withLock { try ensureLoaded() }
     }
 
-    /// 退出前必须释放，否则 llama.cpp 在进程退出时因为显卡资源没收回而崩溃
+    /// Must be released before quitting, or llama.cpp crashes at process exit because GPU resources weren't reclaimed
     public func unload() {
         lock.withLock {
             closed = true
@@ -45,7 +45,7 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
 
     public func embed(_ text: String, as role: EmbeddingRole) async throws -> [Float] {
         let input = role == .query ? "Instruct: \(Self.task)\nQuery:\(text)" : text
-        // 搜索的查询是你在等的，不让；后台理解的卡片才让
+        // Search queries are what you're waiting on, so they don't yield; only cards being understood in the background do
         while role == .card, yields() { try await Task.sleep(for: .milliseconds(200)) }
         return try lock.withLock { try compute(input) }
     }
@@ -81,7 +81,7 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
         }
     }
 
-    /// 调用方已经拿着锁
+    /// The caller already holds the lock
     private func ensureLoaded() throws -> (model: OpaquePointer, context: OpaquePointer, vocab: OpaquePointer, dims: Int) {
         if let loaded { return loaded }
         guard isReady, !closed else { throw Failure.missing }
@@ -92,7 +92,7 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
         guard let model = llama_model_load_from_file(file.path, modelParams) else { throw Failure.load }
         var params = llama_context_default_params()
         params.embeddings = true
-        // 取最后一个词元（结尾的 <|endoftext|>）的向量
+        // Take the embedding of the last token (the trailing <|endoftext|>)
         params.pooling_type = LLAMA_POOLING_TYPE_LAST
         params.n_ctx = UInt32(Self.maxTokens)
         params.n_batch = params.n_ctx
@@ -104,7 +104,7 @@ public final class LocalEmbedder: Embedding, @unchecked Sendable {
         return l
     }
 
-    /// 分词，并保证以 <|endoftext|> 结尾：向量取的就是这个位置，少了它向量就不对
+    /// Tokenize, making sure it ends with <|endoftext|>: the embedding is taken at that position, and without it the embedding is wrong
     private func tokenize(_ text: String, vocab: OpaquePointer) -> [llama_token] {
         let utf8 = Array(text.utf8CString)
         var tokens = [llama_token](repeating: 0, count: Int(Self.maxTokens))

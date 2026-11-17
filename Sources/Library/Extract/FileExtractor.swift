@@ -4,23 +4,23 @@ import PDFKit
 import QuickLookThumbnailing
 import UniformTypeIdentifiers
 
-/// 本地文件、图片、文字 → 素材。按内容长什么样分类，不按来源
+/// Local files, images, text → material. Classified by what the content looks like, not by source
 public enum FileExtractor {
-    /// 正文、转录最多留这么多字。讨论要读全文（一段 95 分钟的分享约 3 万字）；理解和搜索各自只取开头一段，
-    /// 这道线只挡几百页的 PDF 把资料库撑大
+    /// Keep at most this many characters of body and transcript. Discussions read the full text (a 95-minute talk is about 30,000 characters); understanding and search each take only the opening part,
+    /// this limit only stops PDFs of hundreds of pages from bloating the library
     public static let bodyLimit = 200_000
 
-    /// 抽取器自己下载的临时文件放这里，存进文件库后删掉
+    /// Temporary files the extractor downloads itself go here, deleted once in the file store
     static let downloads: URL = {
         let dir = FileManager.default.temporaryDirectory.appending(path: "piyi-downloads", directoryHint: .isDirectory)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }()
 
-    /// 一个文件，或一个文件夹里的文件（最多 40 个）
+    /// One file, or the files in a folder (at most 40)
     public static func files(in url: URL) -> [URL] {
         guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { return [url] }
-        // 数到 40 个就停，不进 .app、.rtfd 这类包的内部
+        // Stop at 40, and don't go inside packages like .app or .rtfd
         var out: [URL] = []
         let walk = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants])
         while out.count < 40, let file = walk?.nextObject() as? URL {
@@ -29,13 +29,13 @@ public enum FileExtractor {
         return out
     }
 
-    /// 从别处送来的一个文件（手机快捷指令存进收件箱的）→ 要收的东西。
-    /// 快捷指令把分享的链接和文字存成 .txt，按文字收；其它文件和拖进来的一样收。
-    /// 读不到（iCloud 里的文件还没下载下来）返回 nil，过会儿再试
+    /// A file sent from elsewhere (saved into the inbox by a phone shortcut) → things to collect.
+    /// The shortcut saves shared links and text as .txt, collected as text; other files are collected like dragged-in ones.
+    /// Returns nil if unreadable (the iCloud file isn't downloaded yet), to retry later
     public static func sources(fromShared file: URL) -> [Source]? {
         guard file.pathExtension.lowercased() == "txt" else { return [.file(file)] }
         guard let data = try? Data(contentsOf: file) else { return nil }
-        // 不是 UTF-8 的（比如 GBK）让系统猜编码；猜不出就当普通文件收，不留在收件箱里反复失败
+        // For non-UTF-8 (e.g. GBK), let the system guess the encoding; if it can't, collect it as a plain file instead of leaving it to keep failing in the inbox
         guard let text = String(data: data, encoding: .utf8) ?? guessedText(data) else { return [.file(file)] }
         return sources(inText: text)
     }
@@ -46,8 +46,8 @@ public enum FileExtractor {
         return text as String?
     }
 
-    /// 一段文字：指向网页的收成这些网址，否则收成一张文字卡；空白的什么都不收。
-    /// 一句话里带着一个网址时收这个网址，整句话记在卡上
+    /// A piece of text: if it points to web pages, collect those URLs, otherwise collect one text card; blank collects nothing.
+    /// When a sentence carries one URL, collect that URL and record the whole sentence on the card
     public static func sources(inText text: String) -> [Source] {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty { return [] }
@@ -57,7 +57,7 @@ public enum FileExtractor {
         return urls.count == 1 && !alone ? [.mentioned(urls[0], in: trimmed)] : urls.map(Source.url)
     }
 
-    /// 文件按类型猜卡片类型，抽取前先放占位卡用
+    /// Guess the card kind from the file type, for the placeholder before extracting
     public static func kind(of url: URL) -> Kind {
         let type = UTType(filenameExtension: url.pathExtension.lowercased()) ?? .data
         if type.conforms(to: .image) { return .image }
@@ -78,7 +78,7 @@ public enum FileExtractor {
         }
         if type.conforms(to: .movie) || type.conforms(to: .video) {
             var m = Material(kind: .video)
-            m.source = url.lastPathComponent      // 文件名多半是 IMG_1234，标题交给模型
+            m.source = url.lastPathComponent      // the file name is usually IMG_1234, so the title is left to the model
             m.format = "本地视频"
             m.original = url
             m.duration = try? await AVURLAsset(url: url).load(.duration).seconds
@@ -104,7 +104,7 @@ public enum FileExtractor {
             m.original = url
             return m
         }
-        // Word、RTF、OpenDocument、网页存档：系统能直接读成富文本
+        // Word, RTF, OpenDocument, web archives: the system can read them as rich text directly
         if let attributed = try? NSAttributedString(url: url, options: [:], documentAttributes: nil) {
             var m = Material(kind: .document)
             m.title = name
@@ -114,7 +114,7 @@ public enum FileExtractor {
             m.original = url
             return m
         }
-        // 其它任何文件（Keynote、Excel、设计稿…）：用系统的快速查看缩略图做封面
+        // Any other file (Keynote, Excel, design files…): use the system's Quick Look thumbnail as the cover
         var m = Material(kind: .document)
         m.title = name
         m.source = url.lastPathComponent
@@ -124,7 +124,7 @@ public enum FileExtractor {
         return m
     }
 
-    /// 图片数据：顺便认出动图和长图。原样保留，动图靠原文件才能动起来
+    /// Image data: also recognizes animated and long images. Kept as-is, since animated images need the original file to move
     public static func image(_ data: Data) -> Material {
         var m = Material(kind: .image)
         m.images = [data]
@@ -139,7 +139,7 @@ public enum FileExtractor {
         return m
     }
 
-    /// 文字：一段话收成一张你的文字卡，之后能改
+    /// Text: a passage is collected as one of your text cards, editable later
     public static func text(_ raw: String) -> Material {
         var m = Material(kind: .text)
         m.form = .note
@@ -147,10 +147,10 @@ public enum FileExtractor {
         return m
     }
 
-    /// 一段文字是在指向网页，还是一段内容：
-    /// - 每一行都是网址（从备忘录复制的一串链接；不带 https:// 的也算）→ 这些网址
-    /// - 只有一个网址，其余是短短一句（App 分享出来的「【标题】网址」）→ 这个网址，标题以抓到的为准
-    /// - 其余（正文里夹着链接）→ 空：整段按文字收，里面的链接不去抓
+    /// Whether a piece of text points to web pages or is content:
+    /// - Every line is a URL (a list of links copied from Notes; without https:// counts too) → those URLs
+    /// - Only one URL, the rest a short line (an app's share text like "【title】URL") → this URL, with the fetched title taking precedence
+    /// - Anything else (links inside body text) → empty: the whole thing is collected as text, links inside aren't fetched
     public static func urls(in text: String) -> [URL] {
         let lines = text.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let whole = lines.compactMap { line in links(in: line).first { $0.range == line.startIndex..<line.endIndex }?.url }
@@ -162,10 +162,10 @@ public enum FileExtractor {
         return rest.trimmingCharacters(in: .whitespacesAndNewlines).count <= shareTextLimit ? [found[0].url] : []
     }
 
-    /// 分享文字里网址以外的部分最多多长：抖音、小红书的分享文字带标题和一句「复制打开 App」，一百来字
+    /// The longest the non-URL part of share text can be: Douyin and Xiaohongshu share text carries a title and a line like "copy and open the app", about a hundred characters
     static let shareTextLimit = 140
 
-    /// 文字里的网页链接（不带 https:// 的补上），邮箱之类的不算
+    /// Web links in the text (https:// added when missing); emails and the like don't count
     private static func links(in text: String) -> [(url: URL, range: Range<String.Index>)] {
         let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         return detector.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
@@ -174,9 +174,9 @@ public enum FileExtractor {
         }
     }
 
-    // MARK: 各类文件
+    // MARK: File types
 
-    /// 从视频里取几帧（位置是 0～1 的比例）
+    /// Take a few frames from a video (positions as 0–1 fractions)
     public static func frames(of url: URL, at positions: [Double]) async -> [CGImage] {
         let asset = AVURLAsset(url: url)
         guard let duration = try? await asset.load(.duration).seconds, duration > 0 else { return [] }
@@ -190,7 +190,7 @@ public enum FileExtractor {
         return out
     }
 
-    /// PDF：页数、首页缩略图、正文（逐页读，够了就停，几百页的书也不会卡）
+    /// PDF: page count, first-page thumbnail, body (read page by page, stopping when there's enough, so books of hundreds of pages don't stall)
     private static func pdf(_ url: URL, name: String) -> Material {
         var m = Material(kind: .document)
         m.format = "PDF"
@@ -219,16 +219,16 @@ public enum FileExtractor {
         text.split(separator: "\n").first { $0.hasPrefix("# ") }.map { String($0.dropFirst(2)).trimmingCharacters(in: .whitespaces) }
     }
 
-    /// 抽取出的文字统一清理：嵌入对象的占位符（显示成方块）、控制字符、成堆的空行
+    /// Uniform cleanup of extracted text: embedded-object placeholders (shown as boxes), control characters, piles of blank lines
     static func clean(_ text: String) -> String {
         String(String.UnicodeScalarView(text.unicodeScalars.filter { $0 != "\u{FFFC}" && ($0.properties.generalCategory != .control || $0 == "\n") }))
             .replacing(#/\n{3,}/#, with: "\n\n")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    // MARK: 图片小工具
+    // MARK: Image helpers
 
-    /// 显示出来的宽高：手机照片常常横着存、另记「转 90°」的方向标记，这种宽高对调
+    /// The displayed width and height: phone photos are often stored sideways with a "rotate 90°" orientation tag, in which case width and height are swapped
     public static func pixelSize(_ source: CGImageSource) -> CGSize? {
         guard let p = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
               let w = p[kCGImagePropertyPixelWidth] as? CGFloat, let h = p[kCGImagePropertyPixelHeight] as? CGFloat, w > 0, h > 0 else { return nil }

@@ -97,7 +97,7 @@ With a cloud model connected, the following send card or page content to the cho
 
 ## Contributing
 
-Building, code layout, translation, and generation of the sample board are described in [CONTRIBUTING.md](CONTRIBUTING.md) (in Chinese).
+Building, code layout, translation, and generation of the sample board are described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

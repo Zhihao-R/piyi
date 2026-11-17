@@ -2,25 +2,25 @@ import Foundation
 import Synchronization
 import Library
 
-/// AI 写给人看的文字怎么写。
-/// 语言：存下来的（标题、描述、要点）和灵感用界面的语言；讨论、提问、抽一张跟着用户说话的语言。提示词本身保持中文，只在里面说用哪种语言。
-/// 写法：每样东西的风格和侧重用户可以在设置里改（Part）；格式、出处、语言这些程序要靠的部分不在里面，留在各处提示词里
+/// How AI writes text for people.
+/// Language: what's stored (titles, descriptions, key points) and inspiration use the interface language; discussions, questions and drawn cards follow the language the user speaks. The prompts themselves stay in Chinese and just say which language to use.
+/// Style: the style and focus of each item can be changed by the user in Settings (Part); format, sources, language and other parts the program relies on aren't included and stay in each prompt
 public enum Writing {
-    /// 放进提示词里的界面语言名：中文、英语……
+    /// Interface language name put into prompts, in Chinese: 中文, 英语…
     static var language: String { Locale(identifier: "zh").localizedString(forLanguageCode: interfaceLanguage) ?? "中文" }
-    /// 长度限制：中文按字数，别的语言按词数（一个词大约顶两个汉字）
+    /// Length limits: by characters for Chinese, by words for other languages (one word is roughly two Chinese characters)
     static func length(_ chars: Int) -> String { interfaceLanguage == "zh" ? "\(chars) 个字" : "\(max(1, chars / 2)) 个词" }
-    /// 模型没守住长度时截短：有汉字的按字截，没有的按词截，不会截在半个词上。看文字本身，不看界面：讨论名跟着用户说话的语言
+    /// Truncate when the model ignores the length: by characters if there are Chinese characters, otherwise by words, never mid-word. Based on the text itself, not the interface: discussion names follow the language the user speaks
     static func clip(_ text: String, to chars: Int) -> String {
         text.unicodeScalars.contains(where: \.properties.isIdeographic) ? String(text.prefix(chars))
             : text.split(separator: " ").prefix(max(1, chars / 2)).joined(separator: " ")
     }
 
-    /// AI 写的几样东西，每样一段用户可以改的写法要求
+    /// The things AI writes, each with a user-editable writing instruction
     public enum Part: String, CaseIterable, Sendable {
         case card, summary, discussion, answer, draw, inspiration
 
-        /// 默认的要求，按界面语言
+        /// Default instructions, by interface language
         public var standard: String {
             switch self {
             case .card: String(localized: "标题不超过 12 个字。\n描述一句话，40 字以内：写主体和内容，图像类再写风格、色彩和氛围。\n标签 6 到 10 个，覆盖主体、题材、风格、色彩、情绪；只写这件东西本身有的，不猜它能拿来做什么。\n长文和文档概括它在讲什么，而不是描述排版。")
@@ -32,20 +32,20 @@ public enum Writing {
             }
         }
 
-        /// 现在用的要求：改过的用改过的，没改的用默认
+        /// The instruction in use: the edited one if edited, otherwise the default
         public var style: String { Writing.custom.withLock { $0[self] } ?? standard }
     }
 
     private static let custom = Mutex<[Part: String]>([:])
 
-    /// 设置里改了一样的要求
+    /// One instruction was changed in Settings
     public static func setStyle(_ text: String?, for part: Part) {
         custom.withLock { $0[part] = text.flatMap(part.customized) }
     }
 }
 
 extension Writing.Part {
-    /// 用户写的这段算不算改过：空的或和默认相同的算没改（nil），界面语言换了，没改过的跟着换
+    /// Whether what the user wrote counts as edited: empty or identical to the default counts as unedited (nil), and unedited ones follow when the interface language changes
     public func customized(_ text: String) -> String? {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty || text == standard ? nil : text

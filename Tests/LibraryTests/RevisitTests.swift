@@ -3,7 +3,7 @@ import Foundation
 import GRDB
 @testable import Library
 
-/// 回看记录：只存不用，但存下来的要对得上，删画板、清废纸篓时不出错
+/// Revisit records: stored but not used yet, yet what's stored must be consistent, with no errors when deleting boards or emptying the trash
 struct RevisitTests {
     private func revisits(_ store: Store) async throws -> [(kind: String, card: Int64, board: Int64?)] {
         try await store.db.read { db in
@@ -30,7 +30,7 @@ struct RevisitTests {
         #expect(rows.map(\.board) == [nil, nil, board])
     }
 
-    /// 画板删了，在那里用过的记录留着；卡清出废纸篓，它的记录跟着走
+    /// When a board is deleted, records of use there stay; when a card is emptied from the trash, its records go with it
     @Test func boardsAndCardsGoAway() async throws {
         let store = try temporaryStore()
         let (keep, gone) = (try await store.createBoard("留").id!, try await store.createBoard("删").id!)

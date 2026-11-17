@@ -1,29 +1,29 @@
 import QuartzCore
 import Tokens
 
-/// 换内容（切画板、切资料库）时留在屏幕上的旧画面：旧卡片的图层原样挪进来，按旧镜头摆着
+/// The old scene kept on screen while switching content (switching boards or the library): the old cards' layers moved in as they were, placed by the old camera
 struct Curtain {
     let layer: QuietLayer
     var cards: [CardLayer]
     let camera: Camera
-    /// 新画面已经换上来，它在淡出
+    /// The new scene is already up and this is fading out
     var lifting = false
 }
 
-/// 换内容：旧画面先留着，新画面在底下把眼前的卡画好再换上来，免得画布空一下、卡片一张张冒出来。
-/// 两边都有的卡从旧位置飞到新位置，其余的交叉淡化。连着快切时，每次只留眼前看得到的那一层当旧画面
+/// Switching content: keep the old scene up while the new one draws the cards in view underneath, then swap it in, so the canvas never goes blank and cards don't pop in one by one.
+/// Cards present on both sides fly from their old position to the new one; the rest cross-fade. When switching quickly in a row, only the layer currently visible is kept as the old scene each time
 extension CanvasView {
-    /// 最多等多久：一百多毫秒以内的等待，点下去几乎觉不出慢；再长就宁可先换上来，没画好的卡后补
+    /// The longest to wait: a wait of a hundred-odd milliseconds hardly feels slow on a click; any longer and it's better to swap in first and fill in the unfinished cards afterwards
     private static let revealDeadline: CFTimeInterval = 0.15
 
-    /// 新画面还藏在幕布后面：这时浮层（资料库分组标题）不跟着换，留着旧画面的
+    /// The new scene is still hidden behind the curtain: the overlay (library group titles) doesn't switch yet and keeps the old scene's
     var isBehindCurtain: Bool { curtain?.lifting == false }
 
-    /// 新卡片放上来之前：把眼前的卡挪进幕布，世界图层先藏起来
+    /// Before the new cards go in: move the visible cards into the curtain and hide the world layer for now
     func lowerCurtain() {
         reveal = nil
         if isBehindCurtain {
-            // 上一次的新画面还没换上来，眼前看到的仍是幕布：底下没画完的那批直接收掉
+            // The previous new scene hasn't been swapped in yet and what's visible is still the curtain: just drop the unfinished batch underneath
             for l in live.values { recycle(l) }
         } else {
             dropCurtain()
@@ -34,7 +34,7 @@ extension CanvasView {
                 c.isGeometryFlipped = true
                 c.position = world.position
                 c.setAffineTransform(world.affineTransform())
-                // 聚拢、亮起时盖住其余卡片的那层底色也留在旧画面里，不然暗着的卡会一下全亮回来
+                // The backdrop that covers the other cards while gathering or highlighting also stays in the old scene, or the dimmed cards would all light back up at once
                 if veil.opacity > 0 {
                     let v = QuietLayer()
                     v.frame = veil.frame
@@ -43,7 +43,7 @@ extension CanvasView {
                     v.zPosition = veil.zPosition
                     c.addSublayer(v)
                 }
-                // 垫在世界图层下面：新卡片淡入、飞过来时盖在旧画面上
+                // Sits under the world layer: new cards cover the old scene as they fade in and fly over
                 layer!.insertSublayer(c, below: world)
                 for l in live.values { c.addSublayer(l) }
                 curtain = Curtain(layer: c, cards: Array(live.values), camera: camera)
@@ -53,7 +53,7 @@ extension CanvasView {
         live = [:]
     }
 
-    /// 新卡片都放上了：等眼前的画好再换上来
+    /// All the new cards are placed: wait until the visible ones are drawn, then swap in
     func revealWhenPainted() {
         guard curtain != nil else { announceReveal(); return }
         let generation = UUID()
@@ -65,7 +65,7 @@ extension CanvasView {
         guard reveal == generation else { return }
         let seen = index.ids(in: camera.visibleRect(in: bounds.size))
         if CACurrentMediaTime() >= deadline || seen.allSatisfy({ live[$0]?.isPainting != true }) { liftCurtain(); return }
-        // 一帧查一次
+        // Check once per frame
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 120) { [weak self] in self?.waitToReveal(generation, until: deadline) }
     }
 
@@ -74,7 +74,7 @@ extension CanvasView {
         reveal = nil
         world.opacity = 1
         announceReveal()
-        // 同一张卡两边都有：新图层从旧图层在屏幕上的样子起飞，旧的直接收掉。still 时都不飞
+        // The same card is on both sides: the new layer takes off from how the old layer looked on screen, and the old one is simply dropped. Nothing flies when still
         var waiting: [Int64: Int64] = [:]
         for (id, item) in items where live[id] != nil && !still { if let card = item.cardID { waiting[card] = id } }
         let size = bounds.size, ratio = curtain.camera.scale / camera.scale
@@ -94,14 +94,14 @@ extension CanvasView {
         curtain.lifting = true
         self.curtain = curtain
 
-        // 分组标题换成新的，整层浮层跟着卡片一起交叉淡化
+        // Group titles switch to the new ones, and the whole overlay cross-fades along with the cards
         let swap = CATransition()
         swap.type = .fade
         swap.duration = Motion.swap
         overlay.add(swap, forKey: "swap")
         updateOverlay()
 
-        // 旧画面晚半拍才淡出：新卡先盖上来，两层不会同时半透明、让画布底色透出来
+        // The old scene fades out half a beat later: the new cards cover it first, so the two layers are never both half-transparent and letting the canvas background show through
         let fade = CABasicAnimation(keyPath: "opacity")
         fade.fromValue = 1
         fade.beginTime = CACurrentMediaTime() + Motion.swap / 2
@@ -116,7 +116,7 @@ extension CanvasView {
         }
     }
 
-    /// 旧画面上补一层放大查看的暗底：外面的暗底在这一刻撤掉，旧画面暗着淡完，变亮的只有新画面
+    /// Adds a detail-view dim backdrop on top of the old scene: the outer backdrop is removed at this moment, the old scene fades out still dimmed, and only the new scene brightens
     public func shadeCurtain() {
         guard let curtain else { return }
         let shade = QuietLayer()
@@ -126,7 +126,7 @@ extension CanvasView {
         curtain.layer.addSublayer(shade)
     }
 
-    /// 新画面换上来了：外面跟着一起换的事现在做
+    /// The new scene is up: do now the things outside that switch along with it
     private func announceReveal() {
         let done = revealed
         revealed = nil

@@ -2,25 +2,25 @@ import Foundation
 import NaturalLanguage
 import Library
 
-/// 一句话想要什么
+/// What a sentence wants
 public enum Intent: String, Codable, Sendable, CaseIterable {
-    /// 找卡片：结果聚拢成一组拼贴
+    /// Find cards: results gather into a collage
     case find
-    /// 带主题的灵感：交给灵感，按主题挑
+    /// Inspiration with a topic: handed to Inspirer, picking by topic
     case inspire
-    /// 随机抽一张，解读显示在文字面板
+    /// Draw one card at random, with the interpretation shown in the text panel
     case draw
-    /// 提问：回答显示在文字面板，依据的卡片聚拢到眼前
+    /// Question: the answer shows in the text panel, and the cards it's based on gather in front of you
     case ask
 }
 
-/// 搜索和灵感从哪些卡片里找
+/// Which cards search and inspiration look through
 public enum Scope: Hashable, Sendable {
     case all
     case board(Int64)
 }
 
-/// 筛选按钮的状态，和句子里解析出的条件合并成同一个查询
+/// State of the filter buttons, merged with conditions parsed from the sentence into one query
 public struct Filters: Equatable, Sendable {
     public var days: Int?
     public var kinds: Set<Kind> = []
@@ -30,51 +30,51 @@ public struct Filters: Equatable, Sendable {
     public init() {}
 }
 
-/// 理解后的一句话：意图，加上语义部分和几种精确条件。语义交给向量和字面匹配，其余用来筛选
+/// A sentence after understanding: intent, plus a semantic part and several exact conditions. The semantic part goes to embeddings and literal matching; the rest is used for filtering
 public struct Query: Equatable, Sendable {
     public var text: String
     public var intent: Intent = .find
-    /// 去掉条件词以后要按意思找的部分；带主题的灵感里就是主题
+    /// What's left to find by meaning after removing condition words; for inspiration with a topic, it's the topic
     public var semantic = ""
-    /// 字面匹配用的词
+    /// Words for literal matching
     public var tokens: [String] = []
     public var colors: [ColorName] = []
-    /// 只看最近几天收的
+    /// Only look at what was collected in the last few days
     public var days: Int?
     public var kinds: Set<Kind> = []
     public var scope: Scope = .all
-    /// 要看图才判断得了（「长得像狗的男人」）：精排时附上缩略图
+    /// Needs the image to judge ("a man who looks like a dog"): attach thumbnails during reranking
     public var visual = false
 
     public init(text: String) { self.text = text }
 
-    /// 找的是同一批卡：语义部分和各种条件都一样（意图、看不看图不算）
+    /// Looking for the same set of cards: the semantic part and all conditions are the same (intent and whether to see images don't count)
     public func sameSearch(as other: Query) -> Bool {
         semantic == other.semantic && Set(colors) == Set(other.colors) && days == other.days && kinds == other.kinds && scope == other.scope
     }
 
-    /// 按意思找这句话：去掉首尾标点、转小写，再切成字面匹配的词。提问、讨论里的找卡都不让规则再拆条件
+    /// Find this sentence by meaning: strip leading and trailing punctuation, lowercase, then split into words for literal matching. Questions and Find cards in discussions don't let the rules split out conditions again
     public mutating func lookFor(_ text: String) {
         semantic = QueryRules.tidy(text.lowercased())
         tokens = QueryRules.tokenize(semantic)
     }
 
-    /// 除了范围什么条件都没有
+    /// No conditions other than scope
     public var isEmpty: Bool { semantic.isEmpty && colors.isEmpty && days == nil && kinds.isEmpty }
 
     func since(_ now: Date) -> Date? { days.map { now.addingTimeInterval(-Double($0) * 86_400) } }
 }
 
-/// 关键词规则：打字时即时给反馈，模型回来之前、没填密钥或离线时都靠它。
-/// 选模型时的测试集也按这套规则拆查询，改了词表要重新验证搜索效果。
-/// 判断模型回来以后也用它：模型说了算有没有条件、是哪种，规则负责认出是哪几个词、去掉它们，剩下的是要按意思找的内容
+/// Keyword rules: give instant feedback while typing, and are relied on before the model returns, with no key, or offline.
+/// The test set for choosing models also splits queries by these rules; changing the word lists means re-checking search quality.
+/// Also used after the judge model returns: the model decides whether there are conditions and which kind, the rules find which words they are and remove them, and what's left is the content to find by meaning
 public enum QueryRules {
-    /// 判断模型对一句话的结论（Searcher.questions）
+    /// The judge model's conclusions about a sentence (Searcher.questions)
     public struct Judged: Sendable, Equatable {
         public var intent: Intent
-        /// 限定了收集时间
+        /// Limited by collection time
         public var timed: Bool
-        /// 限定的类型；nil 是没限定
+        /// The type limited to; nil means no limit
         public var kind: Kind?
         public var color: ColorName?
         public var visual: Bool
@@ -85,11 +85,11 @@ public enum QueryRules {
         q.scope = filters.scope
         var text = raw.lowercased()
 
-        // 意图：模型回来以后它说了算，没回来时规则只认整句就是指令的。
-        // 指令词只在真是抽一张、要灵感时去掉；找卡片、提问用原句，「塔罗牌插画」里的「塔罗」是要找的东西
+        // Intent: once the model returns it decides; before that, the rules only recognize a sentence that is entirely a command.
+        // Command words are only removed when it really is drawing a card or asking for inspiration; finding cards and questions use the original sentence, since 「塔罗」 in 「塔罗牌插画」 (tarot illustrations) is what's being searched for
         q.intent = judged?.intent ?? intent(of: text)
         text = removingHints(of: q.intent, from: text)
-        // 模型回来以后，它说了算有没有这种条件；没回来时规则认出什么算什么
+        // Once the model returns, it decides whether this kind of condition exists; before that, whatever the rules recognize counts
         let timed = judged?.timed ?? true
         let counts = { (kinds: Set<Kind>) in judged.map { $0.kind.map(kinds.contains) ?? false } ?? true }
         let colored = { (color: ColorName) in judged.map { $0.color == color } ?? true }
@@ -100,12 +100,12 @@ public enum QueryRules {
                 days = min(days ?? d, d)
                 text = text.removingWord(phrase)
             }
-            // 模型说限定了时间、规则却认不出是几天的（「去年」「三月」）：不加时间条件，免得把要找的卡筛掉
+            // The model says time is limited but the rules can't tell how many days (「去年」 last year, 「三月」 March): add no time condition, so the wanted cards aren't filtered out
         }
         if let d = filters.days { days = min(days ?? d, d) }
         q.days = days
 
-        // 模型只选一类，句子里的词决定范围：「文章」不分网页、文档、文字
+        // The model picks only one category; the words in the sentence decide the range: 「文章」 (article) doesn't distinguish web pages, documents, or text
         for (word, kinds) in kindWords where text.containsWord(word) && counts(kinds) {
             q.kinds.formUnion(kinds)
             text = text.removingWord(word)
@@ -115,9 +115,9 @@ public enum QueryRules {
 
         for f in fillers { text = text.replacingOccurrences(of: f, with: " ") }
 
-        // 颜色词保留在语义里（「绿色的界面」整体也有意思），同时单独记下来做像素筛选
+        // Color words stay in the semantic part (「绿色的界面」, green interface, also means something as a whole), and are recorded separately for pixel filtering
         var leftover = text
-        // 不算颜色条件的颜色字（「明白」的「白」）留在语义里
+        // Color characters that aren't color conditions (「白」 in 「明白」, "understand") stay in the semantic part
         for color in ColorName.allCases where colored(color) {
             for alias in color.aliases where leftover.containsWord(alias) {
                 if !q.colors.contains(color) { q.colors.append(color) }
@@ -128,15 +128,15 @@ public enum QueryRules {
         if let c = filters.color, !q.colors.contains(c) { q.colors.append(c) }
         q.visual = judged?.visual ?? false
 
-        // 只剩颜色词、连接词（「视频和文档」里的「和」）时不走语义，只按颜色、类型筛选
+        // When only color words and connectives are left (「和」 in 「视频和文档」, videos and documents), skip semantics and filter by color and type only
         let semantic = tokenize(leftover).isEmpty ? "" : tidy(text)
         q.semantic = semantic
         q.tokens = tokenize(semantic)
         return q
     }
 
-    /// 没有模型时认意图。抽一张、要灵感只认整句就是指令的（「抽一张」「给我点灵感」）：句子里还有别的词，
-    /// 多半是要找的东西（「灵感板参考」），当找卡片。提问只认说得很明白的，它不删词，依据的卡照样聚拢
+    /// Recognize intent without a model. Drawing a card and asking for inspiration only match when the whole sentence is the command (「抽一张」, 「给我点灵感」): if the sentence has other words,
+    /// it's most likely something to find (「灵感板参考」, inspiration board references), treated as finding cards. Questions only match when stated very plainly; no words are removed, and the cards it's based on still gather
     static func intent(of text: String) -> Intent {
         let text = text.lowercased()
         for (intent, commands, _) in hints where commands.contains(where: text.contains) {
@@ -146,14 +146,14 @@ public enum QueryRules {
         return .find
     }
 
-    /// 去掉这种意图的指令词，剩下的是主题；找卡片、提问没有指令词，原样返回
+    /// Remove this intent's command words; what's left is the topic. Finding cards and questions have no command words and are returned as is
     static func removingHints(of intent: Intent, from text: String) -> String {
         guard let hint = hints.first(where: { $0.intent == intent }) else { return text }
         return (hint.commands + hint.companions).reduce(text) { $0.replacingOccurrences(of: $1, with: " ", options: .caseInsensitive) }
     }
 
-    /// 指令的说法。commands 单独成句就是指令；companions 是常跟着指令出现的词（「抽一张塔罗牌」），
-    /// 单独出现时是要找的东西。长的排在前面，先被去掉
+    /// Ways to phrase the command. commands on their own are a command; companions are words that often follow a command (「抽一张塔罗牌」, draw a tarot card),
+    /// and on their own are what's being searched for. Longer ones come first and are removed first
     private static let hints: [(intent: Intent, commands: [String], companions: [String])] = [
         (.draw, ["帮我抽一张", "抽一张", "抽张", "抽一下", "抽卡", "随便来一张", "随机一张", "draw a card", "pick a card", "random card"],
          ["塔罗牌", "塔罗", "tarot"]),
@@ -169,7 +169,7 @@ public enum QueryRules {
         ("today", 1), ("yesterday", 2), ("these days", 5), ("this week", 7), ("last week", 14), ("this month", 31), ("last month", 62),
         ("recently", 14), ("recent", 14), ("lately", 14),
     ]
-    /// 类型词。「文章」「笔记」在用户心里不分网页、文档还是自己写的长文，所以同时匹配几类
+    /// Type words. To users, 「文章」 (article) and 「笔记」 (note) don't distinguish web pages, documents, or long text they wrote themselves, so they match several types at once
     static let kindWords: [(String, Set<Kind>)] = [
         ("引文", [.text]), ("语录", [.text]), ("名言", [.text]), ("句子", [.text]), ("文字", [.text]), ("quote", [.text]),
         ("文章", [.web, .document, .text]), ("笔记", [.web, .document, .text, .image]),
@@ -179,7 +179,7 @@ public enum QueryRules {
         ("视频", [.video]), ("影片", [.video]), ("video", [.video]),
         ("音频", [.audio]), ("录音", [.audio]), ("播客", [.audio]), ("audio", [.audio]),
     ]
-    /// 只起连接作用、放进向量会稀释意思的词
+    /// Words that only connect, which would dilute the meaning in an embedding
     static let fillers = ["收集的", "收藏的", "收过的", "收的", "存的", "相关的", "相关", "内容", "的东西", "资料", "一些", "有关"]
 
     static func tidy(_ s: String) -> String {
@@ -188,7 +188,7 @@ public enum QueryRules {
 
     private static let stopwords: Set<String> = ["的", "了", "和", "与", "及", "或", "跟", "还有", "以及", "a", "an", "the", "of", "and", "or"]
 
-    /// 中文按词切分（「哲学」「界面」），英文按单词；去掉只起连接作用的词
+    /// Chinese is split into words (「哲学」, 「界面」), English by word; words that only connect are removed
     public static func tokenize(_ text: String) -> [String] {
         guard !text.isEmpty else { return [] }
         let tokenizer = NLTokenizer(unit: .word)
@@ -204,7 +204,7 @@ public enum QueryRules {
 }
 
 extension ColorName {
-    /// 句子里怎么说这种颜色
+    /// How the sentence says this color
     public var aliases: [String] {
         let zh: [String] = switch self {
         case .red: ["红色", "红"]
@@ -225,7 +225,7 @@ extension ColorName {
 }
 
 extension String {
-    /// 中文按子串匹配；英文要整词匹配，免得 inspired 里的 red 被当成红色
+    /// Chinese matches by substring; English needs whole-word matches, so the red in inspired isn't taken as red
     func containsWord(_ word: String) -> Bool {
         guard word.allSatisfy(\.isASCII) else { return contains(word) }
         return range(of: "\\b\(NSRegularExpression.escapedPattern(for: word))\\b", options: .regularExpression) != nil

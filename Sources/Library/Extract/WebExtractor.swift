@@ -1,15 +1,15 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// 网址 → 素材。分层走，每一层交出一次「尝试」，判成失败（素材标了残缺）才进下一层：
-/// 1. 直链文件：下载下来按文件处理
-/// 2. 平台适配器：YouTube、B 站、X、微博走公开接口；公众号、小红书读页面
-/// 3. 通用解析：网站给机器看的标准信息（标题、封面、站名）+ Readability 取正文
-/// 4. 用户浏览器打开：交给扩展在你的浏览器里后台打开，拿回渲染好的页面，再走一遍 2、3 层的解析
-/// 5. 模型兜底：前几层拿不准时，让模型从页面文字里认出标题和正文
+/// URL → material. Goes in layers; each layer hands back one "attempt", and only when it's judged a failure (material marked partial) does it move on to the next:
+/// 1. Direct file links: download and handle as a file
+/// 2. Platform adapters: YouTube, Bilibili, X, Weibo go through public APIs; WeChat Official Accounts and Xiaohongshu read the page
+/// 3. Generic parsing: the standard info sites provide for machines (title, cover, site name) + Readability for the body
+/// 4. Open in the user's browser: hand it to the extension to open in your browser in the background, get the rendered page back, and run layers 2 and 3 parsing again
+/// 5. Model fallback: when the earlier layers are unsure, have the model pick out the title and body from the page text
 ///
-/// 2、3 层拆成「下载」和「只解析」两步：第 4 层和扩展收来的页面都只用解析那一步。
-/// 帖子类平台按内容长什么样定类型：有视频是视频，有图是图像，只有字是文字。
+/// Layers 2 and 3 are split into "download" and "parse only": layer 4 and pages collected by the extension only use the parse step.
+/// Post-style platforms set the kind by what the content looks like: with video it's video, with images it's image, text only is text.
 public struct WebExtractor: Sendable {
     let session: URLSession
     let models: (any ExtractionModels)?
@@ -21,7 +21,7 @@ public struct WebExtractor: Sendable {
         self.browser = browser
     }
 
-    /// 一层的结果：素材，以及交给模型兜底时要看的页面文字和状态码（读了网页的层才有）
+    /// One layer's result: the material, plus the page text and status code for the model fallback to look at (only layers that read a web page have them)
     struct Attempt {
         var material: Material
         var glance: PageGlance?
@@ -32,8 +32,8 @@ public struct WebExtractor: Sendable {
         await finished(url) { try await layers(url) }
     }
 
-    /// 扩展收来的：页面已经在你的浏览器里渲染好，直接解析。有公开接口的平台照样先走接口，
-    /// 和收网址时一样认得出视频、帖子（B 站的页面上没写自己是视频）；接口不通再解析页面
+    /// Collected by the extension: the page is already rendered in your browser, so parse it directly. Platforms with public APIs still go through the API first,
+    /// so videos and posts are recognized the same as when collecting a URL (Bilibili's page doesn't say it's a video); parse the page only if the API fails
     public func material(rendered page: RenderedPage) async -> Material {
         await finished(page.url) {
             if let api = try? await platform(page.url) { return api }
@@ -69,13 +69,13 @@ public struct WebExtractor: Sendable {
         }
         // 2、3
         var attempt = try await fetched(url)
-        // 4：没有连上的浏览器时 render 返回 nil，原因留着，扩展连上后补抓
+        // 4: render returns nil when no browser is connected; the reason is kept, and it's refetched once the extension connects
         if Self.browserCanHelp(attempt), let browser {
             do {
-                // 小红书的全部内容都在页面自带的数据里，不用滚到底
+                // All of Xiaohongshu's content is in the page's built-in data, no need to scroll to the bottom
                 if let page = try await browser.render(url, scroll: !Self.isXiaohongshu(url)) {
                     attempt = await parsed(Page(html: page.html, url: page.url))
-                    // 浏览器里也是空的：不是缺浏览器，别再等扩展
+                    // Empty in the browser too: it's not that the browser was missing, so stop waiting for the extension
                     if attempt.material.partial == .needsBrowser { attempt.material.partial = .failed(String(localized: "浏览器里打开也没读到内容")) }
                 }
             } catch {
@@ -86,7 +86,7 @@ public struct WebExtractor: Sendable {
         return await rescued(attempt)
     }
 
-    /// 第 5 层：登录页兜不了；页面上本来就没几个字（靠脚本加载）也兜不了
+    /// Layer 5: login pages can't be rescued; nor can pages with hardly any text to begin with (loaded via scripts)
     private func rescued(_ attempt: Attempt) async -> Material {
         var m = attempt.material
         let rescuable = switch m.partial { case .needsBrowser?, .failed?: attempt.status < 400; default: false }
@@ -98,10 +98,10 @@ public struct WebExtractor: Sendable {
         return m
     }
 
-    /// 2、3 层的下载：有公开接口的平台走接口，其余下载网页再解析。服务器说返回的是 PDF、图片、视频时（网址里不一定有后缀），按文件处理
+    /// Layers 2 and 3 download: platforms with public APIs go through the API, the rest download the page and parse it. When the server says it's returning a PDF, image or video (the URL may lack an extension), handle it as a file
     private func fetched(_ url: URL) async throws -> Attempt {
         if let api = try await platform(url) { return Attempt(material: api) }
-        // 小红书的手机版页面更常不要求登录
+        // Xiaohongshu's mobile pages more often don't require login
         let (raw, response) = try await fetch(url, mobile: Self.isXiaohongshu(url), timeout: 30)
         if let mime = response.mimeType, let type = UTType(mimeType: mime),
            type.conforms(to: .pdf) || type.conforms(to: .image) || type.conforms(to: .movie) {
@@ -111,7 +111,7 @@ public struct WebExtractor: Sendable {
         return await parsed(page, status: (response as? HTTPURLResponse)?.statusCode ?? 200)
     }
 
-    /// 2、3 层的解析：不下载网页，只读手里这一页（App 下载的、浏览器渲染的都行）
+    /// Layers 2 and 3 parse: no download, only read the page at hand (downloaded by the app or rendered by the browser)
     func parsed(_ page: Page, status: Int = 200) async -> Attempt {
         let host = page.url.host()?.lowercased() ?? ""
         if host == "mp.weixin.qq.com" { return Attempt(material: await wechat(page), status: status) }
@@ -119,8 +119,8 @@ public struct WebExtractor: Sendable {
         return await generic(page, status: status)
     }
 
-    /// 浏览器帮得上的失败：要登录、靠脚本加载、拦截页、被网站拦下（401、403、429）。
-    /// 断网、网页不存在（404、410）、网站自己出错（5xx），在浏览器里打开也一样；拦截页除外，它常用 503 回
+    /// Failures the browser can help with: login required, loaded via scripts, block pages, blocked by the site (401, 403, 429).
+    /// Offline, page not found (404, 410), the site's own errors (5xx) are the same in the browser; except block pages, which often answer with 503
     static func browserCanHelp(_ attempt: Attempt) -> Bool {
         guard let partial = attempt.material.partial, partial != .offline else { return false }
         return partial == .needsBrowser || attempt.status < 400 || [401, 403, 429].contains(attempt.status)
@@ -131,9 +131,9 @@ public struct WebExtractor: Sendable {
         return host.hasSuffix("xiaohongshu.com") || host == "xhslink.com"
     }
 
-    // MARK: 第 2 层：平台
+    // MARK: Layer 2: platforms
 
-    /// 有公开接口的平台：YouTube、B 站、X、微博。不是这几个、或者接口里没有这条，返回 nil
+    /// Platforms with public APIs: YouTube, Bilibili, X, Weibo. Returns nil if it's none of these, or the API doesn't have this item
     private func platform(_ url: URL) async throws -> Material? {
         let host = url.host()?.lowercased() ?? ""
         return switch true {
@@ -145,7 +145,7 @@ public struct WebExtractor: Sendable {
         }
     }
 
-    /// YouTube：oEmbed 拿标题和作者，缩略图按视频编号取最大尺寸
+    /// YouTube: oEmbed for the title and author, the thumbnail at the largest size by video ID
     private func youtube(_ url: URL) async throws -> Material? {
         guard let id = Self.youtubeID(url),
               let info = try await json("https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v=\(id)") else { return nil }
@@ -159,13 +159,13 @@ public struct WebExtractor: Sendable {
         return m
     }
 
-    /// 视频编号：youtu.be/编号，或者 watch?v=编号
+    /// Video ID: youtu.be/<id>, or watch?v=<id>
     static func youtubeID(_ url: URL) -> String? {
         url.host() == "youtu.be" ? url.lastPathComponent
             : URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "v" }?.value
     }
 
-    /// B 站：公开的视频信息接口，有标题、简介、封面、时长、UP 主
+    /// Bilibili: the public video info API, with title, description, cover, duration, uploader
     private func bilibili(_ url: URL) async throws -> Material? {
         guard let (target, v) = try await bilibiliVideo(url) else { return nil }
         var m = Material(kind: .video)
@@ -175,7 +175,7 @@ public struct WebExtractor: Sendable {
         m.duration = (v["duration"] as? NSNumber)?.doubleValue
         m.format = "B 站"
         m.url = target.absoluteString
-        // 编号用接口给的：老的 av 号链接里没有 BV 号
+        // Use the ID from the API: old av-number links have no BV ID
         m.player = (v["bvid"] as? String).map { Player.bilibili(bvid: $0, url: target) }
         if let pic = v["pic"] as? String {
             m.images = await images([pic])
@@ -183,7 +183,7 @@ public struct WebExtractor: Sendable {
         return m
     }
 
-    /// B 站视频信息接口的 data 和跳转后的网址。b23.tv 短链先跟随跳转
+    /// The data from Bilibili's video info API and the redirected URL. b23.tv short links are followed first
     func bilibiliVideo(_ url: URL) async throws -> (URL, [String: Any])? {
         var target = url
         if url.host() == "b23.tv" { target = try await fetch(url).1.url ?? url }
@@ -197,7 +197,7 @@ public struct WebExtractor: Sendable {
         return (target, v)
     }
 
-    /// X：未登录拿不到页面。图片和视频借公开的 fxtwitter 接口；它不可用时退到官方 oEmbed，至少拿到正文和作者
+    /// X: pages can't be fetched without login. Images and videos come from the public fxtwitter API; when it's unavailable, fall back to the official oEmbed, getting at least the text and author
     private func xPost(_ url: URL) async throws -> Material? {
         guard let id = url.absoluteString.firstMatch(#"status/(\d+)"#, group: 1) else { return nil }
         if let tweet = try await json("https://api.fxtwitter.com/status/\(id)")?["tweet"] as? [String: Any] {
@@ -209,7 +209,7 @@ public struct WebExtractor: Sendable {
                                author: (author?["screen_name"] as? String).map { "@" + $0 },
                                images: video.flatMap { $0["thumbnail_url"] as? String }.map { [$0] } ?? photos,
                                isVideo: video != nil, duration: (video?["duration"] as? NSNumber)?.doubleValue)
-            // 视频流直接播，不下载
+            // Play the video stream directly, no download
             m.player = video?["url"] as? String
             return m
         }
@@ -220,15 +220,15 @@ public struct WebExtractor: Sendable {
                               images: [], isVideo: false, duration: nil)
     }
 
-    /// 微博：不认识的访问者先被转到访客验证页，页面跑脚本领一个访客身份再跳回原帖。App 不跑脚本，直接向同一个地址领身份，
-    /// 带着它打开手机版详情页，页面自带的数据里有正文、作者、配图。手机分享出来的短链先跟随跳转找出帖子编号
+    /// Weibo: unknown visitors are first sent to a visitor check page, where a script gets a visitor identity and jumps back to the post. The app doesn't run scripts, so it gets the identity from the same address directly,
+    /// and opens the mobile detail page with it; the page's built-in data has the text, author and images. Short links shared from the phone are followed first to find the post ID
     private func weibo(_ url: URL) async throws -> Material? {
         var id = Self.weiboID(url)
         if id == nil, Self.weiboShortHosts.contains(url.host() ?? ""), let final = try await fetch(url).1.url { id = Self.weiboID(final) }
         guard let id, let cookie = try await weiboVisitor(),
               let status = Self.weiboStatus(in: String(decoding: try await fetch(URL(string: "https://m.weibo.cn/detail/\(id)")!, cookie: cookie).0, as: UTF8.self))
         else { return nil }
-        // 转发的：原帖接在后面，自己没配图就用原帖的
+        // Reposts: the original post follows; if the repost has no images of its own, use the original's
         let original = status["retweeted_status"] as? [String: Any]
         let own = try await weiboText(of: status, cookie: cookie)
         var quoted: (text: String, complete: Bool)?
@@ -248,17 +248,17 @@ public struct WebExtractor: Sendable {
         return m
     }
 
-    /// 手机分享出来的短链：要跟随跳转才知道是哪条
+    /// Short links shared from the phone: only following the redirect tells which post it is
     static let weiboShortHosts: Set = ["mapp.api.weibo.cn", "share.api.weibo.cn"]
 
-    /// 详情页自带的数据里的这条微博
+    /// This Weibo post in the detail page's built-in data
     static func weiboStatus(in html: String) -> [String: Any]? {
         guard let raw = html.firstMatch(#"\$render_data = (\[.*?\])\[0\]"#, group: 1),
               let data = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [[String: Any]] else { return nil }
         return data.first?["status"] as? [String: Any]
     }
 
-    /// 一条微博的正文。长微博在详情页里只有前一段，全文另取；取不到时交回前一段，标上没取全
+    /// A Weibo post's text. Long posts only have the first part in the detail page, the full text is fetched separately; if that fails, return the first part marked incomplete
     private func weiboText(of status: [String: Any], cookie: String) async throws -> (text: String, complete: Bool) {
         let shown = Self.weiboText(status["text"] as? String ?? "")
         guard status["isLongText"] as? Bool == true else { return (shown, true) }
@@ -268,7 +268,7 @@ public struct WebExtractor: Sendable {
         return (Self.weiboText(full), true)
     }
 
-    /// 帖子编号：m.weibo.cn/status/编号、/detail/编号，weibo.com/用户号/编号；访客验证页的 url 参数里是原帖地址
+    /// Post ID: m.weibo.cn/status/<id>, /detail/<id>, weibo.com/<user id>/<id>; the url parameter of the visitor check page holds the original post address
     static func weiboID(_ url: URL) -> String? {
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
         if let inner = query.first(where: { $0.name == "url" })?.value.flatMap(URL.init(string:)) { return weiboID(inner) }
@@ -279,7 +279,7 @@ public struct WebExtractor: Sendable {
         return path[1]
     }
 
-    /// 领一个微博访客身份，交回请求时带的 Cookie
+    /// Get a Weibo visitor identity, returning the Cookie to send with requests
     private func weiboVisitor() async throws -> String? {
         var request = URLRequest(url: URL(string: "https://passport.weibo.com/visitor/genvisitor2")!, timeoutInterval: 15)
         request.httpMethod = "POST"
@@ -290,13 +290,13 @@ public struct WebExtractor: Sendable {
         return "SUB=\(sub); SUBP=\(subp)"
     }
 
-    /// 微博正文是 HTML：换行留下，话题、链接、表情图的标签去掉，长微博末尾的「全文」链接整个去掉
+    /// Weibo text is HTML: keep line breaks, strip tags of topics, links and emoji images, and drop the 「全文」 ("full text") link at the end of long posts entirely
     static func weiboText(_ html: String) -> String {
         Page.decode(html.replacing(#/<a[^>]*>全文</a>/#, with: "").replacing(#/<br\s*/?>/#, with: "\n").replacing(#/<[^>]+>/#, with: ""))
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// 帖子（推文、小红书笔记、微博）：有视频是视频，有图是图像，只有字是文字
+    /// Posts (tweets, Xiaohongshu notes, Weibo posts): with video it's video, with images it's image, text only is text
     private func post(platform: String, title: String?, text: String?, author: String?,
                       images urls: [String], isVideo: Bool, duration: Double?) async -> Material {
         let images = await images(urls)
@@ -308,27 +308,27 @@ public struct WebExtractor: Sendable {
         if m.kind == .text {
             m.text = text
         } else {
-            m.title = isVideo ? title : nil     // 图像卡的标题交给模型
+            m.title = isVideo ? title : nil     // image cards' titles are left to the model
             m.body = text
         }
         return m
     }
 
-    /// 公众号最多存多少张配图；最短边不到这么多像素的（分隔线、小图标）不要
+    /// How many images a WeChat Official Accounts article keeps at most; ones whose shortest side is under this many pixels (dividers, small icons) are dropped
     static let inlineLimit = 30
     static let inlineMinSide: CGFloat = 80
 
-    /// 公众号：正文在 #js_content 里，配图是懒加载的 data-src
+    /// WeChat Official Accounts: the body is in #js_content, images are lazy-loaded data-src
     private func wechat(_ page: Page) async -> Material {
         var m = Material(kind: .web)
         m.title = page.meta("og:title") ?? page.html.firstMatch(#"var msg_title = '([^']*)'"#, group: 1)
         m.source = page.html.firstMatch(#"var nickname = htmlDecode\("([^"]*)"\)"#, group: 1) ?? page.meta("author")
         m.format = "公众号"
         m.url = page.url.absoluteString
-        // 正文是 #js_content 里面那一段：从它的开标签之后，到紧跟在后面的标签提示框为止（再往后是「修改于」「不喜欢」和二维码）
+        // The body is the part inside #js_content: from after its opening tag up to the tag preview popup right after it (beyond that are "edited on", "dislike" and the QR code)
         var content = page.html.range(of: #"id="js_content"[^>]*>"#, options: .regularExpression).map { String(page.html[$0.upperBound...]) } ?? page.html
         if let end = content.range(of: #"id="js_tags_preview_toast""#) ?? content.range(of: #"id="js_pc_qr_code""#) { content = String(content[..<end.lowerBound]) }
-        // 配图留在原位：正文里图的位置写一个占位行，配图按出现顺序存成其余图片。分隔线、小图标这类太扁太小的图不要
+        // Images stay in place: write a placeholder line in the body where each image goes, and store the images in order of appearance as the other images. Images too flat or small, like dividers and small icons, are dropped
         let blocks = Page.blocks(in: content, image: #"data-src="(https?://mmbiz\.qpic\.cn[^"]+)""#)
         var inline: [String] = []
         for case .image(let u) in blocks where !inline.contains(u) && inline.count < Self.inlineLimit { inline.append(u) }
@@ -349,15 +349,15 @@ public struct WebExtractor: Sendable {
             }
         }
         m.body = String(lines.joined(separator: "\n").prefix(FileExtractor.bodyLimit))
-        // 正文截断后没有位置的图不存
+        // Images left without a position after the body is truncated aren't stored
         let gallery = Array(kept.prefix(m.body!.components(separatedBy: Article.imageMark).count - 1))
         m.images = ((cover == nil ? nil : fetched[0]) ?? gallery.first).map { [$0] + gallery } ?? []
         if m.title == nil, m.images.isEmpty { m.partial = .failed(String(localized: "公众号页面没读到内容")) } else if Article.plain(m.body ?? "").count < Self.shortest { m.partial = .needsBrowser }
         return m
     }
 
-    /// 小红书：页面里有一段 __INITIAL_STATE__，含笔记标题、正文和全部配图（轮播图只有当前那张真的加载了，扫 <img> 拿不全）。
-    /// 很多笔记要登录才看得到，拿不到时退到 og 标签，标成要登录，交给浏览器
+    /// Xiaohongshu: the page has an __INITIAL_STATE__ block with the note's title, body and all images (in a carousel only the current one is actually loaded, so scanning <img> misses some).
+    /// Many notes need login to view; when it can't be had, fall back to the og tags, mark as needing login, and hand it to the browser
     private func xiaohongshu(_ page: Page) async -> Material {
         if let note = Self.xiaohongshuNote(in: page.html) {
             let urls = (note["imageList"] as? [[String: Any]] ?? []).compactMap { ($0["urlDefault"] ?? $0["url"]) as? String }
@@ -384,18 +384,18 @@ public struct WebExtractor: Sendable {
             .first { !(($0["title"] as? String) ?? "").isEmpty || !(($0["desc"] as? String) ?? "").isEmpty }
     }
 
-    /// 正文里的话题写成「#设计[话题]#」，表情写成「[赞R]」：话题留「#设计」，表情去掉
+    /// Topics in the body are written as 「#设计[话题]#」 and emoji as 「[赞R]」: keep topics as 「#设计」 ("#design"), drop the emoji
     static func cleanXiaohongshu(_ desc: String) -> String {
         desc.replacing(#/#([^#\[\n]+)\[话题\]#/#) { "#" + $0.output.1 }
             .replacing(#/\[[^\[\]\n]{1,8}R\]/#, with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    // MARK: 第 3 层：通用解析
+    // MARK: Layer 3: generic parsing
 
-    /// 网站给机器看的标准信息 + Readability 取正文，再判断抓到的是不是失败页
+    /// The standard info sites provide for machines + Readability for the body, then judge whether what was fetched is a failure page
     private func generic(_ page: Page, status: Int) async -> Attempt {
-        // 拦截页上什么都没有，标题、地址也不是这条内容的：一样都不留，交给浏览器
+        // A block page has nothing on it, and its title and address aren't this content's either: keep none of it, hand it to the browser
         if Self.isChallenge(page) {
             var m = Material(kind: .web)
             m.partial = .needsBrowser
@@ -414,19 +414,19 @@ public struct WebExtractor: Sendable {
         m.format = isVideo ? (page.meta("og:site_name") ?? "视频") : nil
         m.url = page.url.absoluteString
         if isVideo {
-            // 地址可能写成 //cdn… 或相对路径，和封面一样按页面补全
+            // The address may be written as //cdn… or a relative path; complete it against the page, like the cover
             let absolute = { (s: String?) in s.flatMap { URL(string: $0, relativeTo: page.url)?.absoluteString } }
             m.player = Player.declared(twitter: absolute(page.meta("twitter:player")),
                                        video: absolute(page.meta("og:video:secure_url") ?? page.meta("og:video:url") ?? page.meta("og:video")),
                                        type: page.meta("og:video:type"))
         }
         if let image, let imageURL = URL(string: image, relativeTo: page.url) {
-            // 封面下不来只当没有封面，标题和正文照留
+            // If the cover can't be downloaded, treat it as having no cover; keep the title and body
             m.images = await images([imageURL.absoluteString])
         }
         let site = page.url.host() ?? ""
         let glance = PageGlance(url: page.url, title: m.title, text: String((text.isEmpty ? Page.paragraphs(in: page.html) : text).prefix(3000)))
-        // 是不是失败页：网站明说出错时直接信它；正文太短按规则算没抓全；否则先问模型，没有能用的服务方再按规则
+        // Is it a failure page: trust the site when it plainly reports an error; a body that's too short counts as not fully fetched by rule; otherwise ask the model first, falling back to rules if there's no usable provider
         if status >= 400 {
             m.partial = Self.judge(status: status, title: m.title, text: text, hasImage: !m.images.isEmpty, site: site)
         } else if let clipped = Self.clipped(glance, hasImage: !m.images.isEmpty, site: site) {
@@ -447,11 +447,11 @@ public struct WebExtractor: Sendable {
         }
     }
 
-    /// 页面上的字少于这个就算没抓全。B 站视频简介短到 47 字也是正常页，公众号只取出十几个字时是没抓全
+    /// Fewer characters than this on the page counts as not fully fetched. A Bilibili video description as short as 47 characters is a normal page; a WeChat Official Accounts article yielding only a dozen or so characters is not fully fetched
     static let shortest = 30
 
-    /// 正文太短：测试里所有模型都把这种页当成正常页（选模型时的测试），所以不问模型。网址、标题里看得出是登录页的提示去登录。
-    /// 有图的放过：一张大图配一句说明的作品页（Dribbble、Pinterest）本来就没几个字。公众号不走这里，它的文章本该有正文
+    /// Body too short: in tests every model took such pages as normal (tests when choosing models), so the model isn't asked. If the URL or title shows it's a login page, prompt to log in.
+    /// Pages with images pass: a work page with one big image and a line of caption (Dribbble, Pinterest) has few words to begin with. WeChat Official Accounts don't come through here, as their articles should have a body
     static func clipped(_ glance: PageGlance, hasImage: Bool, site: String) -> Partial? {
         guard glance.text.count < shortest, !hasImage else { return nil }
         let head = ((glance.title ?? "") + " " + glance.text + " " + glance.url.path()).lowercased()
@@ -460,13 +460,13 @@ public struct WebExtractor: Sendable {
 
     static let loginWords = ["登录", "登陆", "log in", "login", "sign in", "signin", "扫码"]
 
-    /// 拦截页：网站要先确认来的是浏览器（跑脚本领访客身份、人机验证）才给内容。App 不跑脚本，再抓也还是这一页。
-    /// 认地址，或者认标题、且页面上没几个字（文章标题里也可能出现「安全验证」）。遇到新平台的拦截页，往下面两张表里加一行
+    /// Block page: the site wants to confirm the visitor is a browser (running a script to get a visitor identity, a captcha) before giving content. The app doesn't run scripts, so refetching still gets this page.
+    /// Match by address, or by title with hardly any text on the page (an article title can also contain 「安全验证」, "security check"). For a new platform's block page, add a row to one of the two tables below
     static func isChallenge(_ page: Page) -> Bool {
         isChallenge(url: page.url.absoluteString, title: page.title, words: Page.paragraphs(in: page.html).count)
     }
 
-    /// 同一条规则，给手里只有地址、标题、正文字数的时候用（已经收成卡的）
+    /// The same rule, for when only the address, title and body length are at hand (cards already collected)
     static func isChallenge(url: String, title: String?, words: Int) -> Bool {
         let url = url.lowercased()
         if challengeURLs.contains(where: url.contains) { return true }
@@ -474,28 +474,28 @@ public struct WebExtractor: Sendable {
         return challengeTitles.contains(where: title.contains) && words < 200
     }
 
-    /// 微博访客验证、知乎和百度的人机验证
+    /// Weibo's visitor check, Zhihu's and Baidu's captchas
     static let challengeURLs = ["passport.weibo.com/visitor/", "passport.weibo.cn/visitor/", "zhihu.com/account/unhuman", "wappass.baidu.com/static/captcha"]
-    /// 微博访客验证、Cloudflare 的人机验证、知乎和百度的安全验证
+    /// Weibo's visitor check, Cloudflare's captcha, Zhihu's and Baidu's security check
     static let challengeTitles = ["sina visitor system", "just a moment...", "attention required! | cloudflare", "安全验证"]
 
-    /// 规则兜底：抓到的是不是登录页、报错页、要靠脚本加载的空页
+    /// Rule fallback: whether what was fetched is a login page, an error page, or an empty page that needs scripts to load
     static func judge(status: Int, title: String?, text: String, hasImage: Bool, site: String) -> Partial? {
         let head = ((title ?? "") + " " + text.prefix(300)).lowercased()
-        // 正文几乎没有、又有登录字样才算登录页：正常的短页面导航里也常有 Log in
+        // Only a login page if there's almost no body and login wording: normal short pages often have Log in in their navigation too
         if status == 401 || (text.count < 200 && !hasImage && Self.loginWords.contains { head.contains($0) }) { return .login(site: site) }
         if status >= 400 { return .failed(String(localized: "网站返回错误（\(status)）")) }
         if text.count <= 200, !hasImage { return .needsBrowser }
         return nil
     }
 
-    /// 从网上下载下来的文件：按文件处理，但出处记网站；临时文件名不能当标题，交给模型起
+    /// A file downloaded from the web: handled as a file, but the source records the site; the temporary file name can't be the title, so the model names it
     private func downloaded(_ url: URL, data: Data? = nil, ext: String? = nil) async throws -> Material {
         let bytes = if let data { data } else { try await fetch(url, timeout: 60).0 }
         let file = FileExtractor.downloads.appending(path: UUID().uuidString + "." + (ext ?? url.pathExtension))
         try bytes.write(to: file)
         var m = await FileExtractor.material(fromFile: file)
-        // 图片读进了素材本身，临时文件用不着了；要保留原文件的（PDF、视频）存进文件库后再删
+        // Images are read into the material itself, so the temporary file isn't needed; ones that keep the original (PDF, video) are deleted after being saved to the file store
         if m.original == nil { try? FileManager.default.removeItem(at: file) }
         if m.title == file.deletingPathExtension().lastPathComponent { m.title = nil }
         m.source = url.host()
@@ -503,13 +503,13 @@ public struct WebExtractor: Sendable {
         return m
     }
 
-    // MARK: 网络
+    // MARK: Network
 
     static let desktopUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
     static let mobileUA = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1"
 
-    /// 网页请求都走这里：带浏览器标识，网络偶尔断连时重试两次；断网直接报错。
-    /// 带 cookie 时只用它，不用系统存的，免得混进 App 里别处留下的
+    /// All web requests go through here: with a browser user agent, retrying twice on occasional disconnects; offline fails right away.
+    /// With a cookie, use only it and not the system's stored ones, so nothing left elsewhere in the app gets mixed in
     func fetch(_ url: URL, mobile: Bool = false, cookie: String? = nil, timeout: TimeInterval = 15) async throws -> (Data, URLResponse) {
         var request = URLRequest(url: url, timeoutInterval: timeout)
         if let cookie {
@@ -518,18 +518,18 @@ public struct WebExtractor: Sendable {
         }
         request.setValue(mobile ? Self.mobileUA : Self.desktopUA, forHTTPHeaderField: "User-Agent")
         request.setValue("zh-CN,zh;q=0.9,en;q=0.8", forHTTPHeaderField: "Accept-Language")
-        // B 站、小红书、微博的图床校验来源
+        // Image hosts of Bilibili, Xiaohongshu and Weibo check the referer
         if let host = url.host(), host.contains("hdslb") { request.setValue("https://www.bilibili.com/", forHTTPHeaderField: "Referer") }
         if let host = url.host(), host.contains("xhscdn") { request.setValue("https://www.xiaohongshu.com/", forHTTPHeaderField: "Referer") }
         if let host = url.host(), host.hasSuffix("sinaimg.cn") { request.setValue("https://weibo.com/", forHTTPHeaderField: "Referer") }
         return try await send(request)
     }
 
-    /// 发请求的唯一出口：调用方自己填好请求（接口要 POST、要别的标识时）也走这里重试
+    /// The single exit for sending requests: callers that build their own request (an API needing POST or another user agent) also retry through here
     func send(_ request: URLRequest) async throws -> (Data, URLResponse) {
         var lastError: Error = URLError(.unknown)
         for attempt in 0..<3 {
-            // 断网不用再试；超时已经等够了，再试只是让人多等
+            // No point retrying offline; a timeout has already waited long enough, retrying only makes people wait longer
             do { return try await session.data(for: request) } catch let error as URLError where [.notConnectedToInternet, .timedOut].contains(error.code) {
                 throw error
             } catch {
@@ -540,8 +540,8 @@ public struct WebExtractor: Sendable {
         throw lastError
     }
 
-    /// 下载一张图；不是图片、太小（图标、表情）都返回 nil。尺寸从文件头读，不解码。
-    /// 平台给的图片地址常是 http（B 站、小红书），App 不许走不加密的连接，一律换成 https
+    /// Download one image; returns nil if it's not an image or too small (icons, emoji). Size is read from the file header, without decoding.
+    /// Platforms often give http image addresses (Bilibili, Xiaohongshu), and the app doesn't allow unencrypted connections, so switch them all to https
     private func image(_ string: String) async throws -> Data? {
         guard var parts = URLComponents(string: string) else { return nil }
         if parts.scheme == "http" { parts.scheme = "https" }
@@ -552,12 +552,12 @@ public struct WebExtractor: Sendable {
         return data
     }
 
-    /// 并发下载多张图，保持原顺序；单张失败不影响其它
+    /// Download several images concurrently, keeping the original order; one failing doesn't affect the others
     private func images(_ urls: [String]) async -> [Data] {
         await eachImage(urls).compactMap { $0 }
     }
 
-    /// 同上，但失败的留空位，和网址一一对应
+    /// Same as above, but failures leave an empty slot, matching the URLs one to one
     private func eachImage(_ urls: [String]) async -> [Data?] {
         await withTaskGroup(of: (Int, Data?).self) { group in
             for (i, u) in urls.enumerated() { group.addTask { (i, try? await self.image(u)) } }

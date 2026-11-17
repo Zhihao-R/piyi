@@ -1,16 +1,16 @@
 import Foundation
 import Library
 
-// Claude 用 Anthropic 自己的接口（/v1/messages），和别家的 chat/completions 不是一种格式：
-// 系统提示单独放、内容分成一块块、工具结果算用户说的话、流式回答按事件到达。这里只做两种格式之间的转换，发请求还是走 Cloud.send。
+// Claude uses Anthropic's own API (/v1/messages), a different format from everyone else's chat/completions:
+// the system prompt goes separately, content is split into blocks, tool results count as the user speaking, and streamed answers arrive as events. This only converts between the two formats; requests still go through Cloud.send.
 
 extension Cloud {
     private static let claudeVersion = "2026-10-21"
-    /// 这几个模型可能因安全策略拒答：让服务端自动换一个模型重答，免得一张卡就此失败。
-    /// 只列官方写明支持这项功能的型号（Haiku 没有），别的型号发了这个参数未必认
+    /// These models may refuse for safety reasons: let the server automatically retry with another model, so one card doesn't just fail.
+    /// Only models officially documented to support this are listed (Haiku isn't); other models may not accept the parameter
     private static let fallbackModels = ["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]
 
-    /// 每次请求都带的头和参数：接口版本、拒答时自动换模型
+    /// Headers and parameters sent with every request: API version, automatic model switch on refusal
     private func claudeBase(_ model: String, betas: [String] = []) -> (headers: [String: String], body: [String: Any]) {
         var (betas, body): ([String], [String: Any]) = (betas, ["model": model])
         if Self.fallbackModels.contains(model) {
@@ -22,7 +22,7 @@ extension Cloud {
         return (headers, body)
     }
 
-    /// 新的 Claude 关不掉思考，想多少由 effort 定：平时用最低一档
+    /// Newer Claude models can't turn thinking off; effort decides how much: normally the lowest level
     private static func effort(_ thinking: Bool) -> [String: Any] { ["effort": thinking ? "high" : "low"] }
 
     private static func image(_ data: Data) -> [String: Any] {
@@ -31,7 +31,7 @@ extension Cloud {
 
     func claudeGenerate(_ prompt: String, images: [Data], careful: Bool, model: String) async throws -> String {
         var (headers, body) = claudeBase(model)
-        // 这个接口必须给回答长度上限。16000 是官方给不流式请求的建议值：再大会等到超时
+        // This API requires an answer length cap. 16000 is the official recommendation for non-streaming requests: larger ones wait until they time out
         body["max_tokens"] = 16000
         body["output_config"] = Self.effort(careful)
         body["messages"] = [["role": "user", "content": images.map(Self.image) + [["type": "text", "text": prompt]]]]
@@ -42,12 +42,12 @@ extension Cloud {
         return text
     }
 
-    /// 流式对话：回答按事件到达，一块块内容各有编号。文字边到边交出去；工具调用和想的内容拼齐了在结束前交出。
-    /// 想的内容带着签名，下一轮必须原样、按原来的顺序交回，所以把这一轮的全部内容块存成 JSON 当作 thought
+    /// Streaming chat: the answer arrives as events, each content block numbered. Text is passed on as it arrives; tool calls and thinking are passed on once complete, before the end.
+    /// Thinking carries a signature and must be sent back next round unchanged and in the original order, so this round's whole set of content blocks is stored as JSON as the thought
     func claudeConverse(_ chat: Chat, yield: (ChatChunk) -> Void) async throws {
         let setup = setup
         guard let model = setup.chosenModel else { throw Unavailable.notReady }
-        // 桌上的卡会变，前面的内容和模型上次看到的可能对不上；对不上时让服务端丢掉旧的思考，不报错
+        // Cards on the desk change, so earlier content may not match what the model saw last time; when it doesn't, let the server drop the old thinking instead of erroring
         var (headers, body) = claudeBase(model, betas: ["thinking-binding-controls-2026-08-01"])
         body.merge(claudeBody(chat, thinking: setup.thinking)) { $1 }
         let bytes = try await stream("messages", body, headers: headers)
@@ -99,10 +99,10 @@ extension Cloud {
         yield(.done(usage))
     }
 
-    /// 存进 thought 的一整轮内容外面套一层这个名字：别家的 thought 是文字，靠它分得开
+    /// A whole round's content stored in thought is wrapped under this name: other providers' thoughts are text, and this tells them apart
     private static let claudeMark = "claude"
 
-    /// thought 里存的若是 Claude 的一整轮内容，取出来；是别家的文字就返回 nil
+    /// If thought holds a whole round of Claude content, take it out; if it's another provider's text, return nil
     static func claudeTurn(_ thought: String?) -> [[String: Any]]? {
         guard let thought, thought.hasPrefix("{\"\(claudeMark)\":"),
               let stored = (try? JSONSerialization.jsonObject(with: Data(thought.utf8))) as? [String: Any] else { return nil }
@@ -112,7 +112,7 @@ extension Cloud {
     func claudeBody(_ chat: Chat, thinking: Bool) -> [String: Any] {
         var system: [String] = []
         var messages: [[String: Any]] = []
-        // 同一方连着说的并成一条：工具结果和紧跟着的用户的话都算用户这一方
+        // Consecutive turns from the same side are merged into one: tool results and the user's words right after them both count as the user's side
         func add(_ role: String, _ blocks: [[String: Any]]) {
             guard !blocks.isEmpty else { return }
             if messages.last?["role"] as? String == role, let before = messages[messages.count - 1]["content"] as? [[String: Any]] {
@@ -137,7 +137,7 @@ extension Cloud {
             case .assistant:
                 let kept = Set(message.calls.map(\.id))
                 if let stored = Self.claudeTurn(message.thought) {
-                    // 这一轮当时的内容原样交回；只去掉没等到结果的调用
+                    // Send that round's content back exactly as it was; only drop calls that never got a result
                     add("assistant", stored.filter { $0["type"] as? String != "tool_use" || kept.contains($0["id"] as? String ?? "") })
                 } else {
                     add("assistant", (message.text.isEmpty ? [] : [["type": "text", "text": message.text]]) + message.calls.map {
@@ -150,11 +150,11 @@ extension Cloud {
         var body: [String: Any] = [
             "messages": messages,
             "stream": true,
-            // 这个接口必须给回答长度上限。64000 是官方给流式请求的建议值，现在的型号都能写到 128000
+            // This API requires an answer length cap. 64000 is the official recommendation for streaming requests; current models can all write up to 128000
             "max_tokens": 64000,
             "output_config": Self.effort(thinking),
             "thinking": ["type": "adaptive", "block_binding": ["prefix_mismatch_behavior": "drop_block"]],
-            // 开头不变的部分自动缓存
+            // The unchanging start is cached automatically
             "cache_control": ["type": "ephemeral"],
         ]
         if !system.isEmpty { body["system"] = system.joined(separator: "\n\n") }

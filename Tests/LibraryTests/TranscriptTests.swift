@@ -3,18 +3,18 @@ import Foundation
 import GRDB
 @testable import Library
 
-/// 转录按时间分段、段首带时间点；旧的转录从正文里分出来
+/// Transcripts are segmented by time, each segment starting with a timestamp; old transcripts are split out of the body
 @Suite struct TranscriptTests {
     @Test func groupsCuesIntoTimedParagraphs() {
         let cues = [
             Cue(start: 0, end: 4, text: "让我们开始吧"),
             Cue(start: 4, end: 9, text: "什么是代理\n"),
-            // 不到 20 秒：停顿再久也不另起
+            // Under 20 seconds: no new segment however long the pause
             Cue(start: 12, end: 21, text: "带有工具的循环模型"),
-            // 过了 20 秒、和上一句之间停了 1 秒以上：另起
+            // Past 20 seconds with a pause of over 1 second since the last sentence: new segment
             Cue(start: 22.5, end: 30, text: "安全带"),
             Cue(start: 30, end: 40, text: "  "),
-            // 一直不停也不断句，到 45 秒另起
+            // Even without pauses or sentence breaks, a new segment at 45 seconds
             Cue(start: 40, end: 50, text: "线束通常就像一层，"),
             Cue(start: 50, end: 60, text: "围绕模型"),
             Cue(start: 67.5, end: 70, text: "下一段"),
@@ -24,18 +24,18 @@ import GRDB
             00:22 安全带 线束通常就像一层，围绕模型
             01:07 下一段
             """)
-        // 句末标点也能另起
+        // End-of-sentence punctuation can also start a new segment
         #expect(Transcript.text([Cue(start: 0, end: 20, text: "First."), Cue(start: 20, end: 25, text: "Second")]) == "00:00 First.\n00:20 Second")
         #expect(Transcript.stamp(3723) == "1:02:03")
     }
 
-    /// 时间点和简介章节同一个写法：放大查看里能点着跳
+    /// Timestamps are written the same way as description chapters: clickable to jump in the detail view
     @Test func stampsAreChapters() {
         let text = Transcript.text([Cue(start: 0, end: 30, text: "一"), Cue(start: 95, end: 100, text: "二")])
         #expect(Player.chapters(in: text, duration: 100).map(\.seconds) == [0, 95])
     }
 
-    /// 升级：转录过的卡，正文最后一段分出来成转录；拼回去和原来一样，理解的依据不变
+    /// Upgrade: for transcribed cards, the last paragraph of the body is split out as the transcript; joined back it's the same as before, so the basis for understanding doesn't change
     @Test func migrationSplitsTranscriptOffBody() throws {
         let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
         let db = try DatabaseQueue(path: path)

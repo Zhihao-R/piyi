@@ -6,7 +6,7 @@ import Synchronization
 @testable import Intelligence
 @testable import Library
 
-/// 记录调用的假云端服务方：生成和判断都由它来
+/// A fake cloud provider that records calls: it handles both generation and judgment
 final class FakeCloud: Generation, Sendable {
     let name = "假云端"
     let calls = Mutex<[String]>([])
@@ -21,7 +21,7 @@ final class FakeCloud: Generation, Sendable {
     }
 }
 
-/// 假本机向量：按文字长度给一个固定向量，不用模型文件
+/// Fake on-device embeddings: a fixed vector based on text length, no model file needed
 struct FakeLocalEmbedder: Embedding {
     let name = "假本机", isReady = true, model = "fake-embedding"
     func embed(_ text: String, as role: EmbeddingRole) async throws -> [Float] { [Float(text.count % 7), 1, 0] }
@@ -31,7 +31,7 @@ func temporaryStore() throws -> Store {
     try Store(root: FileManager.default.temporaryDirectory.appending(path: "piyi-test-\(UUID().uuidString)"))
 }
 
-/// 收一张网页卡（内容已经抽好）
+/// Collects a web card (content already extracted)
 func collectPage(_ store: Store, url: String, body: String = "一段正文") async throws -> Int64 {
     var m = Material(kind: .web)
     m.url = url
@@ -58,7 +58,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         await understander.run()
         let card = try #require(try await store.card(id))
         #expect(card.understanding == nil && card.caption == "假描述")
-        // 描述生成出来后，算向量的文字变了，向量重算
+        // Once the description is generated, the text used for the vector changes, so the vector is recomputed
         #expect(try await store.vectorBases()[id]?.basis != before.basis)
     }
 
@@ -87,7 +87,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(cloud.calls.withLock { $0.count } == 2)
     }
 
-    /// 失败的卡不自动重试：只补颜色那一步不清掉失败原因
+    /// Failed cards aren't retried automatically: filling in only the color step doesn't clear the failure reason
     @Test func failedCardsWaitForRetry() async throws {
         final class Broken: Generation, Sendable {
             let name = "坏", isReady = true
@@ -122,7 +122,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(!Prompt.needsSummary(card))
     }
 
-    /// 要点读全文：每一段都交给模型，模型抄的原话在哪一段里，那一段就是依据；抄错了找不到的没有依据
+    /// Key points read the full text: every paragraph goes to the model, and the paragraph containing the words the model quoted is the basis; a misquote that can't be found has no basis
     @Test func summaryReadsEveryPassage() async throws {
         var card = Card(kind: .web)
         card.body = (1...40).map { "第 \($0) 段" + String(repeating: "字", count: 100) }.joined(separator: "\n")
@@ -134,10 +134,10 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         let made = Prompt.summary(reply, passages: passages, whole: true, for: card)
         #expect(made.text == "· 开头\n· 结尾\n· 没依据")
         #expect(made.anchors == [SummaryAnchor(part: .body, quote: passages[0].text), SummaryAnchor(part: .body, quote: passages[39].text), nil])
-        // 超过上限的只读前面，并标明
+        // Beyond the limit, only the beginning is read, and that's noted
         card.body = (1...30).map { _ in String(repeating: "字", count: 5000) }.joined(separator: "\n")
         #expect(!Prompt.summarizing(card, passages: Passages.of(card)).whole)
-        // 没换行的超长文字只有一段：截到上限，不是一个字都不给
+        // Very long text with no line breaks is a single paragraph: cut at the limit, rather than giving nothing at all
         card.body = String(repeating: "字", count: Prompt.summaryInput + 10)
         let long = Prompt.summarizing(card, passages: Passages.of(card))
         #expect(!long.whole)
@@ -146,7 +146,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
 }
 
 @Suite struct Judging {
-    /// 假判断服务方：每条都答「是」，题目里带「拿不准」的把握只有 0.3；不能看图
+    /// A fake judgment provider: answers "yes" to everything, with only 0.3 confidence for questions containing "拿不准" (unsure); can't see images
     final class Unsure: Judgment, Sendable {
         let name = "假判断", isReady = true, seesImages = false, sureEnough = 0.85
         let calls = Mutex(0)
@@ -156,7 +156,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         }
     }
 
-    /// 只有要求复判时，把握不够的那几条才交给生成能力仔细想一次；默认不复判
+    /// Only when a second look is requested are the low-confidence items handed to the generation capability to think over once; no second look by default
     @Test func onlyUnsureItemsAreRecheckedWhenAsked() async throws {
         let cloud = FakeCloud(), judge = Unsure()
         let gateway = Gateway(embedder: nil, generators: [cloud], judges: [judge])
@@ -169,7 +169,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(cloud.calls.withLock { $0.count } == 1)
     }
 
-    /// 几道题一次请求问完；有附图时交给能看图的生成能力
+    /// Several questions are asked in one request; with attached images, they go to a generation capability that can see images
     @Test func imagesGoToJudgesThatSeeThem() async throws {
         let cloud = FakeCloud(), judge = Unsure()
         let gateway = Gateway(embedder: nil, generators: [cloud], judges: [judge])
@@ -181,7 +181,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(cloud.calls.withLock { $0.count } == 1)
     }
 
-    /// 前一家判断服务方出错，换下一家（Jev 出错时退到生成模型），不直接放弃
+    /// If one judgment provider errors, move on to the next (when Jev errors, fall back to the generation model) instead of giving up
     @Test func failingJudgeFallsBackToTheNext() async throws {
         final class Broken: Judgment, Sendable {
             let name = "坏的", isReady = true, seesImages = false, sureEnough = 0.85
@@ -194,7 +194,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(cloud.calls.withLock { $0.count } == 1)
     }
 
-    /// 不退到生成模型时，专门的判断服务方出错就直接报错（分拣只认 Jev 的概率）
+    /// Without falling back to the generation model, an error from the dedicated judgment provider is reported directly (sorting only trusts Jev's probabilities)
     @Test func noFallbackAsksOnlyDedicatedJudges() async throws {
         final class Broken: Judgment, Sendable {
             let name = "坏的", isReady = true, seesImages = false, sureEnough = 0.85
@@ -206,7 +206,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
         #expect(cloud.calls.withLock { $0 }.isEmpty)
     }
 
-    /// Jev 的请求和回答：是或否、并列选项、等级三种题
+    /// Jev requests and answers: three kinds of questions, yes/no, parallel options, and grades
     @Test func jevRequestsAndAnswers() throws {
         let choice = Question("哪种？", .choice([("content", "正常页"), ("login", "登录页")]))
         #expect(Jev.body(choice)["type"] as? String == "choice")
@@ -223,7 +223,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
     }
 }
 
-/// 真实云端：只在手动给了 OPENROUTER_API_KEY 时跑，发一次请求，确认请求格式和回答解析是对的
+/// Real cloud: runs only when OPENROUTER_API_KEY is given manually; sends one request to confirm the request format and answer parsing are correct
 @Suite struct RealCloud {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] != nil))
     func understandsOneImage() async throws {
@@ -241,7 +241,7 @@ func collectPage(_ store: Store, url: String, body: String = "一段正文") asy
     }
 }
 
-/// 一张有颜色的小 PNG
+/// A small colored PNG
 func pngData() -> Data {
     let ctx = CGContext(data: nil, width: 40, height: 30, bitsPerComponent: 8, bytesPerRow: 0,
                         space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!

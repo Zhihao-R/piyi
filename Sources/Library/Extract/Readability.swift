@@ -1,9 +1,9 @@
 import Foundation
 import WebKit
 
-/// 正文识别：用 Mozilla Readability（Firefox 阅读模式的算法）解析已经下载好的网页。
-/// 只把网页内容交给系统网页组件解析：页面自己的脚本不跑、任何网络请求都拦掉、不带登录状态，读完就丢。
-/// 网页组件只能在主线程上创建和调用，解析本身在它自己的进程里做。
+/// Body recognition: parse an already-downloaded web page with Mozilla Readability (the algorithm behind Firefox Reader View).
+/// Only the page content is handed to the system web view to parse: the page's own scripts don't run, every network request is blocked, no login state is carried, and it's discarded after reading.
+/// The web view can only be created and called on the main thread; the parsing itself happens in its own process.
 @MainActor
 enum Readability {
     struct Article: Sendable {
@@ -22,7 +22,7 @@ enum Readability {
         let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 1024, height: 768), configuration: config)
         let waiter = Waiter()
         web.navigationDelegate = waiter
-        // 基址留空：相对地址不会被解析成真网址去加载；绝对地址的请求由上面的规则拦掉
+        // Leave the base URL empty: relative addresses won't resolve to real URLs and load; requests to absolute addresses are blocked by the rules above
         web.loadHTMLString(html, baseURL: nil)
         guard await waiter.wait(seconds: 10) else { return nil }
         let call = script + """
@@ -40,7 +40,7 @@ enum Readability {
                        siteName: result["siteName"] as? String, text: clean(text))
     }
 
-    /// 段落之间留一个空行，去掉成堆的空白
+    /// Leave one blank line between paragraphs, drop piles of whitespace
     private static func clean(_ text: String) -> String {
         text.replacing(#/[ \t\u{00A0}]+/#, with: " ")
             .replacing(#/ *\n */#, with: "\n")
@@ -53,7 +53,7 @@ enum Readability {
 
     private static var rules: WKContentRuleList?
 
-    /// 拦掉一切网络请求的规则，编译一次
+    /// Rules blocking all network requests, compiled once
     private static func blockEverything() async -> WKContentRuleList? {
         if let rules { return rules }
         let json = #"[{"trigger":{"url-filter":".*"},"action":{"type":"block"}}]"#
@@ -83,7 +83,7 @@ enum Readability {
 }
 
 extension Bundle {
-    /// 资料块的资源包。打包成 .app 后在 Contents/Resources 里，swift run 和测试时在编译目录里
+    /// The library module's resource bundle. In Contents/Resources once packaged as a .app; in the build folder under swift run and tests
     static let library: Bundle? = {
         let name = "Piyi_Library.bundle"
         for base in [Bundle.main.resourceURL, Bundle.main.bundleURL].compactMap({ $0 }) {

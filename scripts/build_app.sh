@@ -1,34 +1,34 @@
 #!/bin/zsh
-# 编译正式版并打包成 build/Piyi.app（本机自签名，双击即可打开）
+# Builds the release version and packages it as build/Piyi.app (self-signed locally, opens with a double-click)
 set -e
 cd "$(dirname "$0")/.."
 swift build -c release --product Piyi
 swift build -c release --product PiyiRelay
 (cd Extension && { [[ -d node_modules ]] || npm ci --silent } && npm run build --silent)
 BIN=$(swift build -c release --show-bin-path)
-# 默认打到 build/Piyi.app；设 APP=<路径> 打到别处，不动正在用的那个
+# Builds to build/Piyi.app by default; set APP=<path> to build elsewhere without touching the one in use
 APP="${APP:-build/Piyi.app}"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp "$BIN/Piyi" "$APP/Contents/MacOS/Piyi"
-# 扩展的中转程序和 App 放在一起：浏览器按 App 每次启动时写的登记文件找到它
+# The extension relay sits alongside the App: the browser finds it through the registration file the App writes on each launch
 cp "$BIN/PiyiRelay" "$APP/Contents/MacOS/PiyiRelay"
-# 浏览器扩展：App 启动时装到 ~/Library/Application Support/Piyi Bridge/Extension，你在扩展页加载的是那一份
+# Browser extension: the App installs it to ~/Library/Application Support/Piyi Bridge/Extension on launch, and that's the copy you load on the extensions page
 cp -R Extension/dist "$APP/Contents/Resources/Extension"
 cp -R "$BIN/Piyi_Piyi.bundle" "$BIN/Piyi_Library.bundle" "$APP/Contents/Resources/"
-# 界面语言：系统是中文时用中文，其余用英文。翻译表放在 App 自己的 en.lproj 里，SwiftUI 的文字和 String(localized:) 默认都到这里查；
-# 中文就是代码里的原文。两个文件夹都在，系统自带的菜单（文件、编辑、窗口、帮助）和「设置」窗口标题也跟着切
+# Interface language: Chinese when the system is Chinese, English otherwise. The translation table lives in the App's own en.lproj, where SwiftUI text and String(localized:) look by default;
+# Chinese is the original text in the code. With both folders present, the system menus (File, Edit, Window, Help) and the Settings window title switch too
 cp -R Localization/*.lproj "$APP/Contents/Resources/"
-# App 图标：Icon Composer 格式，actool 编译成 Assets.car（系统按层加玻璃质感），另附一份 AppIcon.icns。
-# actool 只在完整的 Xcode 里有；只装了 Command Line Tools 时，把同样的图层叠成一张普通图标，没有玻璃质感
+# App icon: Icon Composer format, compiled by actool into Assets.car (the system adds the glass effect per layer), plus an AppIcon.icns.
+# actool only comes with full Xcode; with only the Command Line Tools, the same layers are stacked into a plain icon, without the glass effect
 if xcrun --find actool >/dev/null 2>&1; then
   xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --app-icon AppIcon --target-device mac \
     --minimum-deployment-target 26.0 --platform macosx --output-partial-info-plist /dev/null >/dev/null
 else
-  echo "没找到 Xcode，App 图标改用不带玻璃质感的普通版（装 Xcode 后重新编译即可换成玻璃版）"
+  echo "Xcode not found: using the plain app icon without the glass effect (install Xcode and rebuild to get the glass version)"
   swift scripts/flat_icon.swift "$APP/Contents/Resources/AppIcon.icns"
 fi
-# llama.cpp 是动态库：放进 Contents/Frameworks，并告诉程序去那里找。本机模型文件不进安装包，在设置里下载
+# llama.cpp is a dynamic library: put it in Contents/Frameworks and tell the program to look there. On-device model files aren't in the package; they're downloaded in Settings
 cp -R "$BIN/llama.framework" "$APP/Contents/Frameworks/"
 install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/Piyi"
 cat > "$APP/Contents/Info.plist" <<PLIST
@@ -37,7 +37,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0"><dict>
   <key>CFBundleName</key><string>Piyi</string>
   <key>CFBundleDisplayName</key><string>Piyi</string>
-  <!-- 默认名 Piyi 和文件名一致，访达才会按 zh-Hans.lproj/InfoPlist.strings 在中文系统里显示「片羽」 -->
+  <!-- The default name Piyi matches the file name, so that Finder shows "片羽" on Chinese systems via zh-Hans.lproj/InfoPlist.strings -->
   <key>LSHasLocalizedDisplayName</key><true/>
   <key>CFBundleIdentifier</key><string>io.github.zhihao-r.piyi</string>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
@@ -49,7 +49,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleShortVersionString</key><string>0.1</string>
   <key>LSMinimumSystemVersion</key><string>26.0</string>
   <key>NSHighResolutionCapable</key><true/>
-  <!-- 右键「服务」→「收进片羽」：选中的文字、网址、文件。消息名对应 QuickCollect.collect -->
+  <!-- Right-click Services → "Collect to Piyi" (收进片羽): selected text, URLs, files. The message name maps to QuickCollect.collect -->
   <key>NSServices</key><array><dict>
     <key>NSMenuItem</key><dict><key>default</key><string>收进片羽</string></dict>
     <key>NSMessage</key><string>collect</string>
@@ -61,4 +61,4 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict></plist>
 PLIST
 codesign --force --deep -s - "$APP" >/dev/null
-echo "已生成 $APP"
+echo "Built $APP"

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 抽取的产物：各种来源统一成的中间格式，存成卡片前的样子
+/// The product of extraction: the common intermediate format all sources are turned into, what it looks like before becoming a card
 public struct Material: Sendable {
     public var kind: Kind
     public var form: Form?
@@ -11,22 +11,22 @@ public struct Material: Sendable {
     public var format: String?
     public var pages: Int?
     public var duration: Double?
-    /// 收进来的就是这个网址（网页、直链文件）
+    /// The collected thing is this URL itself (web pages, direct file links)
     public var url: String?
-    /// 所在页面的网址（从浏览器拖来的图）
+    /// The URL of the page it's on (images dragged from the browser)
     public var sourceURL: String?
-    /// 第一张是封面，其余是多图卡的其余图片
+    /// The first is the cover, the rest are the multi-image card's other images
     public var images: [Data] = []
-    /// 需要原样保留的文件（PDF、视频、Word…）
+    /// Files to keep as-is (PDF, video, Word…)
     public var original: URL?
-    /// 网上的视频在放大查看里播放用的地址（见 Player）
+    /// Address for playing an online video in the detail view (see Player)
     public var player: String?
-    /// 只拿到一部分时的原因；nil 表示完整
+    /// Why only part was fetched; nil means complete
     public var partial: Partial?
 
     public init(kind: Kind) { self.kind = kind }
 
-    /// 内容指纹：有原文件按原文件，没有网址的图片和文字按图片、文字本身。网页不按内容查重
+    /// Content fingerprint: by the original file if there is one, otherwise by the image or text itself when there's no URL. Web pages aren't deduplicated by content
     var fingerprint: String? {
         get throws {
             try Self.fingerprint(original: original.map(FileStore.fingerprint), url: url,
@@ -34,27 +34,27 @@ public struct Material: Sendable {
         }
     }
 
-    /// 查重用的内容指纹规则：有原文件按原文件，没有网址的按封面、再按文字。网页不按内容查重。
-    /// original、cover 传的是文件内容的指纹
+    /// Content fingerprint rule for duplicate checks: by the original file if there is one, otherwise (with no URL) by the cover, then by the text. Web pages aren't deduplicated by content.
+    /// original and cover are passed as fingerprints of the file contents
     static func fingerprint(original: String?, url: String?, cover: String?, text: String?) -> String? {
         original ?? (url == nil ? cover ?? text.map { FileStore.fingerprint(Data($0.utf8)) } : nil)
     }
 }
 
-/// 只拿到一部分的原因。条件满足后自动重新抓取：联网了、扩展连上了，或者你右键「重新抓取」
+/// Why only part was fetched. Refetched automatically once the condition is met: back online, the extension connected, or you right-click "Fetch Again"
 public enum Partial: Codable, Sendable, Equatable {
-    /// 断网
+    /// Offline
     case offline
-    /// 拿到的是登录页：去浏览器登录这个网站后重试
+    /// Got a login page: sign in to this site in the browser, then retry
     case login(site: String)
-    /// 页面靠脚本加载，要交给浏览器扩展打开
+    /// The page loads via scripts and must be opened by the browser extension
     case needsBrowser
-    /// 网站报错或者别的原因
+    /// The site returned an error, or some other reason
     case failed(String)
-    /// 还没抓完：上次抽取到一半就退出了，或者当时留下的是拦截页
+    /// Not fully fetched yet: the app quit halfway through extraction last time, or what was left then was a block page
     case unfinished
 
-    /// 扩展连上后值得自动再抓一次：缺的正是浏览器（靠脚本加载，或者要登录、浏览器里可能登录过）
+    /// Worth fetching again automatically once the extension connects: the browser is exactly what's missing (loads via scripts, or needs login, which the browser may have)
     public var waitsForBrowser: Bool {
         switch self {
         case .needsBrowser, .login: true
@@ -62,10 +62,10 @@ public enum Partial: Codable, Sendable, Equatable {
         }
     }
 
-    /// 每次打开、每次联网时值得自动再抓一次
+    /// Worth fetching again automatically on every open and every time the network comes back
     public var waitsForNetwork: Bool { self == .offline || self == .unfinished }
 
-    /// 给人看的一句话
+    /// A sentence for people
     public var reason: String {
         switch self {
         case .offline: String(localized: "断网时收的，联网后自动补全")

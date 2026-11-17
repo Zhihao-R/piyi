@@ -3,13 +3,13 @@ import Library
 import Intelligence
 import Tokens
 
-/// 画布底部居中、常驻的搜索栏：「对资料库说一句话」。筛选按钮在打字、聚焦或有条件时才浮出来
+/// The search bar docked at the bottom center of the canvas: "Ask your library…". Filter buttons float up only while typing, focused, or with active filters
 struct SearchBar: View {
     static let placeholder = String(localized: "对资料库说一句话…")
     @Bindable var search: SearchModel
-    /// 和操作栏共用一块玻璃：选中卡片时从这条变形过去
+    /// Shares one piece of glass with the action bar: morphs from this bar when cards are selected
     let bar: Namespace.ID
-    /// ⌘F 每按一次加一：把光标放进搜索栏
+    /// Incremented on every ⌘F: put the cursor in the search bar
     let focusRequest: Int
     @FocusState private var focused: Bool
 
@@ -62,7 +62,7 @@ struct SearchBar: View {
     }
 }
 
-/// 筛选按钮：时间、类型、颜色、范围。显示的是按钮和句子合并后的条件；句子里解析出的条件也在这里看得到
+/// Filter buttons: time, type, color, scope. They show the conditions merged from buttons and the sentence; conditions parsed from the sentence are visible here too
 private struct FilterRow: View {
     @Bindable var search: SearchModel
     @State private var picking = false
@@ -116,7 +116,7 @@ private struct FilterRow: View {
                 }
                 .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
 
-                // 找卡片的结果里有来自别的画板的卡：留下它们（灵感、提问的在文字面板上）
+                // Find-cards results include cards from other boards: keep them (for inspiration and questions, on the text panel)
                 if search.showing == .find, search.visitors > 0 {
                     Button { search.keepVisitors() } label: {
                         Label("放进当前画板 \(search.visitors) 张", systemImage: "plus").chipStyle(active: true)
@@ -134,11 +134,11 @@ private struct FilterRow: View {
         Text(title).chipStyle(active: active)
     }
 
-    /// 和句子里的时间词同一组天数（QueryRules.timePhrases），按钮上的字和句子解析出的对得上。「昨天」只从句子里来
+    /// Same set of day ranges as time words in sentences (QueryRules.timePhrases), so button labels match what the sentence parses to. "Yesterday" only comes from sentences
     static let days = [(1, String(localized: "今天")), (2, String(localized: "昨天以来")), (5, String(localized: "这几天")), (7, String(localized: "这一周")), (14, String(localized: "最近两周")), (31, String(localized: "这个月"))]
 }
 
-/// 颜色：十二种叫得出名字的颜色，点一下选中、再点取消
+/// Color: twelve nameable colors, click to select, click again to deselect
 private struct ColorPicker: View {
     @Bindable var search: SearchModel
 
@@ -161,7 +161,7 @@ private struct ColorPicker: View {
 }
 
 extension View {
-    /// 筛选按钮的样子：玻璃胶囊；有条件时字色加深，不另加强调色
+    /// Look of filter buttons: glass capsules; with conditions the text darkens, no extra accent color
     func chipStyle(active: Bool) -> some View {
         padding(.horizontal, 12).frame(height: 26)
             .foregroundStyle(active ? .primary : .secondary)
@@ -171,7 +171,7 @@ extension View {
     }
 }
 
-/// 文字面板：灵感的说法、抽一张的解读、提问的回答，和聚拢到眼前的卡一起出现
+/// Text panel: inspiration's wording, a card draw's interpretation, a question's answer, appearing with the cards gathered in view
 struct ReadingPanel: View {
     let search: SearchModel
     let panel: SearchModel.Panel
@@ -239,7 +239,7 @@ struct ReadingPanel: View {
     }
 }
 
-/// 等模型写的时候：三行淡淡的占位，按「等待」的节奏一呼一吸。文字面板和讨论栏共用
+/// While waiting for the model to write: three faint placeholder lines breathing at the "waiting" rhythm. Shared by the text panel and the discussion bar
 struct Waiting: View {
     @State private var breathe = false
 
@@ -286,7 +286,7 @@ extension ColorName {
         }
     }
 
-    /// 按钮上的色块
+    /// Swatch on a button
     var swatch: Color { Palette.swatches[rawValue]!.color }
 }
 

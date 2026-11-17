@@ -4,7 +4,7 @@ import CoreGraphics
 import GRDB
 @testable import Library
 
-/// 分拣结果的写入
+/// Writing sorting results
 @Suite struct SortingWrites {
     let store: Store
     let card: Int64
@@ -21,7 +21,7 @@ import GRDB
         boards.map { Placement(boardID: $0, frame: CGRect(x: 10, y: 20, width: 200, height: 100), z: 0) }
     }
 
-    /// 写之前逐项重新检查：卡已经在这个画板、画板刚关了自动分拣，这两个跳过，其余照常写入，卡标成已分拣
+    /// Each item is rechecked before writing: card already on this board, or board just had auto-sorting turned off, these two are skipped, the rest are written as usual, and the card is marked sorted
     @Test func skipsBoardsThatNoLongerQualify() async throws {
         let open = try await store.createBoard("配色").id!, present = try await store.createBoard("字体").id!, closed = try await store.createBoard("排版").id!
         try await store.place(card: card, on: present, frame: .zero)
@@ -34,7 +34,7 @@ import GRDB
         #expect(try await store.card(card)?.sorted == true)
     }
 
-    /// 卡进了废纸篓：哪里都不放，照样标成已分拣
+    /// The card went to the trash: placed nowhere, still marked sorted
     @Test func trashedCardIsNotPlaced() async throws {
         let board = try await store.createBoard("配色").id!
         try await store.trash([card])
@@ -43,7 +43,7 @@ import GRDB
         #expect(try await store.card(card)?.sorted == true)
     }
 
-    /// 撤销：这一批摆放都拿走，卡仍然是已分拣
+    /// Undo: all placements in this batch are removed, the card stays sorted
     @Test func undoKeepsCardSorted() async throws {
         let a = try await store.createBoard("配色").id!, b = try await store.createBoard("字体").id!
         let written = try await store.recordSorting(card, placements: placements([a, b]))
@@ -52,7 +52,7 @@ import GRDB
         #expect(try await store.card(card)?.sorted == true)
     }
 
-    /// 新放进标记离开画板时清掉
+    /// The newly-added mark is cleared when the card leaves the board
     @Test func unseenClears() async throws {
         let a = try await store.createBoard("配色").id!
         _ = try await store.recordSorting(card, placements: placements([a]))
@@ -61,7 +61,7 @@ import GRDB
         #expect(try await store.items(on: a).first?.placement.unseen == false)
     }
 
-    /// 移到别的画板时新放进标记不跟过去
+    /// The newly-added mark doesn't follow when moved to another board
     @Test func movedPlacementLosesUnseen() async throws {
         let a = try await store.createBoard("配色").id!, b = try await store.createBoard("字体").id!
         var moved = try await store.recordSorting(card, placements: placements([a]))[0]
@@ -70,7 +70,7 @@ import GRDB
         #expect(try await store.items(on: b).first?.placement.unseen == false)
     }
 
-    /// 「分拣这些卡」只管没放进任何画板的卡
+    /// "Sort These Cards" only handles cards not on any board
     @Test func resortOnlyTouchesUnplacedCards() async throws {
         let board = try await store.createBoard("配色").id!
         var m = Material(kind: .text)
@@ -83,7 +83,7 @@ import GRDB
         #expect(try await store.card(placed)?.sorted == true)
     }
 
-    /// 重新抓取换了内容：正文要按新内容重新补全
+    /// A refetch changed the content: the body must be completed again from the new content
     @Test func refillResetsBodyCompleted() async throws {
         try await store.markBodyCompleted(card)
         var m = Material(kind: .text)
@@ -93,7 +93,7 @@ import GRDB
     }
 }
 
-/// 升级：已有的卡都算分拣过、补全过正文，摆放都没有新放进标记
+/// Upgrade: existing cards all count as sorted and body-completed, and no placements have the newly-added mark
 @Test func migrationMarksExistingCardsSorted() throws {
     let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
     let db = try DatabaseQueue(path: path)

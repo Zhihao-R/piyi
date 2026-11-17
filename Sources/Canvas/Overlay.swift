@@ -3,49 +3,49 @@ import AppKit
 import Library
 import Tokens
 
-/// 一次手势：平移、框选、拖动、缩放、旋转、裁剪
+/// One gesture: pan, marquee select, drag, resize, rotate, crop
 enum Gesture {
     case none
-    /// 上一个点（视图坐标）
+    /// Previous point (view coordinates)
     case pan(CGPoint)
-    /// 起点、当前点（视图坐标）；开始前已经选中的（按住 Shift 时保留）
+    /// Start point, current point (view coordinates); what was selected before starting (kept when holding Shift)
     case marquee(CGPoint, CGPoint, base: Set<Int64>)
     case move(Move)
     case resize(Resize)
     case rotate(Rotate)
-    /// 裁剪中拖动裁剪框的哪几条边（都没有就是整个挪）
+    /// Which edges of the crop frame are being dragged while cropping (none means moving the whole frame)
     case crop(edges: Edges, start: CGPoint, origin: CGRect)
 
     struct Move {
-        /// 手底下那张：吸附和对齐线按它算
+        /// The card under the pointer: snapping and guides are computed from it
         var primary: Int64
         var start: CGPoint
         var origins: [Int64: Placement]
-        /// 拿起时画板里最上面的叠放顺序
+        /// The topmost stacking order on the board at pickup
         var top: Double
-        /// 按下没拖就松手时放大查看（卡片）
+        /// Open detail view when released without dragging (cards)
         var opensOnClick = false
         var current: [Int64: Placement] = [:]
     }
 
     struct Resize {
-        /// 缩放的是哪几张（按下时的摆法）
+        /// Which cards are being resized (their placement at mouse down)
         var origins: [Int64: Placement]
-        /// 按下时控件框住的范围
+        /// The area framed by the control at mouse down
         var box: Box
-        /// 拖的是哪个角：x、y 方向各是 -1 或 1
+        /// Which corner is being dragged: -1 or 1 in each of x and y
         var corner: CGVector
-        /// 对角那一点（世界坐标），缩放时它不动
+        /// The opposite corner (world coordinates), which stays fixed while resizing
         var anchor: CGPoint
-        /// 按下时鼠标离角有多远（世界坐标）：缩放时扣掉，角才贴着鼠标走
+        /// How far the mouse was from the corner at mouse down (world coordinates): subtracted while resizing so the corner follows the mouse
         var grab: CGVector
-        /// 文字类卡片：宽高各自跟着鼠标走（重新排版），不保持比例，也不镜像（翻过来的字没法读）
+        /// Text cards: width and height each follow the mouse (relayout), without keeping the ratio and without mirroring (flipped text can't be read)
         var free = false
 
-        /// 鼠标到了 w（世界坐标）时的摆法：对角不动，保持高宽比，框长到鼠标刚好落在它的边上（和 Keynote、无边记一样）。
-        /// 一张时越过对角就镜像：横向越过左右翻，竖向越过上下翻；一组时整组按同一个倍数缩放，不镜像
+        /// The placement when the mouse is at w (world coordinates): the opposite corner stays put, the aspect ratio is kept, and the frame grows until the mouse lands right on its edge (like Keynote and Freeform).
+        /// A single card mirrors when dragged past the opposite corner: horizontally it flips left-right, vertically top-bottom; a group scales as a whole by one factor and doesn't mirror
         func placements(at w: CGPoint, minWidth: CGFloat) -> [Int64: Placement] {
-            // 换到框自己的坐标（不转、不翻）：从对角指向鼠标
+            // Switch to the frame's own coordinates (no rotation, no flip): from the opposite corner toward the mouse
             let v = CGPoint(x: w.x - grab.dx - anchor.x, y: w.y - grab.dy - anchor.y).applying(CGAffineTransform(rotationAngle: -box.rotation))
             guard origins.count == 1, let (id, o) = origins.first else {
                 let smallest = origins.values.map(\.width).min() ?? minWidth
@@ -68,7 +68,7 @@ enum Gesture {
                 return p
             }
             let sx: CGFloat = v.x * corner.dx < 0 ? -1 : 1, sy: CGFloat = v.y * corner.dy < 0 ? -1 : 1
-            // 横竖两个方向谁要的放大多就按谁：鼠标在卡片的右边或下边上，不会跑到卡片外面
+            // Use whichever direction needs more enlargement: the mouse stays on the card's right or bottom edge, never outside the card
             let scale = max(abs(v.x) / o.width, abs(v.y) / o.height)
             let size = CGSize(width: max(minWidth, scale * o.width), height: max(minWidth, scale * o.width) * o.height / o.width)
             let half = CGPoint(x: corner.dx * sx * size.width / 2, y: corner.dy * sy * size.height / 2).applying(CGAffineTransform(rotationAngle: o.rotation))
@@ -81,19 +81,19 @@ enum Gesture {
     }
 
     struct Rotate {
-        /// 转的是哪几张（按下时的摆法）
+        /// Which cards are being rotated (their placement at mouse down)
         var origins: [Int64: Placement]
-        /// 按下时控件框住的范围：整组绕它的中心转
+        /// The area framed by the control at mouse down: the whole group rotates around its center
         var box: Box
         var startAngle: CGFloat
-        /// 已经转了多少（吸附之后）
+        /// How far it has rotated so far (after snapping)
         var turned: CGFloat = 0
 
-        /// 框现在的样子
+        /// How the frame looks now
         var current: Box { var b = box; b.rotation += turned; return b }
 
-        /// 鼠标到了 w（世界坐标）：按和起点的角度差转，框的角度离摆正（0°、90°…）4° 以内就吸住；按住 Shift 每 15° 一档。
-        /// 角度各不相同的一组没法一起回正，不吸（Shift 照样有档）
+        /// The mouse is at w (world coordinates): rotate by the angle difference from the start point; snap when the frame's angle is within 4° of upright (0°, 90°…); with Shift held, steps of 15°.
+        /// A group with differing angles can't be straightened together, so no snapping (Shift steps still apply)
         mutating func turn(to w: CGPoint, steps: Bool) {
             let target = box.rotation + atan2(w.y - box.center.y, w.x - box.center.x) - startAngle
             let step: CGFloat = steps ? .pi / 12 : .pi / 2, near = (target / step).rounded() * step
@@ -101,7 +101,7 @@ enum Gesture {
             turned = (steps || aligned && abs(target - near) < .pi / 45 ? near : target) - box.rotation
         }
 
-        /// 每张的中心绕框的中心转，自己也转同样的角度
+        /// Each card's center rotates around the frame's center, and the card itself rotates by the same angle
         var placements: [Int64: Placement] {
             let t = CGAffineTransform(rotationAngle: turned), c = box.center
             return origins.mapValues { o in
@@ -119,7 +119,7 @@ enum Gesture {
         static let left = Edges(rawValue: 1), right = Edges(rawValue: 2), top = Edges(rawValue: 4), bottom = Edges(rawValue: 8)
     }
 
-    /// 正在被拖动、缩放、旋转的卡：视野外也不回收
+    /// Cards being dragged, resized, or rotated: not recycled even outside the view
     var moving: Set<Int64> {
         switch self {
         case .move(let m): Set(m.origins.keys)
@@ -131,11 +131,11 @@ enum Gesture {
 }
 
 extension CGFloat {
-    /// 折回 ±180° 以内（弧度）
+    /// Wrap into ±180° (radians)
     var wrappedAngle: CGFloat { atan2(sin(self), cos(self)) }
 }
 
-/// 控件框住的范围（世界坐标）：一张卡就是它自己，跟着卡转；一组是按组的角度刚好包住它们的框
+/// The area framed by the control (world coordinates): for one card it's the card itself, rotating with it; for a group it's the frame that just encloses them at the group's angle
 struct Box {
     var center: CGPoint
     var size: CGSize
@@ -147,14 +147,14 @@ struct Box {
         rotation = p.rotation
     }
 
-    /// 这几张的角度都一样（单张、一起转过的一组）时是这个角度，否则为 nil。
-    /// 一起转的角度只差浮点误差，所以门槛取得很小
+    /// That angle when these cards all share it (a single card, a group rotated together), otherwise nil.
+    /// Angles rotated together differ only by floating-point error, so the threshold is very small
     static func sharedRotation(of placements: [Placement]) -> CGFloat? {
         guard let first = placements.first?.rotation, placements.allSatisfy({ abs(($0.rotation - first).wrappedAngle) < 1e-6 }) else { return nil }
         return first
     }
 
-    /// 一组卡转到 rotation 这个角度看，刚好包住它们的框
+    /// The frame that just encloses a group of cards, seen at the angle rotation
     init(enclosing placements: [Placement], rotation: CGFloat = 0) {
         let back = CGAffineTransform(rotationAngle: -rotation)
         let r = placements.flatMap { Box($0).corners }.map { $0.applying(back) }
@@ -164,7 +164,7 @@ struct Box {
         self.rotation = rotation
     }
 
-    /// 四个角：左上、右上、右下、左下（转过的按转后的位置）
+    /// Four corners: top left, top right, bottom right, bottom left (rotated positions if rotated)
     var corners: [CGPoint] {
         let r = CGAffineTransform(rotationAngle: rotation)
         return [(-1.0, -1.0), (1, -1), (1, 1), (-1, 1)].map { sx, sy in
@@ -173,27 +173,27 @@ struct Box {
         }
     }
 
-    /// 绕中心放大（悬停拿起来的卡放大了一点，控件跟着让开）
+    /// Enlarged around the center (a hovered, lifted card is slightly larger, so the controls move out of the way)
     func scaled(_ k: CGFloat) -> Box { var b = self; b.size = CGSize(width: size.width * k, height: size.height * k); return b }
 }
 
-/// 屏幕坐标（y 向下）的浮层：对齐线、框选框、控件（角标、旋转钮、角度读数）、裁剪时的遮罩和裁剪框。只有一份，不随卡片数量增加
+/// Overlay in screen coordinates (y down): guides, marquee, controls (corner handles, rotate knob, angle readout), and the dimming and crop frame while cropping. There is just one, not growing with the number of cards
 final class Overlay: QuietLayer {
     private let guides = CAShapeLayer(), marquee = CAShapeLayer(), handles = CAShapeLayer(), shade = CAShapeLayer()
-    /// 裁剪框四角控制点的半径（屏幕点）
+    /// Radius of the crop frame's corner handles (screen points)
     static let handleRadius: CGFloat = 6
-    /// 角标：收在框的四个内角，离角多远、两条短边多长；角上多大一块按下是缩放（刚好罩住角标）（屏幕点）
+    /// Corner handles: tucked into the four inner corners of the frame — how far from the corner, how long the two short strokes; how big a patch at the corner is a resize press (just covering the handle) (screen points)
     static let bracketGap: CGFloat = 8, bracketArm: CGFloat = 14, cornerReach = bracketGap + bracketArm + 2
-    /// 旋转钮：平时是右上角里侧一个小白点，鼠标靠近展开成圆钮；紧挨在角上缩放区的斜下方（屏幕点）
+    /// Rotate knob: normally a small white dot just inside the top-right corner, expanding into a round knob as the mouse nears; sits diagonally below the corner's resize area (screen points)
     static let knobSize: CGFloat = 26, dotSize: CGFloat = 7, knobInset = cornerReach + knobSize / 2
-    /// 鼠标离钮中心多近就展开：钮的半径再多一指宽
+    /// How close the mouse must be to the knob's center to expand it: the knob's radius plus a finger's width
     static let knobReach = knobSize / 2 + 35
-    /// 按下、靠近的判定比画出来的大一点：鼠标落点有手抖的余地
+    /// Hit areas for pressing and nearing are a bit larger than what's drawn: room for a shaky hand
     static let slop: CGFloat = 4
-    /// 框短边不到这么长（屏幕点）时不放旋转钮（展开后会越过框的中线），角标按比例往角上收
+    /// When the frame's short side is shorter than this (screen points), no rotate knob (expanded, it would cross the frame's midline), and corner handles shrink toward the corners proportionally
     private static let roomy = (knobInset + knobSize / 2) * 2
     private let knob = QuietLayer(), glyph = QuietLayer()
-    /// 旋转钮现在属于哪一组、展开着没有；没显示时为 nil
+    /// Which group the rotate knob belongs to now and whether it's expanded; nil when not shown
     private var knobOwner: [Int64]?, knobOpen = false
     private lazy var readout: QuietLayer = { let tag = makeTag(); tag.isHidden = true; return tag }()
 
@@ -212,7 +212,7 @@ final class Overlay: QuietLayer {
         marquee.strokeColor = Palette.accent.cg
         marquee.fillColor = Palette.accent.opacity(0.08).cg
         marquee.lineWidth = 1
-        // 角标：白色短折线加一圈淡阴影，压在深色、浅色图片上都看得清；不描整圈边，不用强调色
+        // Corner handles: short white polylines with a faint shadow, visible on dark and light images alike; no full outline, no accent color
         handles.strokeColor = Palette.badgeInk.cg
         handles.fillColor = nil
         handles.lineWidth = 2
@@ -225,7 +225,7 @@ final class Overlay: QuietLayer {
         knob.bounds = CGRect(x: 0, y: 0, width: Self.knobSize, height: Self.knobSize)
         knob.cornerRadius = Self.knobSize / 2
         knob.borderColor = Palette.badgeInk.opacity(0.3).cg
-        // 小白点和角标一样的淡阴影；钮是缩小画出来的，阴影半径先放大回去
+        // The small white dot gets the same faint shadow as the corner handles; the knob is drawn scaled down, so scale the shadow radius back up first
         knob.shadowColor = handles.shadowColor
         knob.shadowRadius = handles.shadowRadius * Self.knobSize / Self.dotSize
         knob.shadowOffset = .zero
@@ -239,7 +239,7 @@ final class Overlay: QuietLayer {
     override init(layer: Any) { super.init(layer: layer) }
     required init?(coder: NSCoder) { fatalError() }
 
-    /// 出处标签：聚拢结果里来自别的画板的卡，下面标一行字。和角标同一种样式（深色底、白字）
+    /// Source label: a line of text below cards in gathering results that come from other boards. Same style as the corner badges (dark background, white text)
     private var tags: [QuietLayer] = []
     private var tagIDs: [Int64] = []
     nonisolated(unsafe) static let tagFont = NSFont.systemFont(ofSize: 11, weight: .medium)
@@ -254,7 +254,7 @@ final class Overlay: QuietLayer {
         tagIDs = list.map(\.id)
     }
 
-    /// 深色底、白字的小标签：出处标签和角度读数共用
+    /// Small label with dark background and white text: shared by source labels and the angle readout
     private func makeTag() -> QuietLayer {
         let tag = QuietLayer(), text = CATextLayer()
         tag.backgroundColor = Palette.badge.cg
@@ -269,7 +269,7 @@ final class Overlay: QuietLayer {
         return tag
     }
 
-    /// 左上角放在 at；返回标签的大小
+    /// Top-left corner at at; returns the label's size
     @discardableResult
     private func layout(_ tag: QuietLayer, _ string: String, at: CGPoint) -> CGSize {
         let size = (string as NSString).size(withAttributes: [.font: Self.tagFont])
@@ -281,19 +281,19 @@ final class Overlay: QuietLayer {
         return tag.frame.size
     }
 
-    /// 旋转中框正中的角度读数，始终正着；nil 收起
+    /// The angle readout in the middle of the frame while rotating, always upright; nil hides it
     func setReadout(_ string: String?, at center: CGPoint) {
         guard let string else { readout.isHidden = true; return }
         let size = layout(readout, string, at: .zero)
         readout.frame.origin = CGPoint(x: center.x - size.width / 2, y: center.y - size.height / 2)
     }
 
-    /// 资料库分组标题：组名加张数，写在画布底色上（不加底），跟着深浅色换字色。按组认图层：刚进视野的那组淡入，一直在的不闪
+    /// Library group titles: group name plus card count, written on the canvas background (no backdrop), with text color following light/dark mode. Layers are keyed by group: a group just entering view fades in, ones already there don't flicker
     private var shelfLabels: [Int: CATextLayer] = [:]
     private var spareShelfLabels: [CATextLayer] = []
     nonisolated(unsafe) static let shelfFont = NSFont.systemFont(ofSize: 13, weight: .semibold), shelfNoteFont = NSFont.systemFont(ofSize: 12)
 
-    /// at 是标题左下角
+    /// at is the title's bottom-left corner
     func setShelves(_ list: [(id: Int, title: String, note: String, at: CGPoint)], dark: Bool) {
         let ids = Set(list.map(\.id))
         for (id, label) in shelfLabels where !ids.contains(id) {
@@ -327,12 +327,12 @@ final class Overlay: QuietLayer {
         }
     }
 
-    /// 屏幕点 p 落在哪一组的标题上
+    /// Which group's title screen point p falls on
     func shelf(at p: CGPoint) -> Int? {
         shelfLabels.first { $0.value.frame.insetBy(dx: -4, dy: -4).contains(p) }?.key
     }
 
-    /// 屏幕点 p 落在哪个出处标签上（返回它所属的摆放编号）
+    /// Which source label screen point p falls on (returns the placement ID it belongs to)
     func tag(at p: CGPoint) -> Int64? {
         zip(tags, tagIDs).first { !$0.0.isHidden && $0.0.frame.insetBy(dx: -2, dy: -2).contains(p) }?.1
     }
@@ -349,13 +349,13 @@ final class Overlay: QuietLayer {
 
     func setMarquee(_ rect: CGRect?) { marquee.path = rect.map { CGPath(rect: $0, transform: nil) } }
 
-    /// 每个框四个角（左上、右上、右下、左下，屏幕坐标）里侧画一个取景框式的角标；没有就传空
+    /// Draws a viewfinder-style corner handle inside each of a frame's four corners (top left, top right, bottom right, bottom left, screen coordinates); pass empty for none
     func setHandles(_ boxes: [[CGPoint]]) {
         let path = CGMutablePath()
         for corners in boxes where corners.count == 4 {
             let k = Self.fit(corners), gap = Self.bracketGap * k, arm = Self.bracketArm * k
             for (i, c) in corners.enumerated() {
-                // 沿两条边往里各走一点
+                // Step in a little along each of the two edges
                 let (a, b) = Self.edges(corners, at: i)
                 let o = CGPoint(x: c.x + (a.x + b.x) * gap, y: c.y + (a.y + b.y) * gap)
                 path.move(to: CGPoint(x: o.x + a.x * arm, y: o.y + a.y * arm))
@@ -367,7 +367,7 @@ final class Overlay: QuietLayer {
         handles.shadowPath = path.copy(strokingWithWidth: handles.lineWidth, lineCap: .round, lineJoin: .round, miterLimit: 1)
     }
 
-    /// 屏幕点 p 落在框的哪个角的缩放区（0…3，同 corners 的顺序）。角外侧也留一点余地
+    /// Which corner's resize area of the frame screen point p falls in (0…3, same order as corners). A little room is left outside the corner too
     static func corner(at p: CGPoint, of corners: [CGPoint]) -> Int? {
         let reach = cornerReach * fit(corners)
         return corners.indices.first { i in
@@ -377,19 +377,19 @@ final class Overlay: QuietLayer {
         }
     }
 
-    /// 旋转钮的中心：右上角往里斜着走一段。框太小放不下时为 nil
+    /// Center of the rotate knob: a short way in diagonally from the top-right corner. nil when the frame is too small to fit it
     static func knobCenter(of corners: [CGPoint]) -> CGPoint? {
         guard fit(corners) == 1 else { return nil }
         let (a, b) = edges(corners, at: 1)
         return CGPoint(x: corners[1].x + (a.x + b.x) * knobInset, y: corners[1].y + (a.y + b.y) * knobInset)
     }
 
-    /// 框小时角标、旋转钮往角上收的比例
+    /// How far corner handles and the rotate knob shrink toward the corners when the frame is small
     private static func fit(_ c: [CGPoint]) -> CGFloat {
         min(1, min(hypot(c[1].x - c[0].x, c[1].y - c[0].y), hypot(c[3].x - c[0].x, c[3].y - c[0].y)) / roomy)
     }
 
-    /// 从第 i 个角出发，沿两条边的单位方向
+    /// From corner i, the unit directions along its two edges
     private static func edges(_ c: [CGPoint], at i: Int) -> (CGPoint, CGPoint) {
         (unit(c[(i + 1) % 4], from: c[i]), unit(c[(i + 3) % 4], from: c[i]))
     }
@@ -399,7 +399,7 @@ final class Overlay: QuietLayer {
         return CGPoint(x: (p.x - c.x) / d, y: (p.y - c.y) / d)
     }
 
-    /// 旋转钮：at 为 nil 收起。换了一组时在新位置从无到有长成小白点；open 时展开成深色圆钮
+    /// Rotate knob: at nil hides it. When switching to another group it grows from nothing into a small white dot at the new position; when open it expands into a dark round knob
     func setKnob(at center: CGPoint?, open: Bool, owner: [Int64]) {
         guard let center else {
             if knobOwner != nil { ease(knob, "opacity", to: 0) }
@@ -421,7 +421,7 @@ final class Overlay: QuietLayer {
         }
         guard open != knobOpen else { return }
         knobOpen = open
-        // 展开、收回是手边的小反馈，大小用「拿起」那种弹簧；颜色跟着淡变
+        // Expanding and collapsing is small feedback at hand: size uses the "lift" spring; color follows with a fade
         let spring = CASpringAnimation(perceptualDuration: Motion.lift.response, bounce: 1 - Motion.lift.damping)
         spring.keyPath = "transform"
         spring.fromValue = knob.presentation()?.transform ?? knob.transform
@@ -435,10 +435,10 @@ final class Overlay: QuietLayer {
 
     private static let dotTransform = CATransform3DMakeScale(dotSize / knobSize, dotSize / knobSize, 1)
 
-    /// 音频卡的播放钮：纸样卡片上的东西用卡片自己的颜色，墨色的圆、纸色的三角，深浅色跟着换；正在出声的那张是暂停。
-    /// 只给悬停的和在出声的那张，最多两个，不随卡片数量增加
+    /// Play button on audio cards: things on paper-style cards use the card's own colors — an ink circle and a paper-colored triangle, switching with light/dark mode; the one playing shows pause.
+    /// Only for the hovered card and the one playing, two at most, not growing with the number of cards
     private var playKnobs: [QuietLayer] = []
-    /// 钮在屏幕上最小、最大多大（屏幕点）：再小点不准，就不画了
+    /// Smallest and largest size of the button on screen (screen points): any smaller can't be hit accurately, so it isn't drawn
     static let playKnob: ClosedRange<CGFloat> = 20...44
 
     func setPlayButtons(_ list: [(center: CGPoint, size: CGFloat, pause: Bool)]) {
@@ -468,7 +468,7 @@ final class Overlay: QuietLayer {
         }
     }
 
-    /// 浮层的淡入淡出：从屏幕上现在的样子过渡到 value
+    /// Overlay fade in/out: transition from how it looks on screen now to value
     private func ease(_ l: CALayer, _ key: String, to value: Any, from: Any? = nil) {
         let a = CABasicAnimation(keyPath: key)
         a.fromValue = from ?? l.presentation()?.value(forKeyPath: key) ?? l.value(forKeyPath: key)
@@ -478,12 +478,12 @@ final class Overlay: QuietLayer {
         l.add(a, forKey: key)
     }
 
-    /// 旋转钮里的白色箭头；播放钮里纸色的三角和暂停，浅色、深色各一份
+    /// The white arrow in the rotate knob; the paper-colored triangle and pause in the play button, one each for light and dark
     private static let rotateGlyph = glyph("arrow.clockwise", pointSize: 12, color: Palette.badgeInk)
     private static let playGlyph = (light: glyph("play.fill", pointSize: 20, color: Palette.card.light), dark: glyph("play.fill", pointSize: 20, color: Palette.card.dark))
     private static let pauseGlyph = (light: glyph("pause.fill", pointSize: 20, color: Palette.card.light), dark: glyph("pause.fill", pointSize: 20, color: Palette.card.dark))
 
-    /// 系统符号画成一种颜色的图
+    /// A system symbol drawn as a single-color image
     private static func glyph(_ name: String, pointSize: CGFloat, color: RGBA) -> CGImage? {
         let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: .semibold)
         guard let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(config) else { return nil }
@@ -497,7 +497,7 @@ final class Overlay: QuietLayer {
         return image.cgImage(forProposedRect: &rect, context: nil, hints: nil)
     }
 
-    /// 裁剪：整张图里裁剪框以外的部分压暗，裁剪框四角画控制点
+    /// Cropping: everything in the full image outside the crop frame is dimmed, with handles drawn at the crop frame's corners
     func setCrop(full: CGRect?, crop: CGRect?) {
         guard let full, let crop else { shade.path = nil; return }
         let path = CGMutablePath()

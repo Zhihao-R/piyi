@@ -10,7 +10,7 @@ import AppKit
     @Test func recognizesBlocks() {
         #expect(blocks("# 标题\n## 小标题\n- 一\n  - 二\n1. 第一\n> 引用\n正文") ==
                 [.heading(1), .heading(2), .bullet(depth: 0), .bullet(depth: 1), .ordered(depth: 0), .quote, .paragraph])
-        // 井号后面没有空格不是标题，星号紧贴字不是列表
+        // A hash without a space after it isn't a heading, and an asterisk right against text isn't a list
         #expect(blocks("#话题\n*强调*") == [.paragraph, .paragraph])
     }
 

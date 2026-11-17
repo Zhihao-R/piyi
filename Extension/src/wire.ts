@@ -1,4 +1,4 @@
-// 和 App 之间的消息：字段和 Sources/Wire/Wire.swift 里的 Message 一致
+// Messages exchanged with the App: fields match Message in Sources/Wire/Wire.swift
 
 export type Kind = 'hello' | 'fetch' | 'request' | 'result' | 'collect' | 'collected' | 'reload'
 
@@ -7,11 +7,11 @@ export interface Message {
   id?: string
   url?: string
   html?: string
-  /// 网页上选中的一段话
+  /// A passage of text selected on the page
   text?: string
-  /// 图片本身，base64
+  /// The image itself, base64
   image?: string
-  /// 没取到图片本身时，图片的地址
+  /// The image's URL, when the image itself couldn't be fetched
   imageURL?: string
   body?: string
   ok?: boolean
@@ -19,9 +19,9 @@ export interface Message {
   scroll?: boolean
   version?: string
   queued?: boolean
-  /// 给人看的一句话，原样显示
+  /// A sentence for people to read, shown as is
   say?: string
 }
 
-/// 中转程序的登记名，和 App 写进浏览器目录的登记文件一致
+/// The relay's registered name, matching the registration file the App writes into the browser's directory
 export const HOST = 'io.github.zhihao_r.piyi.relay'

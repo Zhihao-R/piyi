@@ -1,8 +1,8 @@
 import Foundation
 import CryptoKit
 
-/// 本机向量模型文件：不放进安装包，在设置里点「下载」时存进资料库目录的 models/ 下。
-/// 下载源实测（2026-10）hf-mirror 和 ModelScope 都约 4～5 MB/秒；先用 ModelScope（Qwen 官方所在的站，长期更稳），不通再换 hf-mirror
+/// Local embedding model file: not shipped in the app, saved under models/ in the library folder when you click "Download" in Settings.
+/// Download sources measured (2026-10): hf-mirror and ModelScope both about 4–5 MB/s; ModelScope first (Qwen's official home, more stable long-term), falling back to hf-mirror if unreachable
 public enum LocalModel {
     public static let name = "Qwen3-Embedding-0.6B-Q8_0"
     static let fileName = name + ".gguf"
@@ -22,7 +22,7 @@ public enum LocalModel {
         public var errorDescription: String? { message }
     }
 
-    /// 下载并校验，成功后才放到正式位置。progress 是 0～1
+    /// Download and verify; only moved into its final place on success. progress is 0–1
     public static func download(to root: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
         let target = file(in: root)
         try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -43,7 +43,7 @@ public enum LocalModel {
         throw lastError
     }
 
-    /// 下载到临时文件，边下边报进度
+    /// Download to a temporary file, reporting progress along the way
     private static func fetch(_ url: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
         let box = TaskBox()
         return try await withTaskCancellationHandler {
@@ -53,7 +53,7 @@ public enum LocalModel {
                     guard let file, (response as? HTTPURLResponse)?.statusCode ?? 0 < 400 else {
                         return continuation.resume(throwing: Failure(message: String(localized: "下载源返回错误")))
                     }
-                    // 回调结束后系统会删掉这个文件，先挪走
+                    // The system deletes this file after the callback ends, so move it first
                     let kept = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".gguf")
                     do { try FileManager.default.moveItem(at: file, to: kept); continuation.resume(returning: kept) } catch { continuation.resume(throwing: error) }
                 }

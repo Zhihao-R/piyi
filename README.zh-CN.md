@@ -97,8 +97,8 @@ AI 生成文字的写作风格可在「设置 › 云端模型 › 详细设置�
 
 ## 参与开发
 
-编译调试、代码分块、界面翻译和示例画板的生成流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+编译调试、代码分块、界面翻译和示例画板的生成流程见 [CONTRIBUTING.zh-CN.md](CONTRIBUTING.zh-CN.md)。
 
 ## 许可证
 
-代码以 [MIT 许可证](LICENSE)发布。示例画板中的画作和文字来自公有领域或开放许可来源，逐项出处及第三方代码许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+代码以 [MIT 许可证](LICENSE)发布。示例画板中的画作和文字来自公有领域或开放许可来源，逐项出处及第三方代码许可见 [THIRD_PARTY_NOTICES.zh-CN.md](THIRD_PARTY_NOTICES.zh-CN.md)。

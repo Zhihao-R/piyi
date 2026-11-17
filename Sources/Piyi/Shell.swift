@@ -3,7 +3,7 @@ import Library
 import Canvas
 import Tokens
 
-/// 窗口：左边侧边栏，右边画布；放大查看盖在画布上
+/// Window: sidebar on the left, canvas on the right; detail view covers the canvas
 struct Shell: View {
     @Bindable var model: AppModel
 
@@ -15,10 +15,10 @@ struct Shell: View {
             VStack(spacing: 0) {
                 ZStack {
                     if let canvas = model.canvas {
-                        // 画布铺到侧边栏、工具栏、讨论栏底下；它们各盖住多宽，告诉画布让开
+                        // The canvas extends under the sidebar, toolbar and discussion bar; tell the canvas how much each covers so it makes room
                         GeometryReader { geo in
                             CanvasHost(canvas: canvas, covered: geo.safeAreaInsets).ignoresSafeArea()
-                            // 工具栏不铺底：按钮直接浮在画布上，顶上垫一层渐隐托住标题
+                            // The toolbar has no background: buttons float directly on the canvas, with a fade at the top holding the title
                             LinearGradient(colors: [Palette.titleShade.color, .clear], startPoint: .top, endPoint: .bottom)
                                 .frame(height: geo.safeAreaInsets.top + Chrome.inset)
                                 .ignoresSafeArea()
@@ -27,7 +27,7 @@ struct Shell: View {
                         if let hint = model.emptyHint {
                             Text(hint).font(.callout).foregroundStyle(.secondary).allowsHitTesting(false).transition(.opacity)
                         }
-                        // 放大查看时只剩眼前这张卡：搜索栏收起来
+                        // In detail view only this one card remains: the search bar is put away
                         SearchLayer(model: model)
                             .opacity(model.detail == nil ? 1 : 0)
                             .allowsHitTesting(model.detail == nil)
@@ -48,7 +48,7 @@ struct Shell: View {
                         .transition(.opacity.combined(with: .offset(y: -6)))
                     }
                 }
-                // 切画板时放大查看跟着画布换内容一起变
+                // When switching boards, the detail view changes along with the canvas's content
                 .animation(model.swapping ? .swapSpan : .fade, value: model.detail)
                 .animation(.fade, value: model.closing)
                 .animation(.fade, value: model.notice)
@@ -65,7 +65,7 @@ struct Shell: View {
         .sheet(item: $model.sortSettings) { SortSettings(board: $0, model: model) }
         .navigationTitle(model.title)
         .toolbar {
-            // 没有可退的就不摆后退按钮，免得一颗点不动的圆圈最显眼
+            // No back button when there's nothing to go back to, so an unclickable circle isn't the most prominent thing
             if !model.history.isEmpty {
                 ToolbarItem(placement: .navigation) {
                     Button { model.back() } label: { Image(systemName: "chevron.backward") }
@@ -94,11 +94,11 @@ struct Shell: View {
                         .help("把这里的卡重新分拣一遍，有把握的放进对应的画板")
                 }
             }
-            // 有声音在播：不论在哪个画板、开没开放大查看，都能在这里暂停、回到那张卡
+            // Something is playing: whatever board you're in, detail view open or not, you can pause here and go back to that card
             if model.audio.track != nil {
                 ToolbarItem { NowPlaying(audio: model.audio) { model.detail = $0 } }
             }
-            // 展开、收起讨论栏；收起时有新回答，按钮上亮一个点
+            // Expand/collapse the discussion bar; when collapsed with a new answer, a dot lights up on the button
             ToolbarItem(placement: .primaryAction) {
                 Button { model.discussions.isOpen.toggle() } label: {
                     Image(systemName: "bubble.left.and.bubble.right")
@@ -117,17 +117,17 @@ struct Shell: View {
         }
     }
 
-    /// 放大查看：压暗的底放在外面，按方向键换卡时它不跟着闪
+    /// Detail view: the dimmed backdrop sits outside, so it doesn't flash when switching cards with arrow keys
     @ViewBuilder private var detailLayer: some View {
         if model.detail != nil, !model.closing {
             Palette.backdrop.color.ignoresSafeArea()
-                // 双击不算关：在画板上双击已选中的卡，第一下就打开了，第二下落在这里
+                // A double-click doesn't count as closing: double-clicking a selected card on a board opens it on the first click, and the second lands here
                 .onTapGesture { if (NSApp.currentEvent?.clickCount ?? 1) < 2 { model.closeDetail() } }
-                // 切画板关掉时，暗底已经挪进旧画面跟它一起淡，这里直接撤；面板照样当作旧画面里的一张淡出
+                // When closed by switching boards, the dark backdrop has already moved into the old view to fade with it, so remove it here directly; the panel still fades out as part of the old view
                 .transition(.asymmetric(insertion: .opacity, removal: model.swapping ? .identity : .opacity))
         }
         if let store = model.store {
-            // 每张卡一块面板：换了卡是新的一块（播放器、翻到第几张图都不带过去），换下去的那块自己淡完
+            // One panel per card: a changed card gets a new panel (player and current image don't carry over), the swapped-out one finishes fading on its own
             ForEach(model.panels, id: \.self) { id in
                 let current = id == model.detail
                 DetailView(store: store, card: id, focus: current ? model.focus : nil, audio: model.audio, discuss: discussButton(id),
@@ -138,14 +138,14 @@ struct Shell: View {
                     rewrite: { model.rewrite(id, to: $0) }
                     lift: { model.lift($0) }
                     closed: { current ? model.finishClosing() : model.dismissed(id) }
-                    // 进来、淡出都由它自己做；淡出途中不接点击
+                    // It handles entering and fading out itself; no clicks while fading out
                     .transition(.identity)
                     .allowsHitTesting(current)
             }
         }
     }
 
-    /// 放大查看里出处那一行右端的按钮：叫法和操作条、右键菜单同一处定
+    /// Buttons at the right end of the source row in detail view: labels are defined in the same place as the action bar and context menu
     private func discussButton(_ card: Int64) -> DetailView.Action {
         let entry = model.discussions.entry(for: [card])
         return DetailView.Action(title: entry.title, enabled: entry.enabled) { model.discussions.discuss([card]) }
@@ -166,8 +166,8 @@ private struct RenameField: View {
     }
 }
 
-/// 侧边栏：两个卡片视图，下面是画板列表（按最近打开排序），废纸篓钉在最底下。画板可以拖到画布上生成入口，卡片拖到画板上就移过去。
-/// 不用系统的 List：它插行、删行都是瞬间的，拖卡时弹出「移出」那一行要跟着弹簧把下面的行推开
+/// Sidebar: two card views, then the board list (sorted by most recently opened), Trash pinned at the bottom. Boards can be dragged onto the canvas to create entries; dragging cards onto a board moves them there.
+/// Not the system List: its row inserts and deletes are instant, but while dragging cards the "Remove" row that pops up has to push the rows below aside with a spring
 struct Sidebar: View {
     @Bindable var model: AppModel
 
@@ -196,10 +196,10 @@ struct Sidebar: View {
             }
             .padding(.horizontal, 10)
         }
-        // 废纸篓钉在左下角，不随画板列表滚走：往上拖是归进画板，往左下角甩是拿走
+        // Trash is pinned to the bottom left and doesn't scroll with the board list: dragging up files into boards, flinging to the bottom left takes away
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                // 在画板里一拖起卡，废纸篓上面就弹出一行：移出这个画板（卡还在资料库里）
+                // Once you start dragging a card in a board, a row pops up above Trash: Remove from This Board (the card stays in the library)
                 if let board = model.boards.first(where: { $0.id == model.leaving }) {
                     SidebarRow(title: String(localized: "移出「\(board.name)」"), icon: "rectangle.badge.minus", accepts: model.dragging) { take($0) }
                         .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
@@ -212,27 +212,27 @@ struct Sidebar: View {
         }
     }
 
-    /// 点了去那里的一行；能收卡的再给出怎么收
+    /// A row that goes somewhere when clicked; ones that accept cards also say how to collect
     private func row(_ title: String, icon: String, to place: CanvasContent, accepts: Bool = false, accept: (([String]) -> Bool)? = nil) -> some View {
         SidebarRow(title: title, icon: icon, selected: model.location == place, accepts: accepts, accept: accept)
             .onTapGesture { if model.location != place { model.go(place) } }
     }
 
-    /// 从画布拖来的卡片：移到这个画板，按住 ⌥ 是放一份（从废纸篓拖来的先恢复）
+    /// Cards dragged from the canvas: move to this board; holding ⌥ adds a copy (ones dragged from Trash are restored first)
     private func drop(_ strings: [String], on board: Board) -> Bool {
         guard let items = dragged(strings), board.id != model.canvas?.board else { return false }
         model.put(items, into: board.id!, keepingHere: CanvasView.keepsHere)
         return true
     }
 
-    /// 从画布拖来的卡片：放进废纸篓
+    /// Cards dragged from the canvas: move to Trash
     private func trash(_ strings: [String]) -> Bool {
         guard let items = dragged(strings), model.location != .collection(.trash) else { return false }
         model.trash(items)
         return true
     }
 
-    /// 从画板拖来的卡片：移出这个画板
+    /// Cards dragged from a board: remove from this board
     private func take(_ strings: [String]) -> Bool {
         guard let items = dragged(strings) else { return false }
         model.removeFromBoard(items)
@@ -242,8 +242,8 @@ struct Sidebar: View {
     private func dragged(_ strings: [String]) -> [BoardItem]? { model.draggedItems(strings) }
 }
 
-/// 侧边栏的讨论组：有了第一段讨论才出现，按最近一次动静排；3 天没动静的收进组底折叠的「已归档」。
-/// 卡拖到讨论行上就放上它的桌，讨论栏不切换
+/// The sidebar's discussion group: appears once there's a first discussion, sorted by latest activity; those inactive for 3 days go into a collapsed "Archived" at the bottom of the group.
+/// Dragging a card onto a discussion row puts it on that discussion's table, without switching the discussion bar
 private struct DiscussionGroup: View {
     let model: AppModel
     @State private var showsArchived = false
@@ -286,12 +286,12 @@ private struct DiscussionGroup: View {
     }
 }
 
-/// 有你还没看过的回答：侧边栏讨论行的行尾、工具栏讨论按钮上
+/// There are answers you haven't seen: at the end of the sidebar discussion row and on the toolbar discussion button
 private struct UnreadDot: View {
     var body: some View { Circle().fill(Palette.accent.color).frame(width: 7, height: 7) }
 }
 
-/// 分组标题；画板那一组右边带新建的「+」
+/// Group title; the boards group has a "+" for new on its right
 private struct SidebarHeader<Accessory: View>: View {
     let title: String
     @ViewBuilder var accessory: Accessory
@@ -310,14 +310,14 @@ extension SidebarHeader where Accessory == EmptyView {
     init(title: String) { self.init(title: title) { EmptyView() } }
 }
 
-/// 侧边栏的一行，尺寸照系统侧边栏：32 点高，圆角铺底。选中的铺浅底；接得住的卡片拖到上面时铺深一档。
-/// 落进去的反馈是拖着的那一摞缩进去（见 Outgoing.sink）
+/// A sidebar row, sized like the system sidebar: 32 pt tall, rounded background. Selected gets a light background; when acceptable cards are dragged over it, one shade darker.
+/// The drop feedback is the dragged stack shrinking in (see Outgoing.sink)
 private struct SidebarRow: View {
     let title: String, icon: String
     var selected = false
-    /// 行尾的点：讨论有你还没看过的回答
+    /// The dot at the end of the row: the discussion has answers you haven't seen
     var dot = false
-    /// 眼下拖着的东西这一行接不接得住：接不住的不亮
+    /// Whether this row accepts what's currently being dragged: rows that don't, don't light up
     var accepts = false
     var accept: (([String]) -> Bool)?
     @State private var targeted = false
@@ -341,7 +341,7 @@ private struct SidebarRow: View {
     }
 }
 
-/// 盖在画布上的搜索栏和文字面板。资料库里有意选了卡，搜索栏变形成操作栏
+/// The search bar and text panel over the canvas. With cards deliberately selected in the library, the search bar morphs into the action bar
 struct SearchLayer: View {
     let model: AppModel
     @Namespace private var bar
@@ -372,7 +372,7 @@ struct SearchLayer: View {
     }
 }
 
-/// 把画布（AppKit 视图）放进 SwiftUI
+/// Put the canvas (an AppKit view) into SwiftUI
 struct CanvasHost: NSViewRepresentable {
     let canvas: CanvasView
     let covered: EdgeInsets
@@ -383,8 +383,8 @@ struct CanvasHost: NSViewRepresentable {
 }
 
 extension View {
-    /// 一句提示的样子：玻璃胶囊，离边 16 点。窗口顶部的提示和片羽在后台时屏幕右上角的提示共用；
-    /// 屏幕上的那条（prominent）胶囊更宽松，配大一号的字
+    /// The look of a hint: a glass capsule, 16 pt from the edge. Shared by hints at the top of the window and at the top right of the screen when Piyi is in the background;
+    /// the on-screen one (prominent) is a roomier capsule with one size larger text
     func noticeStyle(prominent: Bool = false) -> some View {
         padding(.horizontal, prominent ? 22 : 16).padding(.vertical, prominent ? 14 : 10).glassEffect().padding(16)
     }

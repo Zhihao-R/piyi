@@ -1,19 +1,19 @@
 import SwiftUI
 import Library
 
-/// 画板的分拣设置：自动分拣开关和一句分拣规则
+/// A board's sorting settings: automatic sorting switch and a one-line sorting rule
 struct SortSettings: View {
     let board: Board
     let model: AppModel
     @State private var autoSort: Bool
     @State private var rule: String
-    /// 画板里一张卡都没有：又没写规则时没有东西可比，不会收卡
+    /// No cards in the board: with no rule written either, there's nothing to compare against, so it won't take cards
     @State private var empty = false
     @Environment(\.dismiss) private var dismiss
 
     init(board: Board, model: AppModel) {
         (self.board, self.model) = (board, model)
-        // 一打开就是画板现在的设置，开关不从默认值动画过去
+        // Opens with the board's current settings; the switch doesn't animate from the default value
         _autoSort = State(initialValue: board.autoSort)
         _rule = State(initialValue: board.rule ?? "")
     }

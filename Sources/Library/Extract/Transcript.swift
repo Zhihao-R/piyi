@@ -1,6 +1,6 @@
 import Foundation
 
-/// 字幕、转录里的一句：从第几秒说到第几秒、说了什么
+/// One line of subtitles or transcript: from which second to which second, and what was said
 public struct Cue: Sendable, Equatable {
     public var start: Double
     public var end: Double
@@ -11,12 +11,12 @@ public struct Cue: Sendable, Equatable {
     }
 }
 
-/// 转录存成按时间分的段，一段一行，行首是这段开始的时间点（「01:25 说的话」）。
-/// 行首时间点和简介里的章节是同一个写法（Player.chapters），放大查看里点了就从那里播
+/// Transcripts are stored as time-based segments, one per line, each starting with its start time ("01:25 what was said").
+/// The line-start timestamp is written the same way as chapters in a description (Player.chapters), so clicking it in the detail view plays from there
 public enum Transcript {
-    /// 一段至少这么长才在停顿、句末另起；再长就不等停顿直接另起（秒）
+    /// A segment must be at least this long before breaking at a pause or sentence end; past the longer one it breaks without waiting for a pause (seconds)
     static let shortest = 20.0, longest = 45.0
-    /// 两句之间空这么久算停顿（秒）
+    /// A gap this long between two lines counts as a pause (seconds)
     static let pause = 1.0
 
     public static func text(_ cues: [Cue]) -> String {
@@ -43,12 +43,12 @@ public enum Transcript {
 
     private static let sentenceEnds = Set("。！？.!?")
 
-    /// 自动字幕没有标点，句与句之间留个空格当停顿；已经有中文标点就不再留
+    /// Auto subtitles have no punctuation, so leave a space between lines as a pause; skip it if there's already Chinese punctuation
     private static func joiner(after text: String) -> String {
         text.last.map(Set("，。！？、；：…").contains) == true ? "" : " "
     }
 
-    /// 05:07；过了一小时 1:02:03
+    /// 05:07; past an hour, 1:02:03
     public static func stamp(_ seconds: Double) -> String {
         let s = Int(seconds)
         return s >= 3600 ? String(format: "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60) : String(format: "%02d:%02d", s / 60, s % 60)

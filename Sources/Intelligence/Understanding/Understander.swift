@@ -1,21 +1,21 @@
 import Foundation
 import Library
 
-/// 理解队列：把卡片从「只有原始内容」变成「能被搜到、看一眼就懂」。
-/// 颜色在本机统计，标题、描述、标签、总结交给生成，向量在本机算。
-/// 要不要做全看「依据」（Card.contentBasis，卡片内容的摘要）：卡片内容的依据和上次理解时不同就重新生成，
-/// 算向量的那段文字或向量模型变了就重算向量。所以退出时没做完的，下次打开自然接着做
+/// Understanding queue: turns cards from "only raw content" into "findable by search, understood at a glance".
+/// Colors are counted locally, title, description, tags and summary go to generation, and embeddings are computed locally.
+/// Whether to do anything depends on the "basis" (Card.contentBasis, a digest of the card's content): if it differs from the last understanding, regenerate;
+/// if the text for embeddings or the embedding model changed, recompute embeddings. So whatever was unfinished at quit naturally continues next launch
 public actor Understander {
     let store: Store
     let gateway: Gateway
-    /// 每做完一张卡调一次，App 据此刷新画布和状态栏
+    /// Called after each card finishes; the app refreshes the canvas and status bar from it
     let progress: @Sendable () -> Void
 
-    /// 同时理解几张（云端生成要等网络；向量在本机，本来就一次一条）
+    /// How many to understand at once (cloud generation waits on the network; embeddings are local and one at a time anyway)
     static let parallel = 3
 
     private var running = false
-    /// 正在做的时候又有新情况：做完手上这几张就重新看一遍
+    /// Something new happened while working: look again after finishing the cards in hand
     private var dirty = false
 
     public init(store: Store, gateway: Gateway, progress: @escaping @Sendable () -> Void) {
@@ -24,12 +24,12 @@ public actor Understander {
         self.progress = progress
     }
 
-    /// 有新卡、内容变了、填了密钥、模型下好了、你点了重试：重新看一遍哪些卡要做
+    /// New cards, changed content, a key entered, the model downloaded, or you clicked Retry: look again at which cards need work
     public nonisolated func kick() {
         Task(priority: .utility) { await self.run() }
     }
 
-    /// 做到没有要做的为止（测试里直接等它）
+    /// Work until nothing is left (tests wait on this directly)
     public func run() async {
         dirty = true
         guard !running else { return }
@@ -47,7 +47,7 @@ public actor Understander {
         var waitingKey: Bool
     }
 
-    /// 看一遍所有卡，标好状态，按收集时间从新到旧做
+    /// Go over all cards, mark their state, and work newest collected first
     private func pass() async {
         guard let cards = try? await store.extractedCards(), let vectors = try? await store.vectorBases() else { return }
         let model = gateway.embeddingModel
@@ -70,14 +70,14 @@ public actor Understander {
                 settled.append(card.id!)
             }
         }
-        // 标题会变的卡画布上标「正在理解」；只补颜色、向量的只在状态栏计数
+        // Cards whose title will change are marked "Reading" on the canvas; ones only getting colors or embeddings are just counted in the status bar
         try? await store.setUnderstanding(.generating, for: jobs.filter(\.generate).map(\.card.id!))
         try? await store.setUnderstanding(.indexing, for: jobs.filter { !$0.generate }.map(\.card.id!))
         try? await store.setUnderstanding(.waitingKey, for: waiting)
         try? await store.setUnderstanding(nil, for: settled)
         progress()
 
-        // 同时做几张；有新情况（新收了卡、填了密钥）就不再往下排，回头重新看一遍，新卡不用等这一整轮
+        // Do several at once; when something new happens (a card collected, a key entered) stop queuing more and look again, so new cards don't wait for this whole round
         await withTaskGroup(of: Void.self) { group in
             var pending = jobs.makeIterator()
             func next() -> Bool {
@@ -105,11 +105,11 @@ public actor Understander {
             } catch is Unavailable {
                 waitingKey = true
             } catch {
-                // 没写出描述也接着算向量：原标题和正文照样能按意思找到
+                // Compute embeddings even if no description was written: the original title and body can still be found by meaning
                 failure = error
             }
         }
-        // 期间卡被重新抓取、内容变了：这次的结果作废，下一轮按新内容重做
+        // The card was refetched and its content changed meanwhile: discard this result, and redo it with the new content next round
         guard (try? await store.saveUnderstanding(id, basis: card.contentBasis, generated: generated, colors: colors)) == true else { return }
         if let generated { card.apply(generated) }
 
@@ -119,7 +119,7 @@ public actor Understander {
                 let values = try await gateway.embed(text, as: .card)
                 try await store.saveVector(Vector(cardID: id, model: model, basis: basis, values: values))
             } catch is Unavailable {
-                // 本机模型被删了：等它下好再算
+                // The local model was deleted: wait until it's downloaded to compute
             } catch {
                 return fail(id, error)
             }
@@ -128,8 +128,8 @@ public actor Understander {
         try? await store.setUnderstanding(waitingKey ? .waitingKey : nil, for: [id])
     }
 
-    /// 让模型写一张卡的标题、描述、标签；长内容的要点另问一次、读全文。
-    /// 要点没写出来就整张算失败、重试时两样一起重做：不为「只差要点」另记一种状态
+    /// Have the model write a card's title, description and tags; key points for long content are asked separately, reading the full text.
+    /// If key points don't come out the whole card counts as failed, and a retry redoes both: no separate state for "only key points missing"
     func write(_ card: Card) async throws -> Generated {
         let images = await Prompt.images(for: card, store: store)
         var written = try await gateway.generate(Prompt.understanding(card, images: images.count), images: images, as: Prompt.Reply.self).generated
@@ -149,15 +149,15 @@ public actor Understander {
 
     static func basis(_ text: String) -> String { FileStore.fingerprint(Data(text.utf8)) }
 
-    /// 还要做哪些：标题、描述没按当前内容生成过，向量没按当前模型、当前文字算过。理解失败的等你重试，没抓到内容的不理解，
-    /// 什么都不做。分拣也按它判断理解做完没有，两边用同一处代码
+    /// What's left to do: title and description not generated for the current content, embeddings not computed with the current model and text. Failed understanding waits for your retry; cards with no fetched content aren't understood,
+    /// nothing is done. Sorting also uses this to judge whether understanding is done; both share one piece of code
     static func pending(_ card: Card, vector: (model: String, basis: String)?, model: String?) -> (generate: Bool, vector: Bool) {
         guard card.understandError == nil, !card.isEmpty else { return (false, false) }
         return (card.understoodBasis != card.contentBasis,
                 model != nil && vector.map { $0.model != model || $0.basis != basis(Prompt.vectorText(card)) } ?? true)
     }
 
-    /// 理解做完了：没失败，有东西可理解，向量模型在，也没有要做的
+    /// Understanding is done: not failed, something to understand, the embedding model present, and nothing left to do
     static func isUnderstood(_ card: Card, vector: (model: String, basis: String)?, model: String?) -> Bool {
         card.understandError == nil && !card.isEmpty && model != nil && pending(card, vector: vector, model: model) == (false, false)
     }

@@ -12,7 +12,7 @@ import Library
 
     @Test func alignsFlushEdgeAndDrawsGuide() {
         let neighbor = CGRect(x: 0, y: 0, width: 100, height: 100)
-        // 左边比邻居左边偏 4，应吸过去对齐并画线
+        // Left edge is 4 off the neighbor's left edge: should snap to align and draw a guide
         let moving = CGRect(x: 4, y: 140, width: 80, height: 60)
         let a = Grid.align(moving, to: [neighbor], tolerance: 10, reach: 200)
         #expect(a.dx == -4)
@@ -21,7 +21,7 @@ import Library
 
     @Test func alignsWithOneUnitGapWithoutGuide() {
         let neighbor = CGRect(x: 0, y: 0, width: 100, height: 100)
-        // 左边离邻居右边 23，吸到隔一格（20）贴着，不画线
+        // Left edge is 23 from the neighbor's right edge: snaps to one grid step (20) away, no guide
         let moving = CGRect(x: 123, y: 300, width: 80, height: 60)
         let a = Grid.align(moving, to: [neighbor], tolerance: 10, reach: 400)
         #expect(a.dx == -3)
@@ -44,12 +44,12 @@ import Library
     @Test func clearanceMovesBatchBelowOthers() {
         let other = CGRect(x: 0, y: 0, width: 200, height: 200)
         let dy = Grid.clearance(for: CGRect(x: 50, y: 50, width: 100, height: 100), avoiding: [other])
-        #expect(dy == 170)   // 顶边落到 220：邻居底边再隔一格
+        #expect(dy == 170)   // top edge lands at 220: one grid step below the neighbor's bottom edge
     }
 }
 
 @Suite struct ResizeTests {
-    /// 200×100 的卡，拖右下角；对角（左上）在原点
+    /// A 200×100 card, dragging the bottom-right corner; the opposite corner (top-left) is at the origin
     func resize(grab: CGVector = .zero) -> Gesture.Resize {
         var p = Placement(boardID: 1, cardID: 1, frame: CGRect(x: 0, y: 0, width: 200, height: 100), z: 0)
         p.id = 1
@@ -58,28 +58,28 @@ import Library
 
     @Test func cornerFollowsPointerAlongDiagonal() {
         #expect(resize().placements(at: CGPoint(x: 300, y: 150), minWidth: 40)[1]!.frame == CGRect(x: 0, y: 0, width: 300, height: 150))
-        // 按下时鼠标离角 (3, -2)：扣掉以后角还在原处
+        // The mouse was (3, -2) from the corner on press: after subtracting that, the corner stays put
         #expect(resize(grab: CGVector(dx: 3, dy: -2)).placements(at: CGPoint(x: 203, y: 98), minWidth: 40)[1]!.frame == CGRect(x: 0, y: 0, width: 200, height: 100))
     }
 
     @Test func pointerStaysOnTheCardEdge() {
-        // 鼠标在 (400, 100)：横向要放大 2 倍，卡长到 400×200，鼠标落在右边上
+        // Mouse at (400, 100): horizontally needs 2x, card grows to 400×200, mouse lands on the right edge
         #expect(resize().placements(at: CGPoint(x: 400, y: 100), minWidth: 40)[1]!.frame == CGRect(x: 0, y: 0, width: 400, height: 200))
-        // 鼠标在 (100, 150)：竖向要放大 1.5 倍，鼠标落在下边上
+        // Mouse at (100, 150): vertically needs 1.5x, mouse lands on the bottom edge
         #expect(resize().placements(at: CGPoint(x: 100, y: 150), minWidth: 40)[1]!.frame == CGRect(x: 0, y: 0, width: 300, height: 150))
     }
 
     @Test func crossingTheAnchorMirrors() {
-        // 横向越过对角：左右翻，卡长到对角左边
+        // Crossing the opposite corner horizontally: flips left-right, card grows to the left of that corner
         let p = resize().placements(at: CGPoint(x: -200, y: 100), minWidth: 40)[1]!
         #expect(p.flipX && !p.flipY)
         #expect(p.frame == CGRect(x: -200, y: 0, width: 200, height: 100))
-        // 两个方向都越过：上下左右都翻
+        // Crossing in both directions: flips both ways
         let q = resize().placements(at: CGPoint(x: -200, y: -100), minWidth: 40)[1]!
         #expect(q.flipX && q.flipY && q.frame == CGRect(x: -200, y: -100, width: 200, height: 100))
     }
 
-    /// 文字类卡片：宽高各自跟着鼠标走，越过对角也不镜像
+    /// Text cards: width and height follow the mouse independently, and don't mirror even past the opposite corner
     @Test func textCardsResizeFreely() {
         var r = resize()
         r.free = true
@@ -90,7 +90,7 @@ import Library
 }
 
 @Suite struct GroupTests {
-    /// 两张 100×100：一张在原点，一张在 (200, 0)；整组外框 300×100
+    /// Two 100×100 cards: one at the origin, one at (200, 0); the group's bounding box is 300×100
     let pair: [Int64: Placement] = {
         var a = Placement(boardID: 1, cardID: 1, frame: CGRect(x: 0, y: 0, width: 100, height: 100), z: 0)
         var b = Placement(boardID: 1, cardID: 2, frame: CGRect(x: 200, y: 0, width: 100, height: 100), z: 1)
@@ -99,22 +99,22 @@ import Library
         return [1: a, 2: b]
     }()
 
-    /// 拖整组的右下角：对角（左上）不动，每张的位置和大小按同一个倍数放大，不镜像
+    /// Dragging the group's bottom-right corner: the opposite corner (top-left) stays put, each card's position and size scale by the same factor, no mirroring
     @Test func groupScalesTogether() {
         let r = Gesture.Resize(origins: pair, box: Box(enclosing: Array(pair.values)), corner: CGVector(dx: 1, dy: 1), anchor: .zero, grab: .zero)
         let placed = r.placements(at: CGPoint(x: 600, y: 200), minWidth: 40)
         #expect(placed[1]!.frame == CGRect(x: 0, y: 0, width: 200, height: 200))
         #expect(placed[2]!.frame == CGRect(x: 400, y: 0, width: 200, height: 200))
-        // 越过对角：缩到最小那张刚好是最小宽度，不翻
+        // Crossing the opposite corner: shrinks until the smallest card is exactly the minimum width, no flip
         let crossed = r.placements(at: CGPoint(x: -100, y: -100), minWidth: 40)
         #expect(crossed[1]!.width == 40 && !crossed[1]!.flipX)
     }
 
-    /// 整组绕外框中心转：每张的中心跟着绕，自己也转同样的角度
+    /// The group rotates around the center of its bounding box: each card's center orbits, and the card itself turns by the same angle
     @Test func groupRotatesAroundItsCenter() {
         let box = Box(enclosing: Array(pair.values))
         var r = Gesture.Rotate(origins: pair, box: box, startAngle: 0)
-        // 从中心 (150, 50) 右边开始，转到正下方：90°
+        // Starting to the right of the center (150, 50), turning to straight below: 90°
         r.turn(to: CGPoint(x: 150, y: 150), steps: false)
         let placed = r.placements
         #expect(abs(placed[1]!.rotation - .pi / 2) < 1e-9)
@@ -122,7 +122,7 @@ import Library
         #expect(abs(placed[2]!.frame.midX - 150) < 1e-9 && abs(placed[2]!.frame.midY - 150) < 1e-9)
     }
 
-    /// 离摆正 4° 以内吸住；按住 Shift 每 15° 一档
+    /// Snaps upright within 4°; holding Shift steps every 15°
     @Test func rotationSnaps() {
         var r = Gesture.Rotate(origins: pair, box: Box(enclosing: Array(pair.values)), startAngle: 0)
         let at = { (deg: CGFloat) in CGPoint(x: 150 + 100 * cos(deg * .pi / 180), y: 50 + 100 * sin(deg * .pi / 180)) }
@@ -134,7 +134,7 @@ import Library
         #expect(abs(r.turned - .pi / 4) < 1e-9)
     }
 
-    /// 整组转过以后再转：按每张自己的角度吸正，不按这次转了多少
+    /// Rotating a group again after it was rotated: snaps upright by each card's own angle, not by how much this turn rotated
     @Test func snapsToUprightAfterEarlierTurns() {
         var turned = pair
         turned[1]!.rotation = .pi / 6
@@ -143,11 +143,11 @@ import Library
         let at = { (deg: CGFloat) in CGPoint(x: r.box.center.x + 100 * cos(deg * .pi / 180), y: r.box.center.y + 100 * sin(deg * .pi / 180)) }
         r.turn(to: at(-27), steps: false)
         #expect(abs(r.turned + .pi / 6) < 1e-9)
-        // 吸正以后框也是正的，读数是 0°
+        // After snapping upright the box is upright too, and the readout is 0°
         #expect(abs(r.current.rotation) < 1e-9)
     }
 
-    /// 转过的组框：按那个角度刚好包住整组
+    /// A rotated group box: at that angle, it just encloses the whole group
     @Test func rotatedGroupBoxHugsMembers() {
         let r = Gesture.Rotate(origins: pair, box: Box(enclosing: Array(pair.values)), startAngle: 0, turned: .pi / 4)
         let box = Box(enclosing: Array(r.placements.values), rotation: .pi / 4)
@@ -155,7 +155,7 @@ import Library
         #expect(abs(box.center.x - 150) < 1e-9 && abs(box.center.y - 50) < 1e-9)
     }
 
-    /// 角度各不相同的一组没法一起回正：不吸；Shift 时按转了多少每 15° 一档
+    /// A group whose angles all differ can't be straightened together: no snapping; with Shift, steps every 15° by how much it turned
     @Test func mixedAnglesDoNotSnap() {
         var mixed = pair
         mixed[1]!.rotation = .pi / 18

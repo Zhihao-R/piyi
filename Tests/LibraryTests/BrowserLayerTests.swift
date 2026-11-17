@@ -5,8 +5,8 @@ import ImageIO
 import Synchronization
 @testable import Library
 
-/// 第 4 层：前三层判成要浏览器时交给扩展，拿回渲染好的页面再解析一遍。
-/// 和网页样本共用录好的网络响应，放在同一个串行的组里
+/// Layer 4: when the first three layers decide a browser is needed, hand it to the extension and parse the rendered page it returns.
+/// Shares the recorded network responses with the web page samples, so it's in the same serialized group
 extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
     static let article = "<html><head><title>一篇文章</title></head><body><article><h1>一篇文章</h1>"
         + String(repeating: "<p>这是浏览器里渲染出来的正文，原来靠脚本加载，App 自己下载时只有一个空壳。</p>", count: 12)
@@ -43,7 +43,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(browser.requests.isEmpty)
     }
 
-    /// 浏览器连着但没读成：显示真实原因，不再说「等扩展」
+    /// The browser is connected but reading failed: show the real reason, no longer "waiting for the extension"
     @Test func browserFailureShowsReason() async {
         serve(["https://example.com/app": Self.shell])
         let m = await WebExtractor(session: Replay.session, browser: FakeBrowser(html: Self.article, failing: true))
@@ -51,7 +51,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(m.partial == .failed("浏览器里没读成：读这个网页超时了"))
     }
 
-    /// 网页不存在：浏览器里打开也一样，不占它的队；被网站拦下（403）才交给浏览器
+    /// The page doesn't exist: the same in a browser, so don't take up its queue; only pages blocked by the site (403) go to the browser
     @Test func onlyBlockedPagesGoToBrowser() async {
         for (status, asked) in [(404, false), (503, false), (403, true)] {
             Replay.responses = ["https://example.com/x": Replay.Recorded(status: status, contentType: "text/html", finalURL: "https://example.com/x",
@@ -70,11 +70,11 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(browser.requests.isEmpty)
     }
 
-    /// 小红书：App 自己拿到的是登录页；浏览器里读页面自带的数据，正文干净、配图一张不少，不用滚到底
+    /// Xiaohongshu: the App on its own gets a sign-in page; in the browser it reads the page's built-in data, with clean body text and every image, no need to scroll to the bottom
     @Test func xiaohongshuNoteFromPageData() async {
         let note = "https://www.xiaohongshu.com/explore/abc?xsec_token=t"
         let images = (1...3).map { "https://sns-webpic-qc.xhscdn.com/\($0)" }
-        // 页面数据里的图片地址是 http 的，App 要换成 https 去下
+        // Image URLs in the page data are http; the App switches them to https to download
         let page = Self.xiaohongshuPage(images: images.map { $0.replacingOccurrences(of: "https://", with: "http://") })
         serve([note: "<html><head><meta name=\"og:title\" content=\"小红书 - 你的生活指南\"></head><body>登录后查看更多</body></html>"],
               images: images)
@@ -89,7 +89,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(browser.requests.first?.scroll == false)
     }
 
-    /// 在浏览器里点「收进片羽」：页面已经渲染好，不再下载
+    /// Clicking "Collect to Piyi" in the browser: the page is already rendered, no further download
     @Test func renderedPageIsParsedDirectly() async {
         let images = ["https://sns-webpic-qc.xhscdn.com/1"]
         serve([:], images: images)
@@ -100,7 +100,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
         #expect(m.url == "https://www.xiaohongshu.com/explore/abc")
     }
 
-    /// 在浏览器里收 B 站页面：页面上没写自己是视频，照样走平台接口，收成视频卡（之后才会取字幕）；接口不通再解析页面
+    /// Collecting a Bilibili page in the browser: the page doesn't say it's a video, but it still goes through the platform API and becomes a video card (subtitles are fetched later); if the API fails, parse the page
     @Test func renderedPlatformPageUsesPlatformAPI() async {
         let url = "https://www.bilibili.com/video/BV15Zpb6iEd6/?spm_id_from=333"
         let page = RenderedPage(url: URL(string: url)!, html: BrowserLayerTests.article)
@@ -133,7 +133,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
             + "<div>猜你想搜</div><div>3天前 浙江</div></body></html>"
     }
 
-    /// 录好的网页，加几张 400×300 的图
+    /// A recorded web page, plus a few 400×300 images
     private func serve(_ pages: [String: String], images: [String] = []) {
         Replay.responses = Dictionary(uniqueKeysWithValues: pages.map { url, html in
             (url, Replay.Recorded(status: 200, contentType: "text/html", finalURL: url, body: Data(html.utf8)))
@@ -154,7 +154,7 @@ extension WebFixtureTests { @Suite @MainActor struct BrowserLayerTests {
     }()
 } }
 
-/// 假的浏览器：html 为 nil 表示没有连上的浏览器。answers：带登录状态请求各网址时回的原文
+/// A fake browser: html nil means no browser is connected. answers: the raw text returned when requesting each URL with sign-in state
 final class FakeBrowser: PageBrowser {
     struct Request: Equatable { var url: String, scroll: Bool }
     struct Timeout: LocalizedError { var errorDescription: String? { "读这个网页超时了" } }

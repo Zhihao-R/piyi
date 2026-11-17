@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import Library
 
-/// 复制、分享来的一段文字：指向网页的抓网页，正文里夹着链接的按文字收
+/// Copied or shared text: if it points to a web page, fetch the page; if links are embedded in the text, collect it as text
 struct ShareTextTests {
     private func urls(_ text: String) -> [String] { FileExtractor.urls(in: text).map(\.absoluteString) }
 
@@ -20,7 +20,7 @@ struct ShareTextTests {
         #expect(urls("README.md").isEmpty)
     }
 
-    /// 文章里夹着链接：整段是内容，链接不去抓
+    /// An article with embedded links: the whole passage is the content, links aren't fetched
     @Test func linksInsideProseStayText() {
         let prose = String(repeating: "这是一段从文章里复制的正文，讲的是排版。", count: 8)
         #expect(urls(prose + " 参考 https://a.com/x").isEmpty)

@@ -2,11 +2,11 @@ import AppKit
 import Library
 import Tokens
 
-/// 鼠标、触控板、键盘：选中、框选、拖动（边缘吸附、对齐线、松手吸网格）、缩放、旋转、拖到侧边栏
+/// Mouse, trackpad, keyboard: select, marquee, drag (edge snapping, guides, snap to grid on release), resize, rotate, drag to the sidebar
 extension CanvasView: NSDraggingSource {
     public override var acceptsFirstResponder: Bool { true }
 
-    /// 视图里的点（y 向下）
+    /// A point in the view (y down)
     func point(_ event: NSEvent) -> CGPoint { point(inWindow: event.locationInWindow) }
 
     func point(inWindow p: CGPoint) -> CGPoint {
@@ -18,7 +18,7 @@ extension CanvasView: NSDraggingSource {
 
     func screenPoint(_ w: CGPoint) -> CGPoint { camera.view(at: w, in: bounds.size) }
 
-    /// 某个世界坐标点上、画面里最上面的那张卡：按图层实际的叠放次序（排在幕上面的算在上面）
+    /// The topmost card in the picture at a world point: by the layers' actual stacking order (cards above the scrim count as on top)
     func item(at w: CGPoint) -> Int64? {
         let reachable = gathering.map { Set($0.members) }
         let z = { (id: Int64) in self.live[id]?.zPosition ?? CGFloat(self.items[id]!.placement.z) }
@@ -27,7 +27,7 @@ extension CanvasView: NSDraggingSource {
             .max { z($0) < z($1) }
     }
 
-    // MARK: 镜头
+    // MARK: Camera
 
     public override func scrollWheel(with event: NSEvent) {
         stopGlide()
@@ -39,13 +39,13 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    /// 双指捏合：识别器给的是累计倍率，每次用完清零，下次拿到的就是这一小段
+    /// Pinch: the recognizer gives a cumulative magnification, reset after each use, so the next one is just this small step
     @objc func pinched(_ r: NSMagnificationGestureRecognizer) {
         zoom(by: 1 + r.magnification, at: point(inWindow: r.location(in: nil)))
         r.magnification = 0
     }
 
-    /// 以鼠标所在点为中心缩放
+    /// Zoom centered on the mouse location
     func zoom(by factor: CGFloat, at p: CGPoint) {
         stopGlide()
         let anchor = worldPoint(p)
@@ -54,19 +54,19 @@ extension CanvasView: NSDraggingSource {
                                         y: anchor.y - (p.y - bounds.height / 2) / scale), scale: scale)
     }
 
-    // MARK: 悬停
+    // MARK: Hover
 
     public override func mouseMoved(with event: NSEvent) {
         guard cropper == nil else { return }
         let p = point(event)
         pointer = p
         setHovered(item(at: worldPoint(p)))
-        // 控件跟着悬停换；旋转钮按鼠标离得多近展开、收回
+        // Controls follow the hover; the rotate knob expands and collapses by how close the mouse is
         if isEditable { updateOverlay() } else { updatePlayButtons() }
         let shelf = shelf(at: p)
         if shelf != hotShelf { hotShelf = shelf; updateShelves() }
         if origin(at: p) != nil || shelf != nil { NSCursor.pointingHand.set(); return }
-        // 悬停在角标、旋转钮上时换成缩放、旋转的鼠标样式。它们排在播放钮前面：卡很小、两样叠在一起时，按下去是缩放、旋转
+        // Over a corner handle or the rotate knob, switch to the resize or rotate cursor. They take precedence over the play button: when a card is small and they overlap, pressing resizes or rotates
         if let g = handle(at: p) { cursor(for: g).set(); return }
         if playButton(at: p) != nil { NSCursor.pointingHand.set(); return }
         NSCursor.arrow.set()
@@ -83,7 +83,7 @@ extension CanvasView: NSDraggingSource {
     private func cursor(for g: Gesture) -> NSCursor {
         switch g {
         case .resize(let r):
-            // 按角在屏幕上相对卡片中心的方向选箭头，卡片转过也对
+            // Choose the arrow by the corner's on-screen direction from the card center, so it's right for rotated cards too
             let c = screenPoint(r.box.center), a = screenPoint(r.anchor)
             let position: NSCursor.FrameResizePosition = switch (c.x > a.x, c.y > a.y) {
             case (true, true): .bottomRight
@@ -97,7 +97,7 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    /// 旋转的鼠标样式：系统没有，用一个旋转箭头符号画，外面描一圈白边，压在深色图片上也看得见
+    /// Rotate cursor: the system has none, so draw a rotating-arrow symbol with a white outline, visible even over dark images
     static let rotateCursor: NSCursor = {
         let config = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
         guard let symbol = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: nil)?.withSymbolConfiguration(config) else { return .crosshair }
@@ -120,7 +120,7 @@ extension CanvasView: NSDraggingSource {
         return NSCursor(image: image, hotSpot: NSPoint(x: 11, y: 11))
     }()
 
-    // MARK: 按下
+    // MARK: Mouse down
 
     public override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
@@ -132,12 +132,12 @@ extension CanvasView: NSDraggingSource {
             gesture = g
             return
         }
-        // 音频卡上的播放钮：只管播和停，不选中、不拿起这张卡
+        // Play button on audio cards: only plays and stops, doesn't select or lift the card
         if let id = playButton(at: p), let item = items[id] { delegate?.canvas(self, play: item); return }
         let shift = event.modifierFlags.contains(.shift), additive = shift || event.modifierFlags.contains(.command)
         if let shelf = shelf(at: p) { selectShelf(shelf, adding: additive); return }
         guard let id = item(at: w) else {
-            // 双击空白处：在这里写一张文字卡
+            // Double-click on empty space: write a text card here
             if event.clickCount == 2, isEditable { addNote(at: w); return }
             if spaceHeld {
                 stopGlide()
@@ -149,12 +149,12 @@ extension CanvasView: NSDraggingSource {
             }
             return
         }
-        // 双击：画板里是打开这张卡（自己写的文字卡接着写），画板入口是进去。资料库和聚拢时单击就看了，轮不到双击
+        // Double-click: on a board it opens the card (text cards you wrote continue editing); on a board entry it goes in. In the library and while gathering a single click already views it, so double-click never gets a turn
         if event.clickCount == 2, let item = items[id], isEditable || !Self.opensOnClick(item) { activate(item); return }
-        // 画板里已经单独选中的这张再点一下：要看它（文字卡是接着写）
+        // Clicking again on the card that's already the only one selected on a board: view it (text cards continue editing)
         let picked = selection == [id]
         if shift, browses, anchor != nil {
-            // 资料库里按住 ⇧ 点：选上一段
+            // ⇧-click in the library: select a range
             selection.formUnion(range(to: id))
         } else if additive {
             selection.formSymmetricDifference([id])
@@ -162,10 +162,10 @@ extension CanvasView: NSDraggingSource {
         } else if !browses, !selection.contains(id) {
             selection = [id]
         }
-        // 画板里的任务是摆：单击先选中，选中了再点才打开。资料库和聚拢的结果是用来看的：单击就放大查看
+        // On a board the job is arranging: a single click selects first, and clicking the selected card opens it. Library and gathering results are for viewing: a single click opens detail view
         let opens = !additive && (!isEditable || picked) && Self.opensOnClick(items[id])
         guard isEditable, selection.contains(id) else {
-            // 不能挪卡的地方（资料库、聚拢中）：按住拖是带去别处（拖到侧边栏的画板上），按下没拖就松手是放大查看
+            // Where cards can't be moved (library, while gathering): press and drag takes them elsewhere (onto a board in the sidebar); press and release without dragging opens detail view
             if !additive { gesture = .move(Gesture.Move(primary: id, start: p, origins: [:], top: topZ, opensOnClick: opens)) }
             return
         }
@@ -173,39 +173,39 @@ extension CanvasView: NSDraggingSource {
         gesture = .move(Gesture.Move(primary: id, start: p, origins: origins, top: topZ, opensOnClick: opens))
     }
 
-    /// 卡片能单击打开（资料库、聚拢时，画板里已选中时；按下没拖就松手）；画板入口总是双击进入
+    /// Cards open with a single click (in the library, while gathering, or when already selected on a board; press and release without dragging); board entries always open with a double-click
     static func opensOnClick(_ item: BoardItem?) -> Bool {
         if case .card? = item?.face { true } else { false }
     }
 
-    /// 打开一张卡：画板里你写的文字卡是接着写，其余交给外壳（卡片放大查看、画板入口进去）
+    /// Open a card: on a board, a text card you wrote continues editing; everything else goes to the shell (cards open detail view, board entries go in)
     func activate(_ item: BoardItem) {
         if item.isNote, isEditable { edit(item.id) } else { delegate?.canvas(self, open: item) }
     }
 
-    /// 控件管的那几张：多选时是整组，否则是悬停的那张（没有悬停时是唯一选中的那张）。
-    /// 框按图层当前的摆法算，拖动、缩放途中也对；旋转途中是跟着转的那个框
+    /// The cards the controls apply to: the whole group when multi-selected, otherwise the hovered card (or the only selected one when nothing is hovered).
+    /// The frame is computed from the layers' current placement, so it's right mid-drag and mid-resize too; mid-rotation it's the frame rotating along
     func controlled() -> (ids: [Int64], box: Box)? {
-        // 拖去侧边栏途中、落下后等重读时，卡在原位只是个影子：不给它画角标和旋转钮
+        // While being dragged to the sidebar, and after dropping while waiting for the reload, the card in place is only a ghost: don't draw corner handles or the rotate knob for it
         guard isEditable, noteEditor == nil, outgoing == nil, dimmed.isEmpty else { return nil }
         if case .rotate(let r) = gesture { return (Array(r.origins.keys), r.current) }
         let ids = selection.count > 1 ? Array(selection) : (hovered ?? selection.first).map { [$0] } ?? []
         let placements = ids.compactMap(placement)
         guard !placements.isEmpty else { return nil }
-        // 一组的朝向：角度都一样就是这个角度（卡片自己记着），各不相同时才用整组转过多少
+        // A group's orientation: if all angles are equal, that angle (each card remembers its own); only when they differ use how far the whole group has rotated
         return (ids, placements.count == 1 ? Box(placements[0]) : Box(enclosing: placements, rotation: Box.sharedRotation(of: placements) ?? groupRotation))
     }
 
-    /// 图层上现在的摆法（拖动途中是拖到的位置）
+    /// The placement on the layers now (mid-drag, the dragged-to position)
     func placement(_ id: Int64) -> Placement? { live[id]?.item?.placement ?? items[id]?.placement }
 
-    /// 控件画在屏幕上的四个角：拿起来的卡放大了一点，控件跟着让开
+    /// The four corners of the controls on screen: a lifted card is slightly enlarged, so the controls move out of the way
     func screenCorners(_ box: Box, _ ids: [Int64]) -> [CGPoint] {
         let k = ids.count == 1 && live[ids[0]]?.lifted == true ? CardShape.lift.scale : 1
         return box.scaled(k).corners.map(screenPoint)
     }
 
-    /// 按在角标上缩放，按在展开的旋转钮上旋转。判定按画出来的位置，缩放、旋转按卡片本身的框
+    /// Press on a corner handle to resize, on the expanded rotate knob to rotate. Hit testing uses the drawn positions; resizing and rotating use the card's own frame
     private func handle(at p: CGPoint) -> Gesture? {
         guard let (ids, box) = controlled() else { return nil }
         let corners = box.corners, screen = screenCorners(box, ids), w = worldPoint(p)
@@ -222,7 +222,7 @@ extension CanvasView: NSDraggingSource {
         return nil
     }
 
-    // MARK: 拖
+    // MARK: Drag
 
     public override func mouseDragged(with event: NSEvent) {
         let p = point(event)
@@ -240,14 +240,14 @@ extension CanvasView: NSDraggingSource {
             let a = worldPoint(rect.origin), b = worldPoint(CGPoint(x: rect.maxX, y: rect.maxY))
             selection = base.union(index.ids(in: CGRect(x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y)))
         case .move(var m):
-            // 卡挪不了的地方：一拖就带出去；拖的是选中的那几张，按在没选中的卡上就只带这一张
+            // Where cards can't be moved: dragging takes them out right away; it drags the selected cards, or just this one if pressed on an unselected card
             if !isEditable {
                 guard hypot(p.x - m.start.x, p.y - m.start.y) > Self.dragSlop else { return }
                 gesture = .none
                 dragOut(selection.contains(m.primary) ? Array(selection) : [m.primary], primary: m.primary, from: [:], event: event)
                 return
             }
-            // 拖进侧边栏（画布铺在它底下）或拖出画布：从眼下的位置叠成一摞交给系统拖放，去选画板；原位上的卡回原处
+            // Dragged into the sidebar (the canvas extends under it) or off the canvas: stack them up from where they are now and hand them to system drag and drop to pick a board; the cards in place return to where they were
             if !uncovered.contains(p), board != nil {
                 overlay.setGuides([])
                 gesture = .none
@@ -256,7 +256,7 @@ extension CanvasView: NSDraggingSource {
                 return
             }
             let starting = m.current.isEmpty
-            // 手抖的一两个点不算拖：不然点一下就成了挪卡，松手还会被吸到网格上
+            // A shake of a point or two isn't a drag: otherwise a click would move the card, and it would snap to the grid on release
             if starting, hypot(p.x - m.start.x, p.y - m.start.y) <= Self.dragSlop { return }
             if starting { for id in m.origins.keys { live[id]?.setLifted(false) } }
             m.current = moved(m, to: p)
@@ -266,7 +266,7 @@ extension CanvasView: NSDraggingSource {
             if starting { delegate?.canvasStateChanged(self) }
         case .resize(let r):
             display(r.placements(at: worldPoint(p), minWidth: Grid.unit * 2))
-            // 文字类卡片边拖边重新排版，不等松手
+            // Text cards relay out while being dragged, without waiting for release
             for id in r.origins.keys {
                 if let l = live[id], let item = l.item, CardArt.reflows(item.face) { l.render(at: renderScale, files: store.files) }
             }
@@ -283,10 +283,10 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    /// 按下后挪过这么多点才算拖
+    /// How many points the mouse must move after pressing to count as a drag
     static let dragSlop: CGFloat = 3
 
-    /// 拖动：手底下那张卡的边靠近邻居就吸过去并画对齐线；其余选中的卡跟着挪同样的距离
+    /// Dragging: when an edge of the card under the pointer nears a neighbor it snaps to it and draws a guide; the other selected cards move the same distance
     func moved(_ m: Gesture.Move, to p: CGPoint) -> [Int64: Placement] {
         guard let primary = m.origins[m.primary] else { return m.origins }
         var offset = CGSize(width: (p.x - m.start.x) / camera.scale, height: (p.y - m.start.y) / camera.scale)
@@ -302,7 +302,7 @@ extension CanvasView: NSDraggingSource {
             lines = a.guides.map { (screenPoint($0.from), screenPoint($0.to)) }
         }
         overlay.setGuides(lines)
-        // 拿起来的卡叠到最上面，彼此的上下次序不变
+        // Lifted cards go to the top of the stack, keeping their order relative to each other
         let order = m.origins.values.sorted { $0.z < $1.z }.map(\.id!)
         return m.origins.mapValues { o in
             var moved = o
@@ -312,7 +312,7 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    // MARK: 松手
+    // MARK: Mouse up
 
     public override func mouseUp(with event: NSEvent) {
         switch gesture {
@@ -322,7 +322,7 @@ extension CanvasView: NSDraggingSource {
             gesture = .none
             delegate?.canvasStateChanged(self)
         case .move(let m):
-            // 按下没拖就松手：资料库和聚拢时、画板里点已选中的那张时打开
+            // Press and release without dragging: opens in the library and while gathering, or when clicking the already selected card on a board
             if m.opensOnClick, let item = items[m.primary] { activate(item) }
         case .marquee:
             overlay.setMarquee(nil)
@@ -341,7 +341,7 @@ extension CanvasView: NSDraggingSource {
         NSCursor.arrow.set()
     }
 
-    /// 松手时某个方向附近没有可对齐的邻居，这个方向吸到网格（按手底下那张卡的左上角）
+    /// On release, in any direction with no neighbor nearby to align to, snap to the grid in that direction (by the top-left corner of the card under the pointer)
     private func snapped(_ m: Gesture.Move) -> [Int64: Placement] {
         guard let primary = m.current[m.primary], primary.rotation == 0 else { return m.current }
         let reach = Grid.reach / camera.scale
@@ -354,7 +354,7 @@ extension CanvasView: NSDraggingSource {
 
     var topZ: Double { items.values.map(\.placement.z).max() ?? 0 }
 
-    /// 改好的摆放：更新图层和索引，写进资料库，记一步撤销。一张就只写这一行；没变的不写
+    /// Updated placements: update layers and index, write to the library, record an undo step. With one card only that row is written; unchanged ones aren't written
     func commit(_ placements: [Placement], as name: String) {
         let changed = placements.filter { p in items[p.id!].map { $0.placement != p } ?? false }
         guard isEditable, !changed.isEmpty else { return }
@@ -366,7 +366,7 @@ extension CanvasView: NSDraggingSource {
             index.update(p.id!, item.bounds)
             if let l = live[p.id!] { refresh(l, with: item) }
         }
-        // 卡可能挪进、挪出了视野：重新挑一遍要放图层的卡
+        // Cards may have moved into or out of view: re-pick which cards get layers
         invalidateRegion()
         let store = store
         Task {
@@ -374,9 +374,9 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    // MARK: 整理
+    // MARK: Tidy
 
-    /// 把选中的卡（没选就是整个画板）排成整齐的行，旋转清零。大致保留原来从左到右、从上到下的顺序
+    /// Arrange the selected cards (the whole board if none selected) into neat rows, with rotation reset. Roughly keeps the original left-to-right, top-to-bottom order
     public func arrangeRows() {
         guard isEditable else { return }
         let targets = selection.isEmpty ? Array(items.values) : selectedItems
@@ -396,7 +396,7 @@ extension CanvasView: NSDraggingSource {
         commit(placements, as: String(localized: "整理成行"))
     }
 
-    /// 卡片换位置的动画：按设计数值里的「换位置」弹簧
+    /// Animation for cards changing position: uses the `Motion.place` spring from the design values
     private func animate(_ placements: [Placement]) {
         for p in placements {
             guard let l = live[p.id!] else { continue }
@@ -411,14 +411,14 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    // MARK: 键盘
+    // MARK: Keyboard
 
     public override func keyDown(with event: NSEvent) {
         switch event.keyCode {
-        case 49: spaceHeld = true                       // 空格：按住拖空白处平移
-        case 51, 117:                                     // 删除（聚拢时不删：眼前是临时摆法）
+        case 49: spaceHeld = true                       // Space: hold and drag on empty space to pan
+        case 51, 117:                                     // Delete (not while gathering: what's in front of you is a temporary arrangement)
             if !selection.isEmpty, gathering == nil { delegate?.canvas(self, delete: selectedItems) }
-        case 36 where cropper != nil: endCrop(commit: true)   // 回车：完成裁剪
+        case 36 where cropper != nil: endCrop(commit: true)   // Return: finish cropping
         default: super.keyDown(with: event)
         }
     }
@@ -429,48 +429,48 @@ extension CanvasView: NSDraggingSource {
 
     @objc public override func selectAll(_ sender: Any?) { selectAll() }
 
-    /// 取消选择（Esc、操作栏上的 ✕）。资料库里选中都是有意的，占 Esc 一层；画板里点一下就选中一张，
-    /// 这一张不占，免得每次后退多按一次，框选、⌘ 点出来的多张才占。聚拢时 Esc 先收聚拢
+    /// Deselect (Esc, ✕ on the action bar). Selections in the library are always deliberate, so they take an Esc step; on a board a click selects a single card,
+    /// which doesn't take a step, so going back doesn't need an extra press each time; only multiple cards from marquee or ⌘-click do. While gathering, Esc first exits gathering
     public func deselect() -> Bool {
         guard !selection.isEmpty, gathering == nil, browses || selection.count > 1 else { return false }
         selection = []
         return true
     }
 
-    /// ⌘C：选中的卡记进剪贴板，到别的画板 ⌘V 放一份。聚拢时眼前是临时摆法，不记
+    /// ⌘C: puts the selected cards on the clipboard, so ⌘V on another board places a copy. Not recorded while gathering, since what's in front of you is a temporary arrangement
     @objc public func copy(_ sender: Any?) {
         guard gathering == nil else { return }
         delegate?.canvas(self, copy: selectedItems)
     }
 
-    /// ⌘V：剪贴板里的文件、图片、网址、文字收进当前视野；⌘C 记下的卡在这里放一份
+    /// ⌘V: files, images, URLs, and text on the clipboard are collected into the current view; cards recorded by ⌘C get a copy placed here
     @objc public func paste(_ sender: Any?) {
         _ = delegate?.canvas(self, accept: .general, at: visibleCenter)
     }
 
-    // MARK: 右键
+    // MARK: Right click
 
     public override func menu(for event: NSEvent) -> NSMenu? {
         if let id = item(at: worldPoint(point(event))), !selection.contains(id) {
-            // 资料库里点一下不动选择：右键没选中的卡，只对这一张
+            // A click in the library doesn't change the selection: right-clicking an unselected card applies to that card only
             if browses, let item = items[id] { return delegate?.canvasMenu(self, for: [item]) }
             selection = [id]
         }
         return selection.isEmpty ? nil : delegate?.canvasMenu(self, for: selectedItems)
     }
 
-    // MARK: 拖出去、拖进来
+    // MARK: Dragging out, dragging in
 
-    /// 拖到画布外：系统拖放带上这几条摆放的编号，侧边栏的画板认得它。
-    /// 不论拖几张，跟着鼠标的都只有一张图：看得见的最上面几张叠成一小摞、标出张数，它们从眼下的位置（from，缺的按原位）
-    /// 飞进这一摞。画板里是把卡带走，原位上的变淡，等落下后画布重读；没落成就复原。
-    /// 出了画布缩成小图，不挡侧边栏的画板名；落进画板时缩进去消失
+    /// Dragging off the canvas: system drag and drop carries the IDs of these placements, which the sidebar's boards recognize.
+    /// However many are dragged, only one image follows the mouse: the top few visible cards stacked into a small pile with a count; they fly from where they are now (from, missing ones use their placement)
+    /// into the pile. On a board this takes the cards away: the ones in place dim, and the canvas reloads after the drop; if the drop doesn't land, they're restored.
+    /// Off the canvas it shrinks to a small image so it doesn't cover the board names in the sidebar; dropped onto a board, it shrinks in and disappears
     private func dragOut(_ ids: [Int64], primary: Int64, from: [Int64: Placement], event: NSEvent) {
         guard let window, let placement = from[primary] ?? items[primary]?.placement else { return }
         let payload = (Self.placementsPrefix + ids.map(String.init).joined(separator: ",")) as NSString
         let p = convert(event.locationInWindow, from: nil)
         let c = screenPoint(CGPoint(x: placement.frame.midX, y: placement.frame.midY))
-        // 看得见的，按住的那张在最前，其余从上往下
+        // The visible ones, with the one being held in front and the rest from top to bottom
         let seen = camera.visibleRect(in: bounds.size)
         let at = { (id: Int64) in from[id] ?? self.items[id]?.placement }
         let shown = ([primary] + ids.filter { $0 != primary }.sorted { (at($0)?.z ?? 0) > (at($1)?.z ?? 0) })
@@ -488,7 +488,7 @@ extension CanvasView: NSDraggingSource {
             return (image, window.convertToScreen(self.convert(rect, to: nil)))
         }
         self.outgoing = outgoing
-        // 资料库里是放进一份，卡不离开，不变淡
+        // In the library it places a copy: the cards don't leave and don't dim
         if isEditable { dim(Set(ids)) }
         updateOverlay()
         delegate?.canvasStateChanged(self)
@@ -499,32 +499,32 @@ extension CanvasView: NSDraggingSource {
         Outgoing.gather(Array(flights), into: window.convertToScreen(convert(drag.top, to: nil)), over: window)
     }
 
-    /// 原位上变淡的卡换成这几张
+    /// Replace the dimmed cards in place with these
     func dim(_ ids: Set<Int64>) {
         let changed = dimmed.symmetricDifference(ids)
         dimmed = ids
         for id in changed { if let l = live[id] { raise(l, id) } }
     }
 
-    /// 画布上没被侧边栏、讨论栏盖住的那一块：拖出它就是把卡带去别处
+    /// The part of the canvas not covered by the sidebar or discussion panel: dragging out of it takes cards elsewhere
     var uncovered: CGRect {
         CGRect(x: viewport.minX, y: 0, width: viewport.width, height: bounds.height)
     }
 
-    /// 拖出画布的摆放、拖进画布的画板，用这两个前缀的文字在拖放里传编号
+    /// Placements dragged off the canvas and boards dragged onto it pass their IDs in drag and drop as text with these two prefixes
     public static let placementsPrefix = "piyi-placements:", boardPrefix = "piyi-board:"
 
-    /// 拖去别的画板时按住 ⌥ 是放一份，这里留着（和 Finder 一样）。光标、原位变不变淡、落下后移还是放都按它
+    /// Holding ⌥ while dragging to another board places a copy and leaves these here (like Finder). The cursor, whether the cards in place dim, and whether the drop moves or copies all follow it
     public static var keepsHere: Bool { NSEvent.modifierFlags.contains(.option) }
 
-    /// 放一份时光标带上「+」
+    /// The cursor shows a "+" when placing a copy
     public func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
         context == .withinApplication ? (Self.keepsHere ? .copy : .move) : []
     }
 
     public func draggingSession(_ session: NSDraggingSession, movedTo screenPoint: NSPoint) {
         guard let outgoing, let window else { return }
-        // 放一份：原位上的卡不变淡，看得出留在这里
+        // Placing a copy: the cards in place don't dim, showing that they stay here
         if isEditable { dim(Self.keepsHere ? [] : outgoing.ids) }
         let drag = outgoing.drag(at: convert(window.convertPoint(fromScreen: screenPoint), from: nil))
         session.enumerateDraggingItems(options: [], for: self, classes: [NSString.self], searchOptions: [:]) { item, _, _ in
@@ -532,8 +532,8 @@ extension CanvasView: NSDraggingSource {
         }
     }
 
-    /// 落进画板：系统直接收走拖动的图，这里补一张同样的图从鼠标处缩小淡出，看得出是「放进去了」。
-    /// 变淡的卡留着，等画布重读时拿走或复原，免得先亮一下再消失
+    /// Dropped onto a board: the system takes the dragged image right away, so add an identical image here that shrinks and fades out from the mouse, showing that "it went in".
+    /// The dimmed cards stay until the canvas reloads and removes or restores them, so they don't light up for a moment before disappearing
     public func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
         defer {
             outgoing = nil
@@ -541,7 +541,7 @@ extension CanvasView: NSDraggingSource {
             delegate?.canvasStateChanged(self)
         }
         guard !operation.isEmpty, let outgoing, let window else { return dim([]) }
-        // 放了一份：原位上的卡留着，不等重读
+        // Placed a copy: the cards in place stay, without waiting for a reload
         if operation == .copy { dim([]) }
         let drag = outgoing.drag(at: convert(window.convertPoint(fromScreen: screenPoint), from: nil))
         Outgoing.sink(drag.image, in: window.convertToScreen(convert(drag.frame, to: nil)), over: window)
@@ -555,10 +555,10 @@ extension CanvasView: NSDraggingSource {
         delegate?.canvas(self, accept: sender.draggingPasteboard, at: worldPoint(point(inWindow: sender.draggingLocation))) ?? false
     }
 
-    // MARK: 播放钮
+    // MARK: Play button
 
-    /// 音频卡的播放钮画在哪（屏幕点）：悬停的那张，和正在出声的那张——它不在手底下也留着，看得出声音是哪张卡的。
-    /// 钮在声波那一块的正中，跟着卡片缩放；卡在屏幕上太小就不画
+    /// Where the play buttons on audio cards are drawn (screen points): the hovered card, and the one playing — kept even when not under the pointer, so you can tell which card the sound comes from.
+    /// The button sits in the center of the waveform area and scales with the card; not drawn when the card is too small on screen
     func playButtons() -> [(id: Int64, center: CGPoint, size: CGFloat, pause: Bool)] {
         guard cropper == nil, outgoing == nil else { return [] }
         var ids = sounding.map { card in live.keys.filter { items[$0]?.cardID == card } } ?? []
@@ -568,14 +568,14 @@ extension CanvasView: NSDraggingSource {
                   live[id]?.isHidden == false, let p = placement(id) else { return nil }
             let size: CGFloat = min(p.width * camera.scale * CardType.playMark, Overlay.playKnob.upperBound)
             guard size >= Overlay.playKnob.lowerBound else { return nil }
-            // 声波那一块的中心离卡片中心多远；上下翻过的卡在另一边
+            // How far the waveform area's center is from the card center; on vertically flipped cards it's on the other side
             let rise = (CardArt.waveform.midY - 0.5) * (p.flipY ? -1 : 1)
             let lift = CGPoint(x: 0, y: rise * p.height).applying(CGAffineTransform(rotationAngle: p.rotation))
             return (id, screenPoint(CGPoint(x: p.frame.midX + lift.x, y: p.frame.midY + lift.y)), size, card.id == sounding)
         }
     }
 
-    /// 屏幕点 p 落在哪张卡的播放钮上
+    /// Which card's play button screen point p falls on
     func playButton(at p: CGPoint) -> Int64? {
         playButtons().first { hypot(p.x - $0.center.x, p.y - $0.center.y) <= $0.size / 2 + Overlay.slop }?.id
     }
@@ -584,7 +584,7 @@ extension CanvasView: NSDraggingSource {
         overlay.setPlayButtons(playButtons().map { ($0.center, $0.size, $0.pause) })
     }
 
-    // MARK: 浮层
+    // MARK: Overlay
 
     func updateOverlay() {
         updatePlayButtons()
@@ -607,7 +607,7 @@ extension CanvasView: NSDraggingSource {
             return
         }
         var boxes = [screenCorners(box, ids)]
-        // 只选了一张、鼠标悬停在别的卡上：选中的那张也留着角标
+        // Only one card selected and the mouse hovering over another: the selected one keeps its corner handles too
         if selection.count == 1, let id = selection.first, ids != [id], let p = placement(id) { boxes.append(screenCorners(Box(p), [id])) }
         overlay.setHandles(boxes)
         let knob = Overlay.knobCenter(of: boxes[0])
@@ -621,29 +621,29 @@ extension CanvasView: NSDraggingSource {
     }
 }
 
-/// 正拖出画布的那几张（见 dragOut）。坐标都是视图坐标（y 向上）
+/// The cards being dragged off the canvas (see dragOut). All coordinates are view coordinates (y up)
 struct Outgoing {
-    /// 按下的地方离最上面那张卡的中心多远：在画布里缩放时按住的那一点一直在鼠标下
+    /// How far the press point is from the top card's center: while resizing within the canvas the point held stays under the mouse
     let offset: CGPoint
-    /// 画布在视图里没被侧边栏盖住的范围：出了它才缩小
+    /// The part of the canvas in the view not covered by the sidebar: shrinking starts only outside it
     let canvas: CGRect
-    /// 最上面那张卡在画布上的大小
+    /// The top card's size on the canvas
     let size: CGSize
-    /// 叠在那一摞里的几张卡的图，最上面的在前
+    /// Images of the cards in the pile, top one first
     let faces: [CGImage]
-    /// 拖着的是哪几张
+    /// Which cards are being dragged
     let ids: Set<Int64>
     var count: Int { ids.count }
 
-    /// 出画布多远缩到最小、最小时最长边多长：比侧边栏一行略高，认得出是哪张
+    /// How far off the canvas it reaches its smallest, and its longest side at the smallest: slightly taller than a sidebar row, enough to tell which card it is
     static let shrinkDistance: CGFloat = 40, thumb: CGFloat = 44
-    /// 一摞最多露几张、每张往右上错开多少点、张数标签多高（点，不随缩小变）
+    /// How many cards a pile shows at most, how many points each is offset to the top right, and the count label's height (points, not scaled down)
     static let layers = 3, step: CGFloat = 4, badge: CGFloat = 18
-    /// 最多几张飞去叠起来：飞到一处后叠在一起分不出张数，再多只是多建图层，拖动第一帧更慢
+    /// At most how many cards fly over to stack: once together in one spot you can't tell how many there are, so more would just create more layers and slow down the first drag frame
     static let flights = 12
 
-    /// 鼠标在 p 时跟着它的图（frame）和其中最上面那张卡的位置（top）。在画布里是原大，按住哪里就拿着哪里；
-    /// 一出画布就缩成小图挪到鼠标右下，鼠标指着的那一行画板名露在外面
+    /// The image following the mouse at p (frame) and the position of the top card in it (top). Within the canvas it's full size and you hold it where you pressed;
+    /// once off the canvas it shrinks to a small image moved to the mouse's lower right, leaving the board name the mouse points at visible
     func drag(at p: CGPoint) -> (frame: CGRect, top: CGRect, image: NSImage) {
         let out = max(canvas.minX - p.x, p.x - canvas.maxX, canvas.minY - p.y, p.y - canvas.maxY, 0)
         let t = min(1, out / Self.shrinkDistance)
@@ -658,7 +658,7 @@ struct Outgoing {
         return (frame, top, image(card: card, size: frame.size))
     }
 
-    /// 一小摞：后面的往右上错开，张数标签压在这一摞的右上角上（只有一张时不标）
+    /// A small pile: the ones behind are offset to the top right, with the count label on the pile's top-right corner (no label for a single card)
     private func image(card: CGSize, size: CGSize) -> NSImage {
         NSImage(size: size, flipped: false) { _ in
             guard let cg = NSGraphicsContext.current?.cgContext else { return false }
@@ -689,8 +689,8 @@ struct Outgoing {
         }
     }
 
-    /// 几张卡从屏幕上各自的位置飞进 target 那一张的位置，边飞边淡，到了就被拖着的那一摞接住。
-    /// 按「换位置」的弹簧飞
+    /// Several cards fly from their own positions on screen to where the target one is, fading as they go, and are caught by the dragged pile on arrival.
+    /// They fly with the `Motion.place` spring
     @MainActor static func gather(_ flights: [(CGImage, CGRect)], into target: CGRect, over parent: NSWindow) {
         guard !flights.isEmpty else { return }
         let area = flights.reduce(target) { $0.union($1.1) }
@@ -713,7 +713,7 @@ struct Outgoing {
         }
     }
 
-    /// 一张图在屏幕上某处缩小淡出
+    /// An image shrinks and fades out somewhere on screen
     @MainActor static func sink(_ image: NSImage, in frame: CGRect, over parent: NSWindow) {
         play(in: frame, over: parent) { root in
             let layer = CALayer()
@@ -739,8 +739,8 @@ struct Outgoing {
         return fade
     }
 
-    /// 在屏幕上 frame 那一块放一段临时动画：落点在画布外（侧边栏上），画布的图层够不着，
-    /// 借一个透明、不接鼠标的子窗口，动画放完就收起
+    /// Plays a temporary animation over frame on screen: the drop point is outside the canvas (on the sidebar), out of reach of the canvas's layers,
+    /// so it borrows a transparent child window that ignores the mouse, and closes it when the animation is done
     @MainActor private static func play(in frame: CGRect, over parent: NSWindow, _ build: (CALayer) -> Void) {
         let window = NSWindow(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false)
         window.isOpaque = false

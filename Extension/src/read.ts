@@ -1,9 +1,9 @@
-// 注入到网页里：读出渲染完的整页 HTML，交回 App 去解析（App 用和直接下载时同一套解析）。
-// 后台抓取时先等脚本把页面画完、需要的话滚到底让懒加载的内容出来；你点「收进片羽」时页面就在眼前，直接读。
+// Injected into web pages: reads the fully rendered page HTML and hands it back to the App to parse (the App uses the same parser as for direct downloads).
+// For background fetches, first wait for scripts to finish drawing the page and, if needed, scroll to the bottom so lazy-loaded content appears; when you click "Collect to Piyi" the page is already in front of you, so read it right away.
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-/// 页面加载完不等于内容到了：靠脚本渲染的页面要等 DOM 安静下来
+/// A loaded page doesn't mean the content is there: for script-rendered pages, wait until the DOM settles
 function quiet(ms: number, limit: number) {
   return new Promise<void>(resolve => {
     let timer = setTimeout(done, ms)
@@ -19,7 +19,7 @@ function quiet(ms: number, limit: number) {
   })
 }
 
-/// 滚到底：高度连续两次不变就停，最多 20 次（看不见的网页定时器一秒一次，再多就太慢了）
+/// Scroll to the bottom: stop once the height stays the same twice in a row, at most 20 times (timers on hidden pages run once a second, so more would be too slow)
 async function scrollToBottom() {
   let height = 0
   for (let steady = 0, round = 0; steady < 2 && round < 20; round++) {

@@ -3,19 +3,19 @@ import Observation
 import Library
 import Wire
 
-/// 浏览器扩展在 App 这一端：等中转程序连上来、把登记文件写进各浏览器、把扩展文件装到固定的地方、报连接状态
+/// The browser extension on the App side: wait for the relay to connect, write manifest files into each browser, install the extension files in a fixed place, report connection status
 @MainActor @Observable
 final class BrowserExtension {
     enum Status: Equatable {
-        /// 连着：是哪几个浏览器
+        /// Connected: which browsers
         case connected([String])
-        /// 连过，现在没连上：浏览器没开，或者扩展被关掉了
+        /// Connected before, not now: the browser isn't open, or the extension was turned off
         case idle
-        /// 从没连上过
+        /// Never connected
         case absent
     }
 
-    /// 支持的浏览器：名字、应用编号、扩展页地址、数据目录（相对 ~/Library/Application Support，登记文件写在它下面）
+    /// Supported browsers: name, bundle ID, extensions page URL, data directory (relative to ~/Library/Application Support; manifest files are written under it)
     struct SupportedBrowser: Identifiable {
         var name: String, bundleID: String, extensionsPage: String, dataFolder: String
         var id: String { bundleID }
@@ -29,7 +29,7 @@ final class BrowserExtension {
     ]
 
     private(set) var browsers: [Hub.Browser] = []
-    /// 连没连过是这台 Mac 上浏览器的事，不跟着资料库走，所以记在 UserDefaults
+    /// Whether it has connected is about the browsers on this Mac, not the library, so it's stored in UserDefaults
     private(set) var everConnected = UserDefaults.standard.bool(forKey: everConnectedKey)
     private static let everConnectedKey = "extensionConnected"
 
@@ -38,32 +38,32 @@ final class BrowserExtension {
         return everConnected ? .idle : .absent
     }
 
-    /// 装给浏览器的扩展文件夹：你在扩展页加载的就是它。App 更新时原地换成新版，浏览器重新加载即可，不用再装一次
+    /// The extension folder installed for browsers: the one you load on the extensions page. On App updates it's replaced in place with the new version; the browser just reloads, no reinstall needed
     let folder = Bridge.directory.appending(path: "Extension", directoryHint: .isDirectory)
 
     @ObservationIgnored private var hub: Hub!
     @ObservationIgnored private(set) var reader: BrowserReader!
-    /// 这次运行里已经让哪些浏览器重新加载过：加载的不是装好的那个文件夹时，版本永远对不上，不能一直重载
+    /// Browsers already asked to reload in this run: if what's loaded isn't the installed folder, the version will never match, so don't keep reloading
     @ObservationIgnored private var reloaded: Set<String> = []
     @ObservationIgnored private var onArrive: () -> Void = {}
     @ObservationIgnored private var onConnect: () -> Void = {}
 
     init() {
-        // 连接中心的事来自各条连接的线程：排进一条队，按到达的顺序在主线程上逐个处理，连上、断开挨得很近时也不会乱序
+        // Connection-center events come from each connection's thread: put them in one queue and handle them one by one on the main thread in arrival order, so connects and disconnects close together never get out of order
         let (events, arrive) = AsyncStream.makeStream(of: Hub.Event.self)
         hub = Hub { arrive.yield($0) }
         reader = BrowserReader(hub: hub)
         Task { [weak self] in for await event in events { self?.handle(event) } }
     }
 
-    /// 装扩展文件、写登记文件、开始等中转程序。onArrive 在本机收件箱里可能来了新的时候调用（浏览器里点了「收进片羽」，或者中转程序刚连上）；
-    /// onConnect 在从没有能用的浏览器变成有的时候调用：连着、而且扩展已经是新版（要重新加载的那个会断开一下，不能这时交活给它）
+    /// Install extension files, write manifest files, start waiting for the relay. onArrive is called when something new may have arrived in the local inbox ("Collect to Piyi" clicked in the browser, or the relay just connected);
+    /// onConnect is called when going from no usable browser to having one: connected, and the extension is already the new version (one that has to reload disconnects briefly, so don't hand it work then)
     func start(onArrive: @escaping () -> Void, onConnect: @escaping () -> Void) {
         self.onArrive = onArrive
         self.onConnect = onConnect
         install()
         register()
-        do { try hub.start() } catch { NSLog("片羽：扩展的连接没能开始监听：\(error)") }
+        do { try hub.start() } catch { NSLog("Piyi: the extension connection couldn't start listening: \(error)") }
     }
 
     private func handle(_ event: Hub.Event) {
@@ -83,14 +83,14 @@ final class BrowserExtension {
         }
     }
 
-    /// 收件箱里这一条查过重了，把要显示的那句话回给等着的扩展。不是扩展存的编号没有扩展认，发了也无妨
+    /// This inbox item has been deduplicated; send the sentence to show back to the waiting extension. IDs not stored by the extension have no extension to claim them; sending is harmless
     func answer(_ id: String, _ receipt: Receipt, taking source: Source) {
         hub.send(Message(.collected, id: id, ok: receipt.kept, say: receipt.text(taking: source)))
     }
 
-    // MARK: 装扩展、登记
+    // MARK: Installing the extension, registration
 
-    /// App 里带的扩展：打包后在 Contents/Resources/Extension，开发时用源码目录里打包好的 dist
+    /// The extension bundled in the App: in Contents/Resources/Extension when packaged, the built dist in the source directory during development
     static let bundled: URL? = [
         Bundle.main.resourceURL?.appending(path: "Extension"),
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../Extension/dist").standardized,
@@ -102,7 +102,7 @@ final class BrowserExtension {
         return manifest["version_name"] as? String
     }
 
-    /// 装好的和 App 里带的版本不一样就换成新版（版本号是打包时算的源码指纹）
+    /// Replace with the new version if the installed one differs from the one bundled in the App (the version is a fingerprint of the source computed at packaging)
     private func install() {
         guard let bundled = Self.bundled, Self.version(of: bundled) != Self.version(of: folder) else { return }
         Bridge.prepare(Bridge.directory)
@@ -113,17 +113,17 @@ final class BrowserExtension {
             try? FileManager.default.removeItem(at: folder)
             try FileManager.default.moveItem(at: staging, to: folder)
         } catch {
-            NSLog("片羽：扩展文件没装上：\(error)")
+            NSLog("Piyi: couldn't install the extension files: \(error)")
         }
     }
 
-    /// 有能交活的浏览器：扩展报了版本，是新版；或者这次已经让它重新加载过还对不上（加载的是别的文件夹），那就照用
+    /// There's a browser that can take work: the extension reported its version and it's the new one; or it was already asked to reload this run and still doesn't match (it loads a different folder), so use it as is
     private var ready: Bool {
         let current = Self.version(of: folder)
         return browsers.contains { $0.version != nil && ($0.version == current || reloaded.contains($0.name)) }
     }
 
-    /// 连上来的扩展不是最新版：让它重新加载（从装好的文件夹读新文件）
+    /// The connected extension isn't the latest: ask it to reload (reading the new files from the installed folder)
     private func reloadOutdated() {
         let current = Self.version(of: folder)
         for browser in browsers where browser.version != nil && browser.version != current && !reloaded.contains(browser.name) {
@@ -132,7 +132,7 @@ final class BrowserExtension {
         }
     }
 
-    /// 告诉各浏览器：扩展可以启动哪个本机程序。每次启动都写一遍，App 挪了位置也能找到；只写装了的浏览器，内容没变不碰
+    /// Tell each browser which local program the extension may launch. Written on every launch so it's found even if the App moved; only for installed browsers, and untouched if unchanged
     private func register() {
         guard let executable = Bundle.main.executableURL else { return }
         let relay = executable.deletingLastPathComponent().appending(path: "PiyiRelay")
@@ -155,9 +155,9 @@ final class BrowserExtension {
         }
     }
 
-    // MARK: 安装指引用
+    // MARK: For the installation guide
 
-    /// 装了的浏览器（按支持列表的顺序）
+    /// Installed browsers (in the order of the supported list)
     var installedBrowsers: [SupportedBrowser] { Self.supported.filter { $0.app != nil } }
 
     func openExtensionsPage(in browser: SupportedBrowser) {
@@ -172,8 +172,8 @@ final class BrowserExtension {
     }
 }
 
-/// 借浏览器做事的实现：交给你的默认浏览器（登录状态在那里），它没连上就交给别的。
-/// 打开网页要排队：一次只读一个，每一页的超时从轮到它才开始算；请求接口不开标签页，不用排
+/// Doing things through the browser: hand it to your default browser (where you're logged in), or another one if it isn't connected.
+/// Opening pages is queued: one at a time, each page's timeout starts when its turn comes; API requests don't open tabs and aren't queued
 final class BrowserReader: PageBrowser {
     private let hub: Hub
     private let line = Line()
@@ -189,7 +189,7 @@ final class BrowserReader: PageBrowser {
                 return RenderedPage(url: page.url.flatMap(URL.init(string:)) ?? url, html: page.html ?? "")
             }
         } catch Hub.Failure.noBrowser, Hub.Failure.disconnected {
-            // 排队或读的时候浏览器断开了（关了浏览器、扩展更新重新加载）：和没连上一样，等它再连上
+            // The browser disconnected while queued or reading (browser closed, extension reloaded after an update): same as not connected, wait for it to reconnect
             return nil
         }
     }
@@ -203,12 +203,12 @@ final class BrowserReader: PageBrowser {
         }
     }
 
-    /// 默认浏览器的名字，和中转程序报来的一样（应用名去掉 .app）
+    /// Name of the default browser, same as the relay reports (app name without .app)
     private static var defaultBrowser: String? {
         NSWorkspace.shared.urlForApplication(toOpen: URL(string: "https://example.com")!)?.deletingPathExtension().lastPathComponent
     }
 
-    /// 排队：前一件做完才开始下一件
+    /// Queue: start the next job only after the previous one is done
     private actor Line {
         private var tail: Task<Void, Never>?
 

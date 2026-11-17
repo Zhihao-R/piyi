@@ -5,9 +5,9 @@ import UniformTypeIdentifiers
 import Library
 import Tokens
 
-/// 画板入口的缩略拼贴：把整个画板缩小画成一张图。图片卡画封面的最小一档，其余的卡画成一块卡片底色
+/// Thumbnail collage for a board's entry: the whole board drawn small as one image. Image cards draw their smallest cover size; other cards draw as a patch of card color
 public enum BoardCollage {
-    /// 在后台读出画板、画好、存起来
+    /// Reads the board, draws it, and saves it, in the background
     public static func refresh(_ board: Int64, store: Store) async throws {
         let items = try await store.items(on: board)
         guard let jpeg = await render(items, files: store.files) else { return }

@@ -1,47 +1,47 @@
 import Foundation
 import Library
 
-/// 一组灵感：几张卡和模型说出的联系
+/// A set of inspiration: a few cards and the connection the model states
 public struct Inspiration: Sendable, Equatable {
     public var cards: [Int64]
     public var text: String
 }
 
-/// 灵感：抽几张意思相近、类型不同的卡给模型，由它从里面挑出两到五张确实有联系的，说出联系。
-/// 不让它把抽到的每一张都串起来：硬串四五张不相干的东西，只剩「逐张点一遍、再用一句大道理收尾」这一种写法。
-/// 每个范围后台预先备好几组，换一组时立刻出现
+/// Inspiration: draw a few cards with similar meaning but different types for the model, which picks two to five that are truly connected and states the connection.
+/// It isn't asked to string together every card drawn: forcing four or five unrelated things together leaves only one way to write it, "touch each one in turn, then close with a grand moral".
+/// Several sets are prepared in the background for each scope, so switching sets is instant
 public actor Inspirer {
     let searcher: Searcher
     let gateway: Gateway
-    /// 备好的几组，按范围和主题分开
+    /// Prepared sets, kept apart by scope and topic
     private var ready: [Key: [Inspiration]] = [:]
     private var filling: [Key: Task<Void, Never>] = [:]
-    /// 最近出现过的卡：挑卡时避开
+    /// Cards shown recently: avoided when picking
     private var recentCards: [Int64] = []
-    /// 轮到第几种联系
+    /// Which kind of connection is up next
     private var turn = 0
 
     struct Key: Hashable { var scope: Scope; var topic: String }
 
-    /// 每个范围备几组。连着按「换一组」时备好的先用完，之后每组都要现写、现核对，所以多备一组
+    /// How many sets to prepare per scope. Pressing "Try Another Set" repeatedly uses up the prepared ones, after which each set must be written and checked on the spot, so prepare one extra
     static let stock = 3
-    /// 抽给模型挑的至少几张：当前画板不够时从全部卡片里配
+    /// At least how many to draw for the model to pick from: when the current board doesn't have enough, fill from all cards
     static let least = 3
-    /// 抽给模型挑的最多几张
+    /// At most how many to draw for the model to pick from
     static let offered = 8
-    /// 模型从里面挑中几张
+    /// How many the model picks from them
     static let chosen = 2...5
-    /// 每一轮想要的张数，轮着来；凑不出就少挑
+    /// Number of cards wanted each round, taken in turn; pick fewer if that many can't be found
     static let sizes = [3, 2, 4, 3, 5]
-    /// 抽到的几张里找不出联系、或者写了但核对不上时，换一批、换一种联系再试，最多几次。
-    /// 核对会拦掉一多半（实测六成左右），试 5 次还凑不出一组的不到一成
+    /// When no connection can be found among the drawn cards, or one is written but fails the check, try again with a new batch and another kind of connection, at most this many times.
+    /// The check blocks more than half (about 60% measured); fewer than one in ten still can't produce a set after 5 tries
     static let attempts = 5
-    /// 现写一组最多等多久（秒）：到了就不再换一批重试，告诉你没找出来，不让人干等
+    /// Longest wait for writing a set on the spot (seconds): once reached, stop retrying with new batches and tell you none was found, rather than leaving you waiting
     static let patience = 25.0
-    /// 写一次、核对一次各自的限时（秒）。平时两三秒就回来，卡住的不等它
+    /// Separate time limits for one write and one check (seconds). Usually back in two or three seconds; stuck ones aren't waited for
     static let callTimeout = 12.0
 
-    /// 这次只看哪一种联系。由代码轮着换，连着几组不会是一个写法；不靠嘱咐模型「换一种说法」
+    /// The one kind of connection to look at this time. The code rotates it, so consecutive sets aren't written the same way; not relying on telling the model to "say it differently"
     enum Angle: CaseIterable {
         case form, opposite, subject, borrow
 
@@ -60,14 +60,14 @@ public actor Inspirer {
         self.gateway = gateway
     }
 
-    /// 资料库变了：备好的组可能指向已删的卡，扔掉重备
+    /// The library changed: prepared sets may point to deleted cards, so throw them away and prepare again
     public func invalidate() {
         ready = [:]
         for task in filling.values { task.cancel() }
         filling = [:]
     }
 
-    /// 来一组：有备好的立刻给，没有就现做；然后在后台补货。topic 不为空时只在和主题相关的卡里挑
+    /// Get a set: give a prepared one right away if there is one, otherwise make one now; then restock in the background. When topic isn't empty, pick only among cards related to the topic
     public func next(scope: Scope, topic: String = "") async throws -> Inspiration {
         let key = Key(scope: scope, topic: topic)
         defer { refill(key) }
@@ -79,7 +79,7 @@ public actor Inspirer {
         return try await make(key)
     }
 
-    /// 后台预先备好几组
+    /// Prepare several sets in the background
     public func prepare(scope: Scope) { refill(Key(scope: scope, topic: "")) }
 
     private func refill(_ key: Key) {
@@ -91,7 +91,7 @@ public actor Inspirer {
                 guard let made = try? await make(key), !Task.isCancelled else { break }
                 ready[key, default: []].append(made)
             }
-            // 期间被作废、又起了新的补货：登记是新任务的，不动它
+            // Invalidated meanwhile and a new restock started: the registration belongs to the new task, leave it alone
             if fillers[key] == id { filling[key] = nil }
         }
     }
@@ -112,44 +112,44 @@ public actor Inspirer {
     private func make(_ key: Key) async throws -> Inspiration {
         let all = await searcher.snapshot()
         var pool = all.filter { $0.vector != nil }
-        // 带主题时在全部卡片里找相关的，范围只决定从哪里起头：范围里凑不够也能从别处配
+        // With a topic, look for related cards among all cards; scope only decides where to start: if the scope is short, others can be filled in from elsewhere
         if !key.topic.isEmpty {
             let related = Set(await searcher.related(QueryRules.parse(key.topic)))
             pool = pool.filter { related.contains($0.id) }
         }
         var home: Set<Int64> = if case .board(let b) = key.scope { Set(pool.filter { $0.boards.contains(b) }.map(\.id)) } else { Set(pool.map(\.id)) }
-        // 空画板：以全部卡片为起点
+        // Empty board: start from all cards
         if home.isEmpty { home = Set(pool.map(\.id)) }
         let deadline = ContinuousClock.now + .seconds(Self.patience)
         for _ in 0..<Self.attempts where ContinuousClock.now < deadline {
             guard let offered = Self.pick(from: pool, home: home, avoiding: Set(recentCards)) else { throw Failure.tooFew }
-            // 这一轮找哪种联系、想要几件都由程序轮着定：让模型自己定的话，写法越写越像，张数每次都是两件。
-            // 两个周期（4 和 5）错开，每种联系都轮得到各种张数
+            // Which kind of connection to look for this round and how many items are both rotated by the program: left to the model, the writing grows more and more alike and it picks two items every time.
+            // Two cycles (4 and 5) are offset, so every kind of connection gets every count in turn
             let (angle, wanted) = (Angle.allCases[turn % Angle.allCases.count], Self.sizes[turn % Self.sizes.count])
             turn += 1
             guard let reply = try await explain(offered, angle: angle, wanted: wanted, topic: key.topic, until: deadline),
                   let picked = Self.chosen(reply.cards, from: offered) else { continue }
-            // 写得具体了，编出来的也具体（「两幅画里都有马」）：对着挑中的这几张再核对一遍，对不上的不给人看
+            // The more specific the writing, the more specific the fabrications ("both paintings have horses"): check it again against the picked cards, and don't show anything that doesn't match
             guard await holds(reply.text, for: picked.compactMap { id in offered.first { $0.id == id } }, until: deadline) else { continue }
-            // 挑中的记下：后台备的下一组避开它们；没挑中的还能再出现
+            // Record the picked ones: the next set prepared in the background avoids them; unpicked ones can appear again
             recentCards = Array((picked + recentCards).prefix(24))
             return Inspiration(cards: picked, text: reply.text)
         }
         throw Failure.nothing
     }
 
-    /// 模型挑中的编号换成卡：要两到五张、互不重复、都在抽给它的那几张里，不然这一组不算
+    /// Turn the numbers the model picked into cards: must be two to five, no repeats, all among those drawn for it, otherwise the set doesn't count
     static func chosen(_ numbers: [Int], from offered: [SearchCard]) -> [Int64]? {
         let cards = numbers.compactMap { offered.indices.contains($0 - 1) ? offered[$0 - 1].id : nil }
         guard cards.count == numbers.count, Set(cards).count == cards.count, chosen.contains(cards.count) else { return nil }
         return cards
     }
 
-    /// 挑一组：两两之间的相似度都落在全库的高段，尽量混合不同类型。
-    /// 联系要是真的，所以挑意思相近的；意外感来自类型和出处不同（一张画和一段话讲的是同一件事），不来自意思离得远。
-    /// 原先取 25%～70% 分位的中段，那里的卡多数其实没有关系，模型只能硬编（实测 19 次里 11 次核对不上）。
-    /// 现在取 80%～97% 分位：最顶上的 3% 多是同一批东西（同一个画家、同一篇文章的几张图），没有新意
-    /// 抽给模型挑的张数最多 offered 张。以当前范围里的卡为起点，范围里不够时其余从全部卡片里配
+    /// Pick a set: every pairwise similarity falls in the library's high range, mixing different types as much as possible.
+    /// The connection should be real, so pick cards with similar meaning; the surprise comes from different types and sources (a painting and a passage about the same thing), not from distant meanings.
+    /// It used to take the middle 25%–70% percentile, where most cards are actually unrelated and the model could only make things up (11 of 19 failed the check in testing).
+    /// Now it takes the 80%–97% percentile: the top 3% are mostly the same batch of things (same painter, several images from one article), with nothing new
+    /// At most offered cards are drawn for the model to pick from. Starts from cards in the current scope, filling the rest from all cards when the scope is short
     static func pick(from pool: [SearchCard], home: Set<Int64>, avoiding recent: Set<Int64>) -> [SearchCard]? {
         guard pool.count >= least else { return nil }
         let sims = (0..<min(3000, pool.count * pool.count)).compactMap { _ -> Float? in
@@ -164,7 +164,7 @@ public actor Inspirer {
         let anchors = pool.filter { home.contains($0.id) && !recent.contains($0.id) }.shuffled()
         for anchor in (anchors.isEmpty ? pool.filter { home.contains($0.id) }.shuffled() : anchors).prefix(12) {
             var group = [anchor]
-            // 先在范围里找，再从别处配；同等条件下优先和已选的类型不同、最近没出现过的
+            // Look in the scope first, then fill from elsewhere; other things equal, prefer types different from those already chosen and cards not shown recently
             let candidates = pool.shuffled().sorted { rank($0, home, recent) < rank($1, home, recent) }
             while group.count < size, let next = candidates.first(where: { c in fits(group, c) && !group.contains { $0.kind == c.kind } })
                     ?? candidates.first(where: { fits(group, $0) }) {
@@ -181,7 +181,7 @@ public actor Inspirer {
 
     struct Reply: Decodable { var cards: [Int]; var text: String }
 
-    /// 让模型从抽到的几张里挑、写。没回应时抛出去；回了但没挑出来（cards 为空）由调用方换一批再试
+    /// Have the model pick from the drawn cards and write. Throws when there's no response; if it responds but picks nothing (cards empty), the caller retries with a new batch
     private func explain(_ cards: [SearchCard], angle: Angle, wanted: Int, topic: String, until deadline: ContinuousClock.Instant) async throws -> Reply? {
         var pictures: [Data] = []
         var lines: [String] = []
@@ -201,8 +201,8 @@ public actor Inspirer {
         return reply.text.isEmpty ? nil : reply
     }
 
-    /// 核对：只拿挑中的这几张（说明行和图）和写好的话去问两件事，说的在卡里看得到，而且真说出了一个联系。
-    /// 有一件不成立，或者判断不了（超时、出错），都不算：宁可换一组，不给人看没核对过的
+    /// Check: using only the picked cards (description lines and images) and the written text, ask two things: what it says is visible in the cards, and it actually states a connection.
+    /// If either fails, or can't be judged (timeout, error), it doesn't count: better to switch sets than show something unchecked
     private func holds(_ text: String, for cards: [SearchCard], until deadline: ContinuousClock.Instant) async -> Bool {
         var pictures: [Data] = []
         var facts: Facts = []
@@ -220,7 +220,7 @@ public actor Inspirer {
         return verdicts?.allSatisfy(\.yes) == true
     }
 
-    /// 这一次调用最多等多久：不超过单次的限时，也不超过这一组剩下的时间。patience 因此是真的上限
+    /// Longest wait for this call: no more than the per-call limit, and no more than this set's remaining time. That makes patience a real upper bound
     static func time(left deadline: ContinuousClock.Instant) -> Double {
         let left = deadline - .now
         return max(0, min(callTimeout, Double(left.components.seconds) + Double(left.components.attoseconds) / 1e18))

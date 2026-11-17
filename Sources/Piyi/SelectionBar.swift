@@ -3,10 +3,10 @@ import Library
 import Canvas
 import Tokens
 
-/// 资料库里有意选了卡：底部的搜索栏变形成这一条，对选中的几张做事。操作和右键菜单是同一份（Menu.actions）
+/// Cards deliberately selected in the library: the search bar at the bottom morphs into this bar to act on them. The actions are the same set as the context menu (Menu.actions)
 struct SelectionBar: View {
     let model: AppModel
-    /// 和搜索栏共用一块玻璃
+    /// Shares one piece of glass with the search bar
     let bar: Namespace.ID
 
     var body: some View {
@@ -60,11 +60,11 @@ struct SelectionBar: View {
         .animation(.spring(Motion.lift), value: picked.count)
     }
 
-    /// 按钮的点击区，和搜索栏上的按钮一样大
+    /// The button's hit area, same size as the buttons on the search bar
     private static let button: CGFloat = 28
 }
 
-/// 把 AppKit 的菜单项照样画成 SwiftUI 菜单的内容：标题、色块、打勾、子菜单都跟右键菜单一致
+/// Draw AppKit menu items as SwiftUI menu content: title, swatch, checkmark and submenus all match the context menu
 private struct MenuItems: View {
     let items: [NSMenuItem]
 

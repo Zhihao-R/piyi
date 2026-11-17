@@ -1,28 +1,28 @@
 import AppKit
 import Library
 
-/// 卡片上的 Markdown：只认随手写字用得到的几种——标题、粗体、斜体、行内代码、链接、列表、引用、代码块。
-/// 同一份解析出两种样子：排好的（卡片、放大查看：标记去掉）和编辑时的（字一个不少，标记变淡），所以边写边看到的就是写完的样子
+/// Markdown on cards: only the few kinds useful for jotting things down — headings, bold, italic, inline code, links, lists, quotes, code blocks.
+/// One parse gives two looks: laid out (cards, detail view: markers removed) and editing (every character kept, markers faded), so what you see while writing is what you get
 public enum Markdown {
-    /// 哪些卡按 Markdown 排：你写的文字卡、Markdown 文件。收进来的文字是原话，里面的星号、井号照原样显示
+    /// Which cards are laid out as Markdown: text cards you wrote, Markdown files. Collected text is kept verbatim, its asterisks and hash signs shown as they are
     public static func applies(to card: CardFace) -> Bool { card.form == .note || isDocument(kind: card.kind, format: card.format) }
     public static func applies(to card: Card) -> Bool { card.form == .note || isDocument(kind: card.kind, format: card.format) }
     private static func isDocument(kind: Kind, format: String?) -> Bool { kind == .document && format == "Markdown" }
 
-    /// 字号是点。颜色由调用方给：画卡片用固定的卡片颜色，放大查看跟着系统深浅色
+    /// Font sizes are in points. Colors come from the caller: drawing cards uses fixed card colors, detail view follows the system light/dark mode
     public struct Style {
         public enum Ink { case primary, secondary, faint, link }
         public var body: CGFloat
         public var lineSpacing: CGFloat
         public var ink: (Ink) -> Any
-        /// 字号取整（画卡片时取到整像素，见 Pen.fontSize）
+        /// Round font sizes (to whole pixels when drawing cards, see Pen.fontSize)
         public var round: (CGFloat) -> CGFloat = { $0 }
 
         public init(body: CGFloat, lineSpacing: CGFloat, ink: @escaping (Ink) -> Any) {
             (self.body, self.lineSpacing, self.ink) = (body, lineSpacing, ink)
         }
 
-        /// 一级到三级标题比正文大多少，更深的按三级
+        /// How much larger level one to three headings are than body text; deeper ones use level three
         static let headings: [CGFloat] = [1.5, 1.25, 1.1]
 
         func font(_ line: Line.Block, bold: Bool = false, italic: Bool = false, code: Bool = false) -> NSFont {
@@ -34,7 +34,7 @@ public enum Markdown {
         }
     }
 
-    /// 排好的样子：标记去掉，列表换成圆点，代码块的围栏行不占地方
+    /// The laid-out look: markers removed, lists turned into bullets, code block fence lines take no space
     public static func rendered(_ source: String, style: Style) -> NSAttributedString {
         let text = source as NSString, out = NSMutableAttributedString()
         var first = true
@@ -70,7 +70,7 @@ public enum Markdown {
         return out
     }
 
-    /// 编辑时的样子：和原文一字不差（文本框里的字就是存下来的字），只是标记变淡、标题变大、粗体变粗
+    /// The editing look: identical to the source text (the text in the text box is the text saved), just with markers faded, headings larger, and bold bolder
     public static func styled(_ source: String, style: Style) -> NSAttributedString {
         let out = NSMutableAttributedString(string: source)
         let paragraph = NSMutableParagraphStyle()
@@ -91,7 +91,7 @@ public enum Markdown {
         return out
     }
 
-    /// Markdown 文件的标题已经单独显示（抽取时取第一个一级标题）：正文里那一行不再重复
+    /// A Markdown file's title is already shown separately (extraction takes the first level-one heading): that line isn't repeated in the body
     public static func droppingTitle(_ title: String, from source: String) -> String {
         var lines = source.components(separatedBy: "\n")
         guard let i = lines.firstIndex(where: { $0.hasPrefix("# ") }),
@@ -100,24 +100,24 @@ public enum Markdown {
         return lines.joined(separator: "\n").trimmingCharacters(in: .newlines)
     }
 
-    // MARK: 解析
+    // MARK: Parsing
 
-    /// 一行：哪种块、行首标记在哪、行内的字一段段是什么样子。位置都按 NSString 的下标，文本框直接能用
+    /// A line: which kind of block, where its line-start marker is, and what each run of inline text looks like. Positions are NSString indices, usable directly by the text box
     struct Line: Equatable {
         enum Block: Equatable { case paragraph, heading(Int), bullet(depth: Int), ordered(depth: Int), quote, code, fence }
         var block: Block
-        /// 整行，不含换行
+        /// The whole line, without the newline
         var range: NSRange
-        /// 行首标记：「# 」「- 」「1. 」「> 」；没有时长度为 0
+        /// Line-start marker: "# ", "- ", "1. ", "> "; length 0 when there is none
         var marker: NSRange
-        /// 行首标记之后的字，按样式切成段，首尾相接
+        /// The text after the line-start marker, cut into runs by style, end to end
         var spans: [Span]
     }
 
     struct Span: Equatable {
         var range: NSRange
         var bold = false, italic = false, code = false, link = false
-        /// 行内标记（星号、反引号、链接的方括号和网址）：排好时去掉，编辑时变淡
+        /// Inline markers (asterisks, backticks, link brackets and URLs): removed when laid out, faded when editing
         var marker = false
     }
 
@@ -150,7 +150,7 @@ public enum Markdown {
     private static let ordered = try! NSRegularExpression(pattern: #"^( *)\d{1,3}[.)]\s+"#)
     private static let quote = try! NSRegularExpression(pattern: #"^>\s?"#)
 
-    /// 行首是哪种块、标记多长（列表的缩进算在标记里，每两个空格深一层）
+    /// What kind of block the line starts, and how long the marker is (list indentation counts as part of the marker; every two spaces is one level deeper)
     private static func block(of line: String) -> (Line.Block, Int) {
         let range = NSRange(location: 0, length: (line as NSString).length)
         if let m = heading.firstMatch(in: line, range: range) { return (.heading(m.range(at: 1).length), m.range.length) }
@@ -160,7 +160,7 @@ public enum Markdown {
         return (.paragraph, 0)
     }
 
-    /// 行内的几种写法，按先后认：先认代码（里面的星号不算数），再认链接、粗体、斜体
+    /// The inline forms, recognized in order: code first (asterisks inside don't count), then links, bold, italic
     private enum Inline: CaseIterable {
         case code, link, bold, italic
 
@@ -174,17 +174,17 @@ public enum Markdown {
         }
     }
 
-    // 第 1 组是要显示的字，前后是标记
+    // Group 1 is the text to show; around it are the markers
     private static let codeSpan = try! NSRegularExpression(pattern: #"`([^`]+)`"#)
     private static let link = try! NSRegularExpression(pattern: #"\[([^\]]+)\]\([^)\s]+\)"#)
-    /// 三个星号又粗又斜：排在粗体前面认，否则会被认成粗体、剩下两边各一个星号
+    /// Three asterisks are bold and italic: recognized before bold, otherwise it would read as bold with a single asterisk left on each side
     private static let boldItalic = try! NSRegularExpression(pattern: #"\*\*\*(?=\S)(.+?)(?<=\S)\*\*\*"#)
     private static let boldStars = try! NSRegularExpression(pattern: #"\*\*(?=\S)(.+?)(?<=\S)\*\*"#)
     private static let boldUnderscores = try! NSRegularExpression(pattern: #"(?<!\w)__(?=\S)(.+?)(?<=\S)__(?!\w)"#)
     private static let italicStar = try! NSRegularExpression(pattern: #"(?<!\*)\*(?=[^\s*])([^*]+?)(?<=\S)\*(?!\*)"#)
     private static let italicUnderscore = try! NSRegularExpression(pattern: #"(?<!\w)_(?=\S)([^_]+?)(?<=\S)_(?!\w)"#)
 
-    /// 一行里标记之后的字，切成样式相同的几段。每个字记着自己的样式，再把相邻样式相同的并起来
+    /// The text after the markers in a line, cut into runs of the same style. Each character records its own style, then adjacent runs with the same style are merged
     private static func spans(_ text: NSString, in range: NSRange) -> [Span] {
         guard range.length > 0 else { return [] }
         var marks = [Span](repeating: Span(range: NSRange()), count: range.length)
@@ -193,7 +193,7 @@ public enum Markdown {
         for kind in Inline.allCases {
             for pattern in kind.patterns {
                 for m in pattern.matches(in: line, range: whole) {
-                    // 代码和标记里的字不再参加别的写法
+                    // Text inside code and markers doesn't take part in other forms
                     guard !(m.range.location..<m.range.upperBound).contains(where: { marks[$0].code || marks[$0].marker }) else { continue }
                     let content = m.range(at: 1)
                     for i in m.range.location..<m.range.upperBound {

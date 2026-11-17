@@ -2,26 +2,26 @@ import Foundation
 import Synchronization
 import Library
 
-/// 云端：经一家服务商（Vendor）调用大模型，生成和对话都走它。多数是同一种请求格式（Claude 的见 Claude.swift），用系统自带的网络接口直接发。
-/// 用 OpenRouter 时，判断另走它转接的 Jev（见 Jev.swift），共用这把密钥
+/// Cloud: calls large models through a provider (Vendor), for both generation and chat. Most use the same request format (Claude's is in Claude.swift), sent directly with the system's built-in networking.
+/// With OpenRouter, judging goes separately to Jev routed through it (see Jev.swift), sharing this key
 public final class Cloud: Generation, Keyed {
-    /// 哪家、哪个模型、要不要思考：设置里可以换
+    /// Which provider, which model, whether to think: changeable in Settings
     private let chosen: Mutex<CloudSetup>
     public var setup: CloudSetup { chosen.withLock { $0 } }
     public var name: String { setup.vendor.name }
 
     let session: URLSession
-    /// 手动跑的真实云端测试、自查从环境变量读密钥；平时为 nil，读密钥文件里这家的那把
+    /// Manually run real cloud tests and self-checks read the key from an environment variable; normally nil, reading this provider's key from the key file
     private let keyOverride: (@Sendable (Vendor) -> String?)?
-    /// 最近一次请求被服务商退回的原因（模型名不对、地址不对、没开通）；之后成功了、换了设置就清掉。设置页拿它提示
+    /// Why the provider last rejected a request (wrong model name, wrong address, not enabled); cleared after a later success or settings change. The settings page uses it for hints
     private let failure = Mutex<String?>(nil)
     public var lastFailure: String? { failure.withLock { $0 } }
-    /// 被拒过的那把密钥：不再拿它发请求
+    /// The key that was rejected: no more requests are sent with it
     private let rejected = Mutex<String?>(nil)
-    /// 这个实例发出的请求一共花了多少美元，按回答里的 usage.cost 累计（只有 OpenRouter 报）。手动跑的真实云端测试拿它核对花费
+    /// Total USD spent by requests from this instance, summed from usage.cost in answers (only OpenRouter reports it). Manually run real cloud tests use it to check spending
     private let cost = Mutex(0.0)
     var spent: Double { cost.withLock { $0 } }
-    /// 模型的上下文长度：问到一次就记住
+    /// The model's context length: remembered once asked
     private let context = Mutex<Int?>(nil)
 
     public init(_ setup: CloudSetup = CloudSetup(), session: URLSession = .shared, key: (@Sendable (Vendor) -> String?)? = nil) {
@@ -30,7 +30,7 @@ public final class Cloud: Generation, Keyed {
         keyOverride = key
     }
 
-    /// 这家的密钥：每家一把，分开存
+    /// This provider's key: one per provider, stored separately
     private func key(for vendor: Vendor) -> String? { keyOverride.map { $0(vendor) } ?? KeyFile.key(for: vendor.rawValue) }
 
     public var keyState: KeyState { keyState(for: setup.vendor) }
@@ -40,7 +40,7 @@ public final class Cloud: Generation, Keyed {
         return key == rejected.withLock({ $0 }) ? .rejected : .ready
     }
 
-    /// 密钥能用，而且知道发到哪、用哪个模型
+    /// The key works, and we know where to send and which model to use
     public var isReady: Bool {
         let setup = setup
         return keyState(for: setup.vendor) == .ready && setup.base != nil && setup.chosenModel != nil
@@ -48,8 +48,8 @@ public final class Cloud: Generation, Keyed {
 
     public func setKey(_ key: String) throws { try KeyFile.setKey(key, for: setup.vendor.rawValue) }
 
-    /// 换服务商、模型：之后的请求都按新的；上下文长度跟着模型走，要重新问。
-    /// 换了地方，「这把密钥被拒过」就不作数了：可能只是上一个地址填错
+    /// Switch provider or model: later requests all follow the new one; context length goes with the model and must be asked again.
+    /// After a change of place, "this key was rejected" no longer holds: maybe the previous address was just mistyped
     public func configure(_ setup: CloudSetup) {
         let moved = chosen.withLock { old in
             defer { old = setup }
@@ -69,7 +69,7 @@ public final class Cloud: Generation, Keyed {
         try await generate(prompt, images: images, careful: careful, judging: false)
     }
 
-    /// judging：用判断模型（没另填、这家也没有另外推荐的，就是同一个）
+    /// judging: use the judge model (the same one if none was entered separately and the provider recommends no other)
     func generate(_ prompt: String, images: [Data], careful: Bool, judging: Bool) async throws -> String {
         let setup = setup
         guard let model = judging ? setup.chosenJudgeModel : setup.chosenModel else { throw Unavailable.notReady }
@@ -79,7 +79,7 @@ public final class Cloud: Generation, Keyed {
         }
         var body: [String: Any] = ["model": model, "messages": [["role": "user", "content": content]]]
         if setup.vendor.jsonMode { body["response_format"] = ["type": "json_object"] }
-        // 平时关掉思考：省时间；判断把握不够时才让它想
+        // Thinking is normally off to save time; only let it think when the judgment isn't confident enough
         body.merge(setup.vendor.thinkingFields(on: careful)) { $1 }
         body.merge(setup.vendor.extras) { $1 }
         let response = try await post("chat/completions", body)
@@ -89,7 +89,7 @@ public final class Cloud: Generation, Keyed {
         return text
     }
 
-    /// 拿判断模型来生成：交给出口去冒充判断能力
+    /// Generate with the judge model: handed to the gateway to stand in for the judging capability
     public var judging: any Generation { Judging(cloud: self) }
 
     private struct Judging: Generation {
@@ -109,12 +109,12 @@ public final class Cloud: Generation, Keyed {
         return json
     }
 
-    /// 发出请求，拿回状态正常的响应。流式和非流式共用：密钥被拒时记下这把；限流和服务端出错时等一会儿重试，最多三次。
-    /// errorData 把出错时的响应读成完整的数据，好取出错误说明
+    /// Send the request and get back a response with a normal status. Shared by streaming and non-streaming: remembers a rejected key; on rate limits and server errors waits and retries, up to three times.
+    /// errorData reads the error response into complete data, so the error message can be extracted
     func send<Response>(_ path: String, _ body: [String: Any], headers: [String: String] = [:],
                         fetch: (URLRequest) async throws -> (Response, URLResponse),
                         errorData: (Response) async throws -> Data) async throws -> Response {
-        // 服务商、地址、密钥取自同一刻的设置：正好赶上换服务商时，不会把这家的密钥发到那家去
+        // Provider, address and key are taken from settings at the same moment: if the provider changes right then, this provider's key won't be sent to the other
         let setup = setup
         let name = setup.vendor.name
         guard let key = key(for: setup.vendor), key != rejected.withLock({ $0 }), let base = setup.base else { throw Unavailable.notReady }
@@ -143,7 +143,7 @@ public final class Cloud: Generation, Keyed {
                 failure.withLock { $0 = nil }
                 return response
             }
-            // 密钥不对：记下这把，卡片停在「等待密钥」，不逐张记失败
+            // Wrong key: remember this one; cards stay at "Waiting for a key" instead of each recording a failure
             if status == 401 {
                 rejected.withLock { $0 = key }
                 throw Unavailable.notReady
@@ -158,7 +158,7 @@ public final class Cloud: Generation, Keyed {
         throw lastError
     }
 
-    /// 按回答里的 usage.cost 累计花费
+    /// Add up spending from usage.cost in the answer
     @discardableResult
     private func charge(_ usage: Any?) -> Double {
         guard let charge = ((usage as? [String: Any])?["cost"] as? NSNumber)?.doubleValue else { return 0 }
@@ -167,10 +167,10 @@ public final class Cloud: Generation, Keyed {
     }
 }
 
-// MARK: 对话
+// MARK: Chat
 
 extension Cloud: Conversation {
-    /// 发出流式请求，拿回一行行到达的回答
+    /// Send a streaming request and get back the answer line by line as it arrives
     func stream(_ path: String, _ body: [String: Any], headers: [String: String] = [:]) async throws -> URLSession.AsyncBytes {
         try await send(path, body, headers: headers, fetch: { try await self.session.bytes(for: $0) }) { bytes in
             var data = Data()
@@ -179,7 +179,7 @@ extension Cloud: Conversation {
         }
     }
 
-    /// 从 OpenRouter 的模型列表里读上下文长度，读到一次就记住；别家没有这份列表，问不到
+    /// Read context length from OpenRouter's model list, remembered once read; other providers have no such list, so it can't be asked
     public func contextLength() async -> Int? {
         if let known = context.withLock({ $0 }) { return known }
         let setup = setup
@@ -187,13 +187,13 @@ extension Cloud: Conversation {
               let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
               let models = json["data"] as? [[String: Any]],
               let length = (models.first { $0["id"] as? String == model }?["context_length"] as? NSNumber)?.intValue else { return nil }
-        // 问的这会儿模型被换了，就不记
+        // The model was switched while asking: don't remember it
         if setup == self.setup { context.withLock { $0 = length } }
         return length
     }
 
-    /// chat/completions 打开 stream：服务器一段段推回 SSE（每行「data: {…}」），文字边到边交出去；
-    /// 工具调用的名字和参数是分好几段到的，拼齐了在结束前一起交出；最后一段带用量和花费
+    /// chat/completions with stream on: the server pushes back SSE piece by piece (each line "data: {…}"), and text is passed on as it arrives;
+    /// tool call names and arguments arrive in several pieces and are passed on together once complete, before the end; the last piece carries usage and cost
     public func converse(_ chat: Chat) -> AsyncThrowingStream<ChatChunk, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
@@ -207,7 +207,7 @@ extension Cloud: Conversation {
                     var calls: [Int: ToolCall] = [:]
                     var usage = ChatUsage()
                     for try await line in bytes.lines {
-                        // 「: OPENROUTER PROCESSING」这类注释行是保活用的
+                        // Comment lines like ": OPENROUTER PROCESSING" are keep-alives
                         guard line.hasPrefix("data: ") else { continue }
                         let payload = line.dropFirst(6)
                         if payload == "[DONE]" { break }
@@ -215,7 +215,7 @@ extension Cloud: Conversation {
                         if let error = json["error"] as? [String: Any] { throw Failure(message: String(localized: "\(displayed(name))：\(error["message"] as? String ?? String(localized: "未知错误"))")) }
                         if let used = json["usage"] as? [String: Any] { usage = Self.usage(used, cost: charge(used)) }
                         guard let delta = ((json["choices"] as? [[String: Any]])?.first)?["delta"] as? [String: Any] else { continue }
-                        // 想的内容：OpenRouter 放在 reasoning，别家放在 reasoning_content
+                        // Thinking: OpenRouter puts it in reasoning, others in reasoning_content
                         if let thought = delta["reasoning_content"] as? String ?? delta["reasoning"] as? String, !thought.isEmpty {
                             continuation.yield(.thought(thought))
                         }
@@ -224,7 +224,7 @@ extension Cloud: Conversation {
                             let i = (piece["index"] as? NSNumber)?.intValue ?? 0
                             var call = calls[i] ?? ToolCall(id: "", name: "", arguments: "")
                             if let id = piece["id"] as? String, !id.isEmpty { call.id = id }
-                            // 有的服务商（Gemini）在调用上附一段凭据，下一轮要原样带回
+                            // Some providers (Gemini) attach a credential to the call that must be sent back unchanged next round
                             if let extra = piece["extra_content"], let data = try? JSONSerialization.data(withJSONObject: extra) {
                                 call.extra = String(decoding: data, as: UTF8.self)
                             }
@@ -252,7 +252,7 @@ extension Cloud: Conversation {
     func body(_ chat: Chat) -> [String: Any] {
         let setup = setup
         let model = setup.chosenModel ?? ""
-        // 经 OpenRouter 用 Anthropic、Google 的模型要显式标缓存，别的（DeepSeek）自动按开头缓存
+        // Anthropic and Google models via OpenRouter need explicit cache marks; others (DeepSeek) cache the start automatically
         let marks = setup.vendor == .openRouter && (model.hasPrefix("anthropic/") || model.hasPrefix("google/"))
         let messages: [[String: Any]] = chat.messages.enumerated().map { m, message in
             var out: [String: Any] = ["role": message.role.rawValue]
@@ -260,7 +260,7 @@ extension Cloud: Conversation {
             case .system, .tool:
                 out["content"] = message.text
             case .assistant:
-                // 只调工具、不说话：内容留空
+                // Only calling tools, not speaking: content left empty
                 out["content"] = message.text.isEmpty && !message.calls.isEmpty ? NSNull() : message.text
             case .user:
                 out["content"] = message.parts.enumerated().map { p, part -> [String: Any] in
@@ -280,7 +280,7 @@ extension Cloud: Conversation {
                 }
             }
             if let id = message.callID { out["tool_call_id"] = id }
-            // Claude 存下的是它自己的一整轮内容，不是能给别家看的文字
+            // What Claude stored is its own whole round of content, not text other providers can read
             if let thought = message.thought, setup.vendor.sendsThoughtsBack, Self.claudeTurn(thought) == nil { out["reasoning_content"] = thought }
             return out
         }
@@ -290,7 +290,7 @@ extension Cloud: Conversation {
             "stream": true,
         ]
         body.merge(setup.vendor.thinkingFields(on: setup.thinking)) { $1 }
-        // 同 generate：OpenRouter 按最近的响应速度挑服务商。每轮可能落到不同服务商上，缓存命中率由测试集量（discussion-plan.md 第五节）
+        // Same as generate: OpenRouter picks the provider by recent response speed. Each round may land on a different provider; cache hit rate is measured by the test set (discussion-plan.md section 5)
         body.merge(setup.vendor.extras) { $1 }
         body.merge(setup.vendor.streamExtras) { $1 }
         if !chat.tools.isEmpty {

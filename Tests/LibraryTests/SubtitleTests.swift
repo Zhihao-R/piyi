@@ -2,8 +2,8 @@ import Testing
 import Foundation
 @testable import Library
 
-/// 平台字幕：挑哪一条、B 站借浏览器的登录状态取、取到后存成转录。
-/// 用录好的网络响应，放进网页样本那个串行的组里
+/// Platform subtitles: which track to pick, fetching Bilibili with the browser's sign-in state, saving as a transcript once fetched.
+/// Uses recorded network responses, in the same serialized group as the web page samples
 extension WebFixtureTests { @Suite @MainActor struct SubtitleTests {
     typealias Track = WebExtractor.Track
 
@@ -12,12 +12,12 @@ extension WebFixtureTests { @Suite @MainActor struct SubtitleTests {
         let german = Track(language: "de-DE", automatic: false, url: "de")
         let english = Track(language: "en-US", automatic: false, url: "en")
         let chinese = Track(language: "zh-Hans", automatic: false, url: "zh")
-        // 别的语言的人工字幕多半是翻译：要原声的，人工的比自动的准
+        // Human subtitles in other languages are mostly translations: take the original language; human ones are more accurate than automatic
         #expect(WebExtractor.pick([german, chinese, auto, english]) == english)
         #expect(WebExtractor.pick([german, chinese, auto]) == auto)
-        // 认不出原声时挑中文
+        // When the original language can't be told, pick Chinese
         #expect(WebExtractor.pick([german, chinese]) == chinese)
-        // B 站：AI 字幕原声排第一，后面是翻译；有人工的中文字幕时用人工的
+        // Bilibili: AI subtitles in the original language come first, translations after; when there are human Chinese subtitles, use those
         let ai = [Track(language: "zh", automatic: true, url: "ai-zh"), Track(language: "en", automatic: true, url: "ai-en")]
         #expect(WebExtractor.pick(ai)?.url == "ai-zh")
         #expect(WebExtractor.pick(ai + [Track(language: "zh-CN", automatic: false, url: "zh-CN")])?.url == "zh-CN")
@@ -43,7 +43,7 @@ extension WebFixtureTests { @Suite @MainActor struct SubtitleTests {
         ]
     }
 
-    /// 登录后字幕列表里才有地址
+    /// The subtitle list has URLs only after sign-in
     static let signedIn = #"{"code":0,"data":{"subtitle":{"subtitles":[{"lan":"ai-zh","subtitle_url":"//aisubtitle.hdslb.com/bfs/ai_subtitle/prod/abc?auth_key=1"}]}}}"#
     static let signedOut = #"{"code":0,"data":{"subtitle":{"subtitles":[{"lan":"ai-zh","subtitle_url":""}]}}}"#
 
@@ -53,7 +53,7 @@ extension WebFixtureTests { @Suite @MainActor struct SubtitleTests {
         let browser = FakeBrowser(html: "", answers: [Self.player: Self.signedIn])
         #expect(await WebExtractor(session: Replay.session, browser: browser).subtitles(for: url) == [Cue(start: 0.5, end: 3, text: "你的童年有没有科教频道"), Cue(start: 3, end: 5.2, text: "提到童年回忆")])
         #expect(await WebExtractor(session: Replay.session, browser: FakeBrowser(html: "", answers: [Self.player: Self.signedOut])).subtitles(for: url) == nil)
-        // 没有连上的浏览器
+        // No browser connected
         #expect(await WebExtractor(session: Replay.session, browser: FakeBrowser(html: nil)).subtitles(for: url) == nil)
         #expect(await WebExtractor(session: Replay.session).subtitles(for: url) == nil)
     }
@@ -67,7 +67,7 @@ extension WebFixtureTests { @Suite @MainActor struct SubtitleTests {
         m.url = Self.video
         guard case .created(let id) = try await store.collect(m, into: board, frame: .zero) else { throw CancellationError() }
 
-        // 没连上浏览器：只有简介，总结要标「仅根据简介」
+        // No browser connected: only the description, so the summary must be marked "Based on the description only"
         try await Extractor(session: Replay.session, browser: FakeBrowser(html: nil)).completeBody(of: id, in: store)
         #expect(try await store.card(id)?.transcript == nil)
 

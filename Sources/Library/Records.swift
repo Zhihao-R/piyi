@@ -2,108 +2,108 @@ import Foundation
 import CoreGraphics
 import GRDB
 
-/// 卡片按内容长什么样分六类，不按来源：本地 mp4 和 B 站视频都是视频
+/// Cards fall into six kinds by what the content looks like, not by source: a local mp4 and a Bilibili video are both video
 public enum Kind: String, Codable, Sendable, CaseIterable, DatabaseValueConvertible {
     case image, text, web, document, video, audio
 }
 
-/// 同一类里需要不同处理的形态
+/// Forms within one kind that need different handling
 public enum Form: String, Codable, Sendable, DatabaseValueConvertible {
-    /// 长图：卡片只露开头一截
+    /// Long image: the card shows only the top part
     case long
-    /// 动图：悬停时才动
+    /// Animated image: moves only on hover
     case animated
-    /// 你的文字：在画板上写的、粘贴或从手机收进来的纯文本。能改、能换底色。
-    /// 网页帖子里只有字的（带网址）是别人的原话，不算
+    /// Your text: plain text written on a board, pasted, or collected from the phone. Editable, can change background color.
+    /// Text-only web posts (with a URL) are someone else's words and don't count
     case note
 }
 
-/// 抽取进行到哪一步
+/// How far extraction has got
 public enum Extraction: String, Codable, Sendable, DatabaseValueConvertible {
     case extracting
-    /// 抽取结束。只拿到一部分时 partial 记着原因
+    /// Extraction finished. If only part was fetched, partial records why
     case complete
 }
 
-/// 理解排到哪一步；nil 表示没有要做的
+/// How far understanding is queued; nil means nothing to do
 public enum Understanding: String, Codable, Sendable, DatabaseValueConvertible {
-    /// 要生成标题和描述：卡片样子马上会变，画布上标「正在理解」
+    /// Needs a title and description: the card's look is about to change, so the canvas marks it "Reading"
     case generating
-    /// 只补算颜色、向量：样子不变，只在状态栏计数
+    /// Only filling in colors and vectors: the look doesn't change, only counted in the status bar
     case indexing
-    /// 要生成标题和描述，但还没填密钥（或密钥被拒）。颜色和向量照常算
+    /// Needs a title and description, but no key yet (or the key was rejected). Colors and vectors are computed as usual
     case waitingKey
 }
 
-/// 资料库里的一条记录：原始内容 + 理解结果
+/// One record in the library: original content + understanding results
 public struct Card: Codable, Sendable, Identifiable, Equatable, FetchableRecord, MutablePersistableRecord {
     public var id: Int64?
     public var kind: Kind
     public var form: Form?
-    /// 第一次收进来的时间：再收一次也不改，按天分组、时间筛选都用它
+    /// When it was first collected: unchanged by collecting again; used for grouping by day and filtering by time
     public var collectedAt: Date
-    /// 最近一次又收到它的时间：「全部卡片」按它把这张卡提到最前；没再收过是 nil
+    /// When it was last collected again: "All Cards" brings it to the front by this; nil if never collected again
     public var resurfacedAt: Date?
 
-    // 原始内容
-    /// 收进来的就是这个网址时记在这里（网页卡、直链文件），补抓时用它
+    // Original content
+    /// Recorded here when the collected thing is this URL itself (web cards, direct file links); used for refetching
     public var url: String?
-    /// 比较用网址：按网址查重看它和 finalKey
+    /// URL for comparison: the URL duplicate check looks at it and finalKey
     public var urlKey: String?
-    /// 收的网址跳转到了别处（短链接）时，最终地址的比较用网址：以后收长链接也查得到这张
+    /// When the collected URL redirected elsewhere (a short link), the comparison URL of the final address: so collecting the long link later finds this card too
     public var finalKey: String?
-    /// 出处网址：拖进来的图所在的页面，或者收的网址跳转到的最终页面。不参与查重
+    /// Source URL: the page a dragged-in image was on, or the final page the collected URL redirected to. Not used in duplicate checks
     public var sourceURL: String?
-    /// 内容指纹：按内容查重只看它
+    /// Content fingerprint: the content duplicate check only looks at this
     public var fingerprint: String?
     public var title: String?
-    /// 出处：作者、网站、文件名
+    /// Source: author, site, file name
     public var source: String?
-    /// 给人看的格式标签：PDF、Markdown、GIF、小红书、B 站…
+    /// Format label for people: PDF, Markdown, GIF, Xiaohongshu, Bilibili…
     public var format: String?
-    /// 你亲手写的文字
+    /// Text you wrote yourself
     public var text: String?
-    /// 收的时候和网址一起带来的那句话（「参考 figma.com 定价页的排版」）；重新抓取不动它
+    /// The line that came with the URL when collected ("reference the layout of figma.com's pricing page"); refetching doesn't touch it
     public var note: String?
-    /// 你写的文字卡的底色名（见 Palette.tints）；nil 是卡片本来的底色
+    /// Background color name of a text card you wrote (see Palette.tints); nil is the card's default background
     public var tint: String?
-    /// 抽取出的正文；视频是简介
+    /// Extracted body; for video it's the description
     public var body: String?
-    /// 视频、音频说的话（本机转录，或者平台字幕），格式见 Transcript。没有时总结只是根据简介
+    /// What a video or audio says (local transcription, or platform subtitles), format in Transcript. Without it the summary only goes by the description
     public var transcript: String?
-    /// 补全正文（图中文字识别、转录、平台字幕）做完了。分拣要等它
+    /// Body completion (text recognition in images, transcription, platform subtitles) is done. Sorting waits for it
     public var bodyCompleted: Bool
-    /// 封面和原文件：文件库里的文件名（内容指纹 + 扩展名）
+    /// Cover and original file: file names in the file store (content fingerprint + extension)
     public var cover: String?
     public var original: String?
-    /// 网上的视频在放大查看里播放用的地址：平台的嵌入播放器，或者视频流（见 Player）。视频不下载，所以没有 original
+    /// Address for playing an online video in the detail view: the platform's embed player, or a video stream (see Player). Videos aren't downloaded, so there's no original
     public var player: String?
     public var pages: Int?
-    /// 秒
+    /// Seconds
     public var duration: Double?
     public var extraction: Extraction
-    /// 只拿到一部分的原因；nil 表示完整
+    /// Why only part was fetched; nil means complete
     public var partial: Partial?
-    /// 进废纸篓的时间；nil 表示没删
+    /// When it was trashed; nil means not deleted
     public var trashedAt: Date?
 
-    // 理解结果
+    // Understanding results
     public var generatedTitle: String?
-    /// 卡片上显示的一句话
+    /// The one-line text shown on the card
     public var caption: String?
-    /// 不显示，只用来算向量的长描述
+    /// Not shown, a long description only used to compute vectors
     public var detail: String?
     public var tags: [String]
     public var summary: String?
-    /// 每条要点依据的原文段落，见 SummaryAnchor
+    /// The original passage each key point is based on, see SummaryAnchor
     public var summaryAnchors: [SummaryAnchor?]?
-    /// 颜色统计，格式由理解决定，资料块只负责存
+    /// Color statistics; the format is up to understanding, the library module only stores it
     public var colors: String?
-    /// 生成标题、描述、标签、总结时依据的内容摘要；依据一变就重新排队
+    /// Digest of the content the title, description, tags and summary were generated from; when the basis changes it's re-queued
     public var understoodBasis: String?
     public var understandError: String?
     public var understanding: Understanding?
-    /// 分拣过：不论放没放进别的画板，分过一次就不再自动分
+    /// Sorted: whether or not it was put on another board, once sorted it's never auto-sorted again
     public var sorted: Bool
 
     public init(kind: Kind, collectedAt: Date = .now) {
@@ -119,26 +119,26 @@ public struct Card: Codable, Sendable, Identifiable, Equatable, FetchableRecord,
 
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 
-    /// 显示用的标题：网页、文档、视频保留原标题，图片和文字用模型起的（它们的原标题多半是文件名）。
-    /// 画布读的是 CardFace.columns 里同一条规则的 SQL 写法，改这里要一起改
+    /// Title for display: web pages, documents and videos keep their original title, images and text use the model's (their original title is usually a file name).
+    /// The canvas reads the SQL version of the same rule in CardFace.columns; change both together
     public var displayTitle: String {
         let preferred = kind == .image || kind == .text ? generatedTitle ?? title : title ?? generatedTitle
         return preferred ?? text.map { String($0.prefix(16)) } ?? ""
     }
 
-    /// 抓到了内容：封面、正文、转录、文字至少有一样
+    /// Got content: at least one of cover, body, transcript, text
     public var hasContent: Bool { cover != nil || body != nil || transcript != nil || text != nil }
 
-    /// 没抓到内容的残缺卡：标题只是网址或失败页的标题，不能当内容理解
+    /// A partial card with no content: the title is just the URL or a failure page's title, not content to understand
     public var isEmpty: Bool { partial != nil && !hasContent }
 
-    /// 全部正文：正文后面接上转录。理解、搜索读它
+    /// The full body: body followed by transcript. Understanding and search read it
     public var fullBody: String? {
         let parts = [body, transcript].compactMap { $0 }.filter { !$0.isEmpty }
         return parts.isEmpty ? nil : parts.joined(separator: "\n\n")
     }
 
-    /// 理解的依据：只算理解的输入（原标题、正文、你写的文字、封面），不算理解自己写出来的东西，否则会循环重排
+    /// Basis for understanding: only understanding's inputs (original title, body, your text, cover), not what understanding wrote itself, or it would keep re-queuing
     public var contentBasis: String { Self.basis(title: title, body: fullBody, text: text, cover: cover) }
 
     static func basis(title: String?, body: String?, text: String?, cover: String?) -> String {
@@ -146,7 +146,7 @@ public struct Card: Codable, Sendable, Identifiable, Equatable, FetchableRecord,
     }
 }
 
-/// 多图卡的其余图片，按顺序
+/// The other images of a multi-image card, in order
 public struct CardImage: Codable, Sendable, Equatable, FetchableRecord, PersistableRecord {
     public var cardID: Int64
     public var position: Int
@@ -155,7 +155,7 @@ public struct CardImage: Codable, Sendable, Equatable, FetchableRecord, Persista
     public static let databaseTableName = "cardImage"
 }
 
-/// 每张卡的向量，记着是哪个模型、依据哪段文字算的
+/// Each card's vector, noting which model and which text it was computed from
 public struct Vector: Codable, Sendable, FetchableRecord, PersistableRecord {
     public var cardID: Int64
     public var model: String
@@ -175,13 +175,13 @@ public struct Vector: Codable, Sendable, FetchableRecord, PersistableRecord {
 public struct Board: Codable, Sendable, Identifiable, Equatable, FetchableRecord, MutablePersistableRecord {
     public var id: Int64?
     public var name: String
-    /// 缩略拼贴：缩略图目录里的文件名
+    /// Thumbnail collage: file name in the thumbnails folder
     public var collage: String?
     public var createdAt: Date
     public var openedAt: Date
-    /// 自动分拣：关掉后这个画板不再自动收卡
+    /// Auto-sort: when off, this board no longer receives cards automatically
     public var autoSort = true
-    /// 分拣规则：一句话说明这个画板收什么；nil 表示没写，按画板里已有的卡判断
+    /// Sorting rule: one sentence on what this board collects; nil means not written, judge by the cards already on the board
     public var rule: String?
 
     public init(name: String, at date: Date = .now) {
@@ -195,28 +195,28 @@ public struct Board: Codable, Sendable, Identifiable, Equatable, FetchableRecord
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 }
 
-/// 一张卡或一个画板入口在某个画板里的摆法。cardID 和 entryBoardID 恰好有一个
+/// How a card or a board entry is placed on a board. Exactly one of cardID and entryBoardID is set
 public struct Placement: Codable, Sendable, Identifiable, Equatable, FetchableRecord, MutablePersistableRecord {
     public var id: Int64?
     public var boardID: Int64
     public var cardID: Int64?
-    /// 画板入口指向的画板
+    /// The board a board entry points to
     public var entryBoardID: Int64?
-    /// 世界坐标，左上角为原点、y 向下
+    /// World coordinates, origin at the top left, y pointing down
     public var x: Double
     public var y: Double
     public var width: Double
     public var height: Double
-    /// 弧度
+    /// Radians
     public var rotation: Double
-    /// 镜像：拖角越过对角时翻过来（先镜像再旋转）
+    /// Mirroring: flipped when a corner is dragged past the opposite corner (mirror first, then rotate)
     public var flipX = false
     public var flipY = false
-    /// 裁剪框：原图里的一块，按原图宽高归一到 0～1；nil 表示不裁
+    /// Crop rect: a region of the original image, normalized to 0–1 by its width and height; nil means no crop
     public var crop: CGRect?
-    /// 叠放顺序，大的在上
+    /// Stacking order, larger on top
     public var z: Double
-    /// 新放进标记：分拣放进来的、你还没看过。离开这个画板时清掉
+    /// Newly-placed mark: put here by sorting and you haven't seen it yet. Cleared when you leave this board
     public var unseen = false
 
     public init(boardID: Int64, cardID: Int64? = nil, entryBoardID: Int64? = nil, frame: CGRect, z: Double) {

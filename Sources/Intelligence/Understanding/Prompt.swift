@@ -3,9 +3,9 @@ import CoreGraphics
 import ImageIO
 import Library
 
-/// 交给生成能力的内容：提示词和附图。标题、描述、标签一次请求，读开头就够；长内容的要点另问一次，读全文
+/// What's handed to generation: prompt and attached images. Title, description and tags in one request, which only needs the opening; key points for long content are asked separately, reading the full text
 enum Prompt {
-    /// 正文（或你写的文字）达到这么多字才生成总结。先按这个，用起来再调
+    /// Only generate a summary when the body (or text you wrote) reaches this many characters. Start with this, adjust with use
     static let summaryLength = 1500
 
     struct Reply: Decodable {
@@ -14,7 +14,7 @@ enum Prompt {
         var detail: String?
         var tags: [String]
 
-        /// 要点另问，问到了再填
+        /// Key points are asked separately and filled in when they arrive
         var generated: Generated {
             Generated(title: title, caption: caption, detail: detail, tags: Array(tags.prefix(10)), summary: nil)
         }
@@ -55,9 +55,9 @@ enum Prompt {
         (card.text ?? card.fullBody.map(Article.plain) ?? "").count >= summaryLength
     }
 
-    // MARK: 要点
+    // MARK: Key points
 
-    /// 要点一次最多读这么多字，再长的只读前面这些并标明。讨论把 20 万字以内的全文整篇交给模型，这里留一半余量
+    /// Key points read at most this many characters at once; longer texts only have the beginning read, and are marked so. Discussions hand full texts under 200,000 characters to the model whole; this leaves half as margin
     static let summaryInput = 100_000
 
     struct Points: Decodable {
@@ -65,11 +65,11 @@ enum Prompt {
         var points: [Point]
     }
 
-    /// 要点的提示词：全文交给模型，每条要点照抄一小句依据的原话。
-    /// 和标题、描述分开问：那边读开头加几帧画面就够，这边必须读完。
-    /// 让它抄原话而不是报段落编号：编号它常报错（内容写到了后半段，编号却都指着开头的简介），
-    /// 原话抄错了在原文里找不到，那一条就不能点，不会跳到错的地方。
-    /// whole 为 false 表示全文超过了上限，只读了前一部分
+    /// The key points prompt: the full text goes to the model, and each key point copies a short sentence of the original it's based on.
+    /// Asked separately from title and description: those only need the opening plus a few frames; this must read everything.
+    /// It copies original text rather than giving paragraph numbers: it often gets numbers wrong (content from the second half, numbers all pointing at the intro at the start);
+    /// if the copied text is wrong it can't be found in the original, so that point just isn't clickable instead of jumping to the wrong place.
+    /// whole false means the full text exceeded the limit and only the first part was read
     static func summarizing(_ card: Card, passages: [Passage]) -> (prompt: String, whole: Bool) {
         var lines: [String] = [], count = 0, whole = true
         if passages.isEmpty {
@@ -80,10 +80,10 @@ enum Prompt {
         let timed = passages.contains { $0.part == .transcript }
         var part: Passage.Part?
         for passage in passages {
-            // 视频、音频：简介和转录分开标出来，依据要落在转录上，点了才能跳到那一秒
+            // Video, audio: the intro and the transcription are labeled separately; evidence should land on the transcription so clicking jumps to that second
             if timed, passage.part != part { lines.append(passage.part == .body ? "【简介】" : "\n【转录】") }
             part = passage.part
-            // 放不下的那一段截到上限为止：没换行的超长文字只有一段，整段跳过的话模型一个字都读不到
+            // The section that doesn't fit is cut at the limit: overlong text without line breaks is a single section, and skipping it whole would leave the model nothing to read
             let text = passage.text.prefix(summaryInput - count)
             lines.append(String(text))
             count += text.count
@@ -108,9 +108,9 @@ enum Prompt {
         return (prompt, whole)
     }
 
-    /// 模型写的要点换成存的样子：一行一条的文字，和每条依据的那一段（按它抄的原话在原文里找，找不到的那条没有依据）
+    /// Turn the model's key points into the stored form: one per line, plus the section each is based on (found in the original by the text it copied; points not found have no basis)
     static func summary(_ reply: Points, passages: [Passage], whole: Bool, for card: Card) -> (text: String?, anchors: [SummaryAnchor?]?) {
-        // 说了 3 到 5 条，有时会写出八九条：只留前 5 条
+        // Asked for 3 to 5, it sometimes writes eight or nine: keep only the first 5
         let points = reply.points.filter { !$0.text.isEmpty }.prefix(5)
         guard let text = summary(points.map(\.text), for: card, whole: whole) else { return (nil, nil) }
         let anchors = points.map { point -> SummaryAnchor? in
@@ -120,14 +120,14 @@ enum Prompt {
         return (text, anchors.contains { $0 != nil } ? anchors : nil)
     }
 
-    /// 总结存成一行一条，「· 」开头。前面可以有一行说明：视频、音频没转出文字也没有平台字幕时，正文只是简介；全文太长时只读了前一部分
+    /// The summary is stored one point per line, starting with "· ". There can be a note line in front: for video and audio with no transcription and no platform subtitles the body is just the intro; for very long texts only the first part was read
     static func summary(_ points: [String]?, for card: Card, whole: Bool = true) -> String? {
         guard let points, !points.isEmpty, needsSummary(card) else { return nil }
         let note = (card.kind == .video || card.kind == .audio) && card.transcript == nil ? String(localized: "仅根据简介") + "\n" : whole ? "" : String(localized: "只读了前一部分") + "\n"
         return note + points.map { "· " + $0 }.joined(separator: "\n")
     }
 
-    /// 算向量用的文字：标题、描述、标签、正文节选。图片卡和文字卡在同一把尺子上比较（不把图片本身算进向量）
+    /// Text for computing embeddings: title, description, tags, body excerpt. Image cards and text cards are compared on the same ruler (the image itself isn't part of the embedding)
     static func vectorText(_ card: Card) -> String {
         let excerpt = String((card.text ?? card.fullBody.map(Article.plain) ?? "").prefix(600))
         return [card.generatedTitle, card.title, card.caption, card.detail, card.tags.joined(separator: "、"), card.format, excerpt, card.source]
@@ -145,9 +145,9 @@ enum Prompt {
         }
     }
 
-    // MARK: 附图
+    // MARK: Attached images
 
-    /// 让模型看的画面，按内容选：视频取三帧、动图取三帧、长图切三段、多图取前三张。最长边 512 像素的 JPEG
+    /// The frames the model sees, chosen by content: three frames from a video, three from an animated image, three slices of a long image, the first three of several images. JPEG with longest side 512 px
     static func images(for card: Card, store: Store) async -> [Data] {
         let files = store.files
         var frames: [CGImage] = []
@@ -166,7 +166,7 @@ enum Prompt {
         return frames.compactMap { scaled($0, maxPixel: 512) }.compactMap { FileExtractor.jpeg($0, quality: 0.8) }
     }
 
-    /// 搜索精排、灵感、抽一张给模型看的小图：封面最长边 384 像素的 JPEG
+    /// Small image shown to the model for search reranking, inspiration, and drawing a card: cover as JPEG with longest side 384 px
     static func glance(_ cover: String, files: FileStore) -> Data? {
         image(files.url(of: cover), maxPixel: 384).flatMap { FileExtractor.jpeg($0, quality: 0.75) }
     }

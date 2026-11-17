@@ -1,8 +1,8 @@
 import SwiftUI
 import Tokens
 
-/// 第一次打开的引导分几步，都可以先跳过，之后在设置里补。只出现没做过、也没看过的那几步：
-/// 以后加一步，老用户打开时只看到新加的那一步
+/// First-launch onboarding has several steps, all skippable and completable later in settings. Only steps not done and not seen appear:
+/// when a step is added later, existing users see only the new step on launch
 enum OnboardingStep: String, CaseIterable {
     case keys, model, browser, phone
 
@@ -51,7 +51,7 @@ struct Onboarding: View {
         .frame(width: 520)
     }
 
-    /// 几步就几根短条，走到的那根拉长
+    /// One short bar per step, the current one stretched
     private var progress: some View {
         HStack(spacing: 6) {
             ForEach(steps.indices, id: \.self) { i in
@@ -67,7 +67,7 @@ struct Onboarding: View {
         VStack(alignment: .leading, spacing: 20) {
             StepHeader(step: step)
             switch step {
-            // 不带左边标题：服务商选框靠左、按内容宽，和下面的密钥框左边对齐
+            // No title on the left: the provider picker hugs the left at its content width, left-aligned with the key field below
             case .keys:
                 VStack(alignment: .leading, spacing: 12) { CloudAccess(model: model, labeled: false) }
                     .labelsHidden()
@@ -113,7 +113,7 @@ private struct StepHeader: View {
     }
 }
 
-/// 设置里点「…指引」打开的弹窗：和引导里那一步同样的标题、说明和内容
+/// The popup opened by "…Guide" in settings: same title, explanation and content as that onboarding step
 struct GuideSheet<Content: View>: View {
     let step: OnboardingStep
     let done: () -> Void

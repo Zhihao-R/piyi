@@ -35,7 +35,7 @@ enum Schema {
                 t.column("understoodBasis", .text)
                 t.column("understandError", .text)
             }
-            // 画布、搜索、向量、灵感、计数都从这里读，不靠每处查询自己记得排除废纸篓
+            // The canvas, search, vectors, inspiration and counts all read from here, instead of relying on each query to remember to exclude the trash
             try db.execute(sql: "CREATE VIEW liveCard AS SELECT * FROM card WHERE trashedAt IS NULL")
 
             try db.create(table: "cardImage") { t in
@@ -77,10 +77,10 @@ enum Schema {
             }
         }
         migrator.registerMigration("v2") { db in
-            // 理解排到哪一步，画布和状态栏读它
+            // How far understanding is queued; the canvas and status bar read it
             try db.alter(table: "card") { t in t.add(column: "understanding", .text) }
-            // 早期版本导入的卡已经有云端生成的标题和描述：记上依据，只重算向量，不重新生成。
-            // 只读用到的几列：Card 跟着后面的版本加了列，这时表里还没有
+            // Cards imported by early versions already have cloud-generated titles and descriptions: record their basis, recompute only vectors, don't regenerate.
+            // Read only the columns used: Card gained columns in later versions that the table doesn't have yet
             for row in try Row.fetchAll(db, sql: "SELECT id, title, body, text, cover FROM card WHERE caption IS NOT NULL AND understoodBasis IS NULL") {
                 let id: Int64 = row["id"]
                 let title: String? = row["title"], body: String? = row["body"], text: String? = row["text"], cover: String? = row["cover"]
@@ -96,18 +96,18 @@ enum Schema {
         }
         migrator.registerMigration("v4") { db in
             try db.alter(table: "card") { t in t.add(column: "transcribed", .boolean).notNull().defaults(to: false) }
-            // 之前只有本地的视频、音频会转录，它们抽取时没有正文：有正文的就是转过的
+            // Previously only local video and audio were transcribed, and they had no body when extracted: any with a body was transcribed
             try db.execute(sql: "UPDATE card SET transcribed = 1 WHERE kind IN ('video', 'audio') AND original IS NOT NULL AND body IS NOT NULL AND body != ''")
         }
         migrator.registerMigration("v5") { db in
-            // 自动分拣：已有的画板全部打开，规则为空
+            // Auto-sort: turn it on for all existing boards, with an empty rule
             try db.alter(table: "board") { t in
                 t.add(column: "autoSort", .boolean).notNull().defaults(to: true)
                 t.add(column: "rule", .text)
             }
         }
         migrator.registerMigration("v6") { db in
-            // 已有的卡都算分拣过、补全过正文：升级后不把整个资料库重新分一遍，想分的话用「分拣这些卡」
+            // Treat all existing cards as sorted and body-completed: upgrading doesn't re-sort the whole library; to sort, use "Sort These Cards"
             try db.alter(table: "card") { t in
                 t.add(column: "sorted", .boolean).notNull().defaults(to: false)
                 t.add(column: "bodyCompleted", .boolean).notNull().defaults(to: false)
@@ -117,11 +117,11 @@ enum Schema {
         }
         migrator.registerMigration("v7") { db in
             try db.alter(table: "card") { t in t.add(column: "tint", .text) }
-            // 以前粘贴、从手机收进来的纯文本也是你的文字：都能改
+            // Plain text pasted or collected from the phone before is also your text: all editable
             try db.execute(sql: "UPDATE card SET form = 'note' WHERE kind = 'text' AND url IS NULL AND form IS NULL")
         }
         migrator.registerMigration("v8") { db in
-            // 回看记录：画板删了记录还在，卡从废纸篓清掉才跟着删
+            // Revisit records: kept when a board is deleted, removed only when the card is cleared from the trash
             try db.create(table: "revisit") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("kind", .text).notNull()
@@ -132,8 +132,8 @@ enum Schema {
         }
         migrator.registerMigration("v9") { db in
             try db.alter(table: "card") { t in t.add(column: "player", .text) }
-            // 已经收的 YouTube、B 站视频按网址补上嵌入播放器；别的网站的要重新抓取才有。
-            // 规则照当时的 Player 抄一份：升级只跑一次，不跟着以后的改动变
+            // Fill in embed players by URL for YouTube and Bilibili videos already collected; other sites need a refetch to get one.
+            // The rules are copied from Player as it was then: a migration runs only once and shouldn't change with later edits
             for row in try Row.fetchAll(db, sql: "SELECT id, url, sourceURL FROM card WHERE kind = 'video' AND original IS NULL") {
                 let urls = [row["sourceURL"], row["url"]].compactMap { ($0 as String?).flatMap(URLComponents.init(string:)) }
                 guard let player = urls.lazy.compactMap(Self.v9Player).first else { continue }
@@ -141,8 +141,8 @@ enum Schema {
             }
         }
         migrator.registerMigration("v10") { db in
-            // 转录从正文里分出来单独存：放大查看里和简介分开排。转录总是最后补进正文的，最后一个空行之后的就是它；
-            // 拼回去和原来的正文一样，理解的依据不变，不会重新排队
+            // Store transcripts separately from the body: listed apart from the description in the detail view. The transcript was always the last thing added to the body, so it's whatever follows the last blank line;
+            // joined back it equals the old body, so the understanding basis doesn't change and nothing re-queues
             try db.alter(table: "card") { t in t.add(column: "transcript", .text) }
             for row in try Row.fetchAll(db, sql: "SELECT id, body FROM card WHERE transcribed = 1 AND body IS NOT NULL") {
                 let body: String = row["body"]
@@ -153,7 +153,7 @@ enum Schema {
             try db.alter(table: "card") { t in t.drop(column: "transcribed") }
         }
         migrator.registerMigration("v11") { db in
-            // 和 AI 讨论。桌上的卡指向 card 不指向 liveCard：进了废纸篓的卡还留在桌上，清空废纸篓时跟着删
+            // Discussing with AI. Desk cards point to card, not liveCard: trashed cards stay on the desk and are deleted with them when the trash is emptied
             try db.create(table: "discussion") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("name", .text)
@@ -177,15 +177,15 @@ enum Schema {
         }
         migrator.registerMigration("v12") { db in
             try db.alter(table: "card") { t in
-                // 又收到一次的时间：收集时间不改，默认排序按它提到最前
+                // When it was collected again: collection time doesn't change, the default order brings it to the front by this
                 t.add(column: "resurfacedAt", .datetime)
-                // 和网址一起带来的那句话
+                // The line that came with the URL
                 t.add(column: "note", .text)
-                // 跳转后的最终地址，查重用
+                // Final address after redirects, for the duplicate check
                 t.add(column: "finalKey", .text)
             }
             try db.create(index: "card_on_finalKey", on: "card", columns: ["finalKey"])
-            // 已有的卡：收的网址跳转过的，出处里记着最终地址，补成 finalKey。图片卡的出处是图所在的网页，不是最终地址，不补
+            // Existing cards: for collected URLs that redirected, the source records the final address, so fill it into finalKey. An image card's source is the page the image was on, not a final address, so skip it
             for row in try Row.fetchAll(db, sql: "SELECT id, urlKey, sourceURL FROM card WHERE url IS NOT NULL AND sourceURL IS NOT NULL AND partial IS NULL AND kind != 'image'") {
                 let urlKey: String? = row["urlKey"]
                 guard let key = URLKey.of(row["sourceURL"]), key != urlKey, URLKey.lands(key, from: urlKey) else { continue }
@@ -193,16 +193,16 @@ enum Schema {
             }
         }
         migrator.registerMigration("v13") { db in
-            // 要点带上依据的段落
+            // Key points carry the passage they're based on
             try db.alter(table: "card") { t in t.add(column: "summaryAnchors", .jsonText) }
-            // 理解的做法改了两处：要点以前只读开头 2500 字，标签以前被提示词里的例子带偏。已有的卡全部重新理解一遍；
-            // 向量跟着新的标签自己重算，不用清
+            // Understanding changed in two ways: key points used to read only the first 2500 characters, and tags were skewed by the examples in the prompt. Re-understand all existing cards;
+            // vectors recompute on their own with the new tags, no need to clear them
             try db.execute(sql: "UPDATE card SET understoodBasis = NULL WHERE understoodBasis IS NOT NULL")
         }
         return migrator
     }
 
-    /// v9 补播放地址用的规则：YouTube 认 watch?v= 和 youtu.be/编号，B 站认网址里的 BV 号
+    /// Rules for filling in player addresses in v9: YouTube matches watch?v= and youtu.be/<id>, Bilibili matches the BV ID in the URL
     private static func v9Player(_ url: URLComponents) -> String? {
         let host = url.host?.lowercased() ?? ""
         let query = { (name: String) in url.queryItems?.first { $0.name == name }?.value }

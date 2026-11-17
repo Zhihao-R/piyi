@@ -2,8 +2,8 @@ import Testing
 import Foundation
 @testable import Library
 
-/// 微博和拦截页：App 自己抓到的是访客验证页，微博领访客身份走详情页的数据，其它网站的拦截页交给浏览器。
-/// 和网页样本共用录好的网络响应，放在同一个串行的组里
+/// Weibo and block pages: the App on its own gets a visitor verification page; Weibo gets a visitor identity and uses the detail page's data, while other sites' block pages go to the browser.
+/// Shares the recorded network responses with the web page samples, so it's in the same serialized group
 extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
     static let share = "https://mapp.api.weibo.cn/fx/bb4e966cbc25177949819a33a6161722.html"
     static let visitor = "https://visitor.passport.weibo.cn/visitor/visitor?entry=sinawap&a=enter&url=https%3A%2F%2Fm.weibo.cn%2Fstatus%2F5353848056318699&domain=.weibo.cn"
@@ -23,7 +23,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         for (url, id) in cases { #expect(WebExtractor.weiboID(URL(string: url)!) == id, "\(url)") }
     }
 
-    /// 手机分享的短链：跟随跳转到验证页，从里面认出帖子；长微博取全文，配图带来源下载
+    /// Short links shared from a phone: follow redirects to the verification page and recognize the post there; long posts get the full text, images are downloaded with a source
     @Test func sharedLinkReadsPost() async {
         serve(status: ["id": "5353848056318699", "isLongText": true, "text": "比地球更适宜居住的世界？<br />确实有…<a href=\"/status/1\">全文</a>",
                        "user": ["screen_name": "镜子杂谈"], "pics": [["large": ["url": Self.picture]]]])
@@ -38,7 +38,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         #expect(m.url == "https://m.weibo.cn/detail/5353848056318699")
     }
 
-    /// 全文取不到：留下前一段，去掉末尾的「全文」，标成没取全
+    /// Full text unavailable: keep the first part, remove the trailing "全文" (full text) link, mark as not fully fetched
     @Test func longTextUnavailableIsPartial() async {
         serve(status: ["id": "5353848056318699", "isLongText": true, "text": "前一段…<a href=\"/status/1\">全文</a>", "user": ["screen_name": "作者"]])
         let m = await WebExtractor(session: Replay.session).material(for: URL(string: "https://m.weibo.cn/status/5353848056318699")!)
@@ -46,7 +46,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         #expect(m.partial == .failed("长微博只取到前一段"))
     }
 
-    /// 转发的原帖是长微博：原帖也取全文
+    /// A repost of a long post: the full text of the original is fetched too
     @Test func repostOfLongPostReadsFullOriginal() async {
         serve(status: ["id": "5353848056318699", "text": "转发", "user": ["screen_name": "转发的人"],
                        "retweeted_status": ["id": "42", "isLongText": true, "text": "原帖前一段<a href=\"/status/42\">全文</a>", "user": ["screen_name": "原作者"]]])
@@ -56,7 +56,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         #expect(m.partial == nil)
     }
 
-    /// 转发的：原帖接在后面，自己没配图就用原帖的
+    /// Reposts: the original post follows, and if the repost has no images it uses the original's
     @Test func repostKeepsOriginal() async {
         serve(status: ["id": "5353848056318699", "text": "说得好", "user": ["screen_name": "转发的人"],
                        "retweeted_status": ["text": "原帖内容", "user": ["screen_name": "原作者"], "pics": [["large": ["url": Self.picture]]]]])
@@ -65,7 +65,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         #expect(m.images.count == 1)
     }
 
-    /// 领不到访客身份：接口这条路不通，退回通用解析，认出验证页交给浏览器，不把它当内容
+    /// No visitor identity: the API route fails, fall back to general parsing, recognize the verification page and hand it to the browser, not treating it as content
     @Test func noVisitorFallsToBrowser() async {
         Replay.responses = [Self.share: page(Self.visitorPage, finalURL: Self.visitor),
                             "https://passport.weibo.com/visitor/genvisitor2": json(#"visitor_gray_callback({"retcode":50000000,"msg":"fail"});"#)]
@@ -77,7 +77,7 @@ extension WebFixtureTests { @Suite @MainActor struct WeiboTests {
         #expect(browser.requests.count == 1)
     }
 
-    /// Cloudflare 的人机验证用 503 回：一样交给浏览器；文章标题里出现「安全验证」不算
+    /// Cloudflare's human verification answers with 503: also handed to the browser; "安全验证" (security check) in an article title doesn't count
     @Test func challengePagesGoToBrowser() async {
         let cloudflare = "<html><head><title>Just a moment...</title></head><body><p>Verifying you are human.</p></body></html>"
         Replay.responses = ["https://example.com/a": .init(status: 503, contentType: "text/html", finalURL: "https://example.com/a", body: Data(cloudflare.utf8))]

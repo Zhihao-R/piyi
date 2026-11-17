@@ -3,25 +3,25 @@ import CoreText
 import Library
 import Tokens
 
-/// 卡片外观：在后台把一张卡画成一张位图。一条记录一张干净的卡片，外观上的每一处差异都表达一项信息（类型、格式、状态）。
-/// 版式数值都相对卡片宽度（Tokens.CardType），卡片放大缩小时版式不变。
+/// Card appearance: draws a card into a bitmap in the background. One record, one clean card; every visual difference conveys one piece of information (type, format, state).
+/// Layout values are all relative to the card width (Tokens.CardType), so the layout stays the same as the card grows or shrinks.
 struct CardArt {
     let face: Face
     let size: CGSize
-    /// 封面已经按裁剪框取好、解码成合适的大小；没有封面时为 nil
+    /// The cover, already cut to the crop frame and decoded at a suitable size; nil when there is no cover
     let cover: CGImage?
-    /// 聚拢时临时放大的倍数
+    /// The temporary enlargement factor while gathering
     var zoom: CGFloat = 1
-    /// 分拣放进来、你还没看过：右上角标「新」
+    /// Placed by sorting and not yet viewed by you: marked "New" at the top right
     var unseen = false
-    /// 只画压在画面上的角标，别处透明：视频悬停预览时盖在播放的画面上面，时长、平台、状态照样看得见
+    /// Draws only the badges sitting on the picture, transparent elsewhere: laid over the playing picture during video hover preview, so duration, platform, and status stay visible
     var marksOnly = false
 
-    /// 画成 size × pixelScale 像素的位图
+    /// Draws a bitmap of size × pixelScale pixels
     func render(pixelScale: CGFloat) -> CGImage? {
         let w = Int((size.width * pixelScale).rounded(.up)), h = Int((size.height * pixelScale).rounded(.up))
         guard let ctx = screenBitmap(width: w, height: h) else { return nil }
-        // 宽高各自取整后按实际像素铺满：只按 pixelScale 缩放的话，取整多出的那不到一像素留成空行，在卡片顶边显成一道白边
+        // Round width and height separately, then fill the actual pixels: scaling only by pixelScale leaves the sub-pixel remainder of rounding as an empty row, which shows as a white line along the card's top edge
         ctx.scaleBy(x: CGFloat(w) / size.width, y: CGFloat(h) / size.height)
         var pen = Pen(ctx: ctx, size: size, pixelScale: pixelScale)
         switch face {
@@ -32,16 +32,16 @@ struct CardArt {
     }
 
     private var w: CGFloat { size.width }
-    /// 字号、边距按这个宽度算。文字类卡片固定按默认宽度：拉大只是排版区域变大，字号不变；其余卡片按实际宽度，整体缩放
+    /// Font size and margins are computed from this width. Text cards always use the default width: stretching only enlarges the layout area, not the font size; other cards use their actual width and scale as a whole
     private var t: CGFloat { Self.reflows(face) ? CardSize.typeWidth * zoom : w }
 
-    /// 文字类卡片（文字、文章，没有封面的网页和文档）：拉大时重新排版，不整体放大
+    /// Text cards (text, articles, web pages and documents without a cover): re-laid out when stretched, not scaled up as a whole
     static func reflows(_ face: Face) -> Bool {
         guard case .card(let card) = face else { return false }
         return card.kind == .text || isArticle(card) || (card.kind == .web || card.kind == .document) && card.cover == nil
     }
 
-    /// 有封面、有正文的网页：封面压标题，下面要点和正文。只看抽取出的正文，模型写的一句描述不算
+    /// Web page with a cover and body text: title over the cover, key points and body below. Only the extracted body counts, not the one-line description the model writes
     static func isArticle(_ card: CardFace) -> Bool { card.kind == .web && card.cover != nil && card.length > 0 }
 
     private func draw(_ card: CardFace, _ pen: inout Pen) {
@@ -60,7 +60,7 @@ struct CardArt {
         case .text:
             if card.isOwnText, card.length <= CardType.shortTextLimit { quote(card, &pen) } else { article(card, footer: String(localized: "\(card.length) 字"), &pen) }
         case .web:
-            // 有平台角标（公众号、小红书）时底部写作者，没有时写网站
+            // With a platform badge (WeChat Official Accounts, Xiaohongshu), the bottom shows the author; otherwise the site
             let footer = card.format != nil ? card.source : card.site ?? card.source
             if let cover, Self.isArticle(card) {
                 reading(cover, card, footer: footer, &pen)
@@ -101,10 +101,10 @@ struct CardArt {
         if unseen { pen.badges([String(localized: "新")], w: t, trailing: true) }
     }
 
-    /// 音频卡上声波占的那一块（相对卡片宽高）。播放钮摆在它正中（见 CanvasView.playButtons）
+    /// The area the waveform takes on an audio card (relative to card width and height). The play button sits right in its center (see CanvasView.playButtons)
     static let waveform = CGRect(x: 0.3, y: 0.18, width: 0.4, height: 0.32)
 
-    /// 短文：引文卡，宋体 / 衬线，留白多
+    /// Short text: a quote card, Song / serif typeface, with plenty of white space
     private func quote(_ card: CardFace, _ pen: inout Pen) {
         pen.fill(Palette.card.now)
         let p = t * CardType.padding
@@ -116,7 +116,7 @@ struct CardArt {
         pen.text(card.source ?? "", size: t * CardType.footer, color: Palette.inkTertiary.now, in: footerRect)
     }
 
-    /// 你写的文字卡：底色是你挑的，Markdown 排好；排不下的底部渐隐
+    /// A text card you wrote: background color of your choice, Markdown laid out; what doesn't fit fades out at the bottom
     private func note(_ card: CardFace, _ pen: inout Pen) {
         let paper = Palette.tint(card.tint).now
         pen.fill(paper)
@@ -125,14 +125,14 @@ struct CardArt {
         pen.fade(paper, from: bottom - t * 0.12, to: bottom)
     }
 
-    /// 文字卡的版式：画卡片和编辑时同一套，只是颜色的写法不同
+    /// Text card layout: the same for drawing the card and for editing, only the colors are specified differently
     static func noteStyle(t: CGFloat, round: @escaping (CGFloat) -> CGFloat = { $0 }, ink: @escaping (RGBA) -> Any) -> Markdown.Style {
         var style = Markdown.Style(body: t * CardType.note, lineSpacing: t * CardType.bodyLineSpacing) { ink($0.cardColor) }
         style.round = round
         return style
     }
 
-    /// 长文、没有图的网页和文档：标题 + 要点 + 开头几段，底部渐隐 + 一行出处
+    /// Long text, web pages and documents without images: title + key points + first few paragraphs, fading out at the bottom + one line of source
     private func article(_ card: CardFace, footer: String?, _ pen: inout Pen) {
         pen.fill(Palette.card.now)
         let p = t * CardType.padding
@@ -158,13 +158,13 @@ struct CardArt {
         pen.text(footer ?? "", size: t * CardType.footer, color: Palette.inkTertiary.now, in: footerRect)
     }
 
-    /// 有封面的文章：标题压在封面底部，下面先要点、再正文。拉大时封面只跟着变宽，多出的高度都用来露出更多字
+    /// Article with a cover: title over the bottom of the cover, below it key points first, then body. When stretched the cover only gets wider; all extra height goes to showing more text
     private func reading(_ cover: CGImage, _ card: CardFace, footer: String?, _ pen: inout Pen) {
         pen.fill(Palette.card.now)
         let p = t * CardType.padding
         let titleSize = t * CardType.title
         let titleHeight = pen.height(card.title, font: .systemFont(ofSize: pen.fontSize(titleSize), weight: .bold), maxLines: 3, width: w - p * 2)
-        // 封面至少要放得下标题，上面再留出角标的位置
+        // The cover must at least fit the title, with room above for the badges
         let coverHeight = max(min(w * CardSize.coverShare(CGFloat(cover.height) / CGFloat(cover.width)), size.height * 0.6),
                               titleHeight + p * 2 + t * CardType.badge * 2.4)
         pen.image(cover, in: CGRect(x: 0, y: 0, width: w, height: coverHeight))
@@ -184,9 +184,9 @@ struct CardArt {
         pen.text(footer ?? "", size: t * CardType.footer, color: Palette.inkTertiary.now, in: footerRect)
     }
 
-    /// 要点排在正文前面：在画布上是扫一眼，要点比开头那几句更说得清这篇讲什么。一条一段，折行和圆点后的字对齐。
-    /// 后面还有正文（sharing）时要点不占满：卡片的大小是收进来时定的，那时还没有要点，放不下的整条不画，留出地方让正文露几行。
-    /// 返回占了多高（连同和正文之间的空隙）；没有要点是 0
+    /// Key points go before the body: on the canvas you just glance, and key points say what the piece is about better than its first few sentences. One paragraph per point; wrapped lines align with the text after the bullet.
+    /// When body text follows (sharing), key points don't take all the space: the card's size was set when collected, before there were key points, so points that don't fit are dropped whole, leaving room for a few lines of body.
+    /// Returns the height used (including the gap before the body); 0 when there are no key points
     private func points(_ card: CardFace, at y: CGFloat, bottom: CGFloat, sharing: Bool, _ pen: inout Pen) -> CGFloat {
         guard let summary = card.summary else { return 0 }
         let p = t * CardType.padding, width = w - p * 2, room = max(0, bottom - y)
@@ -195,7 +195,7 @@ struct CardArt {
         var shown: [Substring] = [], used: CGFloat = 0
         for point in summary.split(separator: "\n") {
             let height = pen.height(String(point), font: font, lineSpacing: lineSpacing, hanging: "· ", maxLines: .max, width: width) + spacing
-            // 第一条总是画
+            // The first one is always drawn
             if sharing, !shown.isEmpty, used + height > room * CardType.pointsShare { break }
             shown.append(point)
             used += height
@@ -204,7 +204,7 @@ struct CardArt {
                         in: CGRect(x: p, y: y, width: width, height: room)) + t * CardType.gap
     }
 
-    /// 有封面、没有正文的网页：封面 + 下面一栏标题和网站
+    /// Web page with a cover but no body: cover + a bar below with title and site
     private func withCover(_ cover: CGImage, _ card: CardFace, footer: String?, _ pen: inout Pen) {
         pen.fill(Palette.card.now)
         let p = t * CardType.padding
@@ -215,7 +215,7 @@ struct CardArt {
         pen.text(footer ?? "", size: t * CardType.footer, color: Palette.inkTertiary.now, in: footerRect)
     }
 
-    /// 画板入口：画板名，下面一行「画板」
+    /// Board entry: the board name, with a line "Board" below
     private func entry(_ name: String, _ pen: inout Pen) {
         pen.fill(Palette.placeholder.now)
         if let cover { pen.image(cover, in: pen.bounds) }
@@ -227,7 +227,7 @@ struct CardArt {
         pen.text(String(localized: "画板"), size: t * CardType.footer, color: Palette.inkTertiary.now, in: CGRect(x: p, y: size.height - bar * 0.38, width: w - p * 2, height: bar * 0.3))
     }
 
-    /// 正在抽取、残缺、正在理解：一种轻量的标示
+    /// Extracting, incomplete, understanding in progress: a lightweight indicator
     private func state(_ card: CardFace, _ pen: inout Pen) {
         if card.extraction == .extracting {
             pen.rect(pen.bounds, Palette.card.now.opacity(0.6))
@@ -252,18 +252,18 @@ struct CardArt {
     static func isCJK(_ text: String) -> Bool { text.unicodeScalars.contains { (0x4E00...0x9FFF).contains($0.value) } }
 }
 
-/// 画卡片用的笔：坐标都是左上角为原点、y 向下的点（卡片的世界坐标单位），内部换成 Core Graphics 的左下原点
+/// The pen for drawing cards: coordinates are points with origin at top left and y down (the card's world coordinate units), converted internally to Core Graphics' bottom-left origin
 struct Pen {
     let ctx: CGContext
     let size: CGSize
     let pixelScale: CGFloat
     var bounds: CGRect { CGRect(origin: .zero, size: size) }
 
-    /// 字号取整到整像素：版式按卡片宽度连续变化，不取整的话几乎每张卡一个字号，
-    /// 系统为每个字号单独缓存字形，5000 张卡时多占几十 MB
+    /// Font sizes are rounded to whole pixels: the layout varies continuously with card width, and without rounding nearly every card would get its own font size;
+    /// the system caches glyphs separately per font size, which costs tens of MB more with 5000 cards
     func fontSize(_ points: CGFloat) -> CGFloat { max(1, (points * pixelScale).rounded()) / pixelScale }
 
-    /// 左上原点的矩形 → Core Graphics 的矩形
+    /// Top-left-origin rect → Core Graphics rect
     private func flip(_ r: CGRect) -> CGRect { CGRect(x: r.minX, y: size.height - r.maxY, width: r.width, height: r.height) }
 
     func fill(_ color: RGBA) { rect(bounds, color) }
@@ -273,7 +273,7 @@ struct Pen {
         ctx.fill(flip(r))
     }
 
-    /// 图片铺满矩形，多出来的部分裁掉（按顶边对齐：长图只露开头）
+    /// Image fills the rect, with the excess cropped (aligned to the top edge: long images show only the top)
     func image(_ image: CGImage, in r: CGRect) {
         let iw = CGFloat(image.width), ih = CGFloat(image.height)
         let k = max(r.width / iw, r.height / ih)
@@ -285,7 +285,7 @@ struct Pen {
         ctx.restoreGState()
     }
 
-    /// 从 from 到 to 渐隐成底色（盖住被截断的正文）
+    /// Fade from from to to into the background color (covering truncated body text)
     func fade(_ color: RGBA, from: CGFloat, to: CGFloat) {
         guard to > from, let gradient = CGGradient(colorsSpace: Screen.colorSpace, colors: [color.opacity(0).cg, color.cg] as CFArray, locations: [0, 1]) else { return }
         ctx.saveGState()
@@ -299,8 +299,8 @@ struct Pen {
         return base.fontDescriptor.withDesign(.serif).flatMap { NSFont(descriptor: $0, size: size) } ?? base
     }
 
-    /// 写一段字，从矩形顶部开始排，排不下的截掉。返回实际占用的高度。
-    /// hanging：每段开头的项目符号，折行时后面的行和符号后的字对齐
+    /// Writes a paragraph laid out from the top of the rect, cutting off what doesn't fit. Returns the height actually used.
+    /// hanging: the bullet at the start of each paragraph; wrapped lines align with the text after the bullet
     @discardableResult
     func text(_ string: String, size: CGFloat, weight: NSFont.Weight = .regular, color: RGBA, lineSpacing: CGFloat = 0,
               paragraphSpacing: CGFloat = 0, hanging: String? = nil, maxLines: Int = 0, in r: CGRect) -> CGFloat {
@@ -308,14 +308,14 @@ struct Pen {
              paragraphSpacing: paragraphSpacing, hanging: hanging, maxLines: maxLines, in: r)
     }
 
-    /// 只量不画：排进这么宽、最多 maxLines 行要多高
+    /// Measure without drawing: how tall it is laid out at this width, at most maxLines lines
     func height(_ string: String, font: NSFont, lineSpacing: CGFloat = 0, hanging: String? = nil, maxLines: Int, width: CGFloat) -> CGFloat {
         guard !string.isEmpty else { return 0 }
         let text = Self.attributed(string, font: font, color: Palette.ink.now, lineSpacing: lineSpacing, hanging: hanging)
         return Self.height(CTFramesetterCreateWithAttributedString(text), maxLines: maxLines, width: width)
     }
 
-    /// 按实际排出的前 maxLines 行量高度：中文字体的行高比系统字体的标称值高，按标称值估会少排一行
+    /// Measures the height from the first maxLines lines actually laid out: Chinese fonts have taller lines than the system font's nominal value, so estimating by the nominal value would lay out one line too few
     private static func height(_ setter: CTFramesetter, maxLines: Int, width: CGFloat) -> CGFloat {
         let tall: CGFloat = 10_000
         let frame = CTFramesetterCreateFrame(setter, CFRange(), CGPath(rect: CGRect(x: 0, y: 0, width: width, height: tall), transform: nil), nil)
@@ -346,7 +346,7 @@ struct Pen {
                     maxLines: maxLines, in: r)
     }
 
-    /// 写一段排好样式的字，规则同上
+    /// Writes a styled paragraph, same rules as above
     @discardableResult
     func text(_ attributed: NSAttributedString, maxLines: Int = 0, in r: CGRect) -> CGFloat {
         guard attributed.length > 0, r.width > 1, r.height > 1 else { return 0 }
@@ -355,7 +355,7 @@ struct Pen {
         if maxLines > 0 { box.size.height = min(r.height, Self.height(setter, maxLines: maxLines, width: r.width) + 1) }
         let frame = CTFramesetterCreateFrame(setter, CFRange(), CGPath(rect: flip(box), transform: nil), nil)
         CTFrameDraw(frame, ctx)
-        // 实际用了多高：最后一行的底边
+        // Height actually used: the bottom edge of the last line
         let lines = CTFrameGetLines(frame) as! [CTLine]
         guard !lines.isEmpty else { return 0 }
         var origins = [CGPoint](repeating: .zero, count: lines.count)
@@ -365,7 +365,7 @@ struct Pen {
         return box.height - origins.last!.y + descent
     }
 
-    /// 角标：压在卡片角上的小胶囊，默认左上，可放到底边和右边
+    /// Badge: a small capsule on a card corner, top left by default, can go to the bottom and right edges
     func badges(_ labels: [String], w: CGFloat, bottom: Bool = false, trailing: Bool = false, color: RGBA = Palette.badge) {
         let font = NSFont.systemFont(ofSize: fontSize(w * CardType.badge), weight: .medium)
         let inset = w * 0.04, padX = w * 0.022, height = w * CardType.badge * 1.7
@@ -384,7 +384,7 @@ struct Pen {
         }
     }
 
-    /// 视频的播放标记：画面中间一个半透明圆，里面一个三角
+    /// Video play marker: a translucent circle in the middle of the picture with a triangle inside
     func playMark(w: CGFloat) {
         let d = w * CardType.playMark
         let c = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -401,7 +401,7 @@ struct Pen {
         ctx.fillPath()
     }
 
-    /// 音频的声波：几根高低不同的竖条
+    /// Audio waveform: a few vertical bars of different heights
     func waveform(in r: CGRect) {
         let heights: [CGFloat] = [0.3, 0.6, 1, 0.7, 0.45, 0.85, 0.5, 0.25]
         let bar = r.width / CGFloat(heights.count * 2 - 1)
@@ -420,7 +420,7 @@ extension RGBA {
 }
 
 extension Markdown.Style.Ink {
-    /// 画在卡片上的颜色
+    /// Colors drawn on the card
     var cardColor: RGBA {
         switch self {
         case .primary: Palette.ink.now

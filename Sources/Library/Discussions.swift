@@ -1,29 +1,29 @@
 import Foundation
 import GRDB
 
-// 和 AI 讨论卡片的讨论记录：讨论、讨论记录、桌三张表。
-// 讨论记录只往后追加，不改不删；最近一次动静、已归档、新回答都从它现算，不另存状态
+// Records of discussing cards with AI: three tables, discussion, discussion log, and desk.
+// The log is append-only, never edited or deleted; last activity, archived, and new answers are all computed from it, with no separate state
 
-/// 一段讨论。名字为 nil 时叫「新讨论」：第一个回答出来后由模型起名
+/// A discussion. With a nil name it's called "New Discussion": the model names it after the first answer
 public struct Discussion: Codable, Sendable, Identifiable, Equatable, FetchableRecord, MutablePersistableRecord {
     public var id: Int64?
     public var name: String?
     public var createdAt: Date
-    /// 你看过的最后一条记录的序号
+    /// Sequence number of the last log entry you've seen
     public var seen: Int
 
     public static let databaseTableName = "discussion"
 
-    /// 侧边栏、标题行显示的名字
+    /// The name shown in the sidebar and title row
     public var displayName: String { name ?? String(localized: "新讨论") }
 
     public mutating func didInsert(_ inserted: InsertionSuccess) { id = inserted.rowID }
 }
 
-/// 讨论记录里的一条
+/// One entry in the discussion log
 public struct DiscussionEvent: Sendable, Equatable, Identifiable {
     public var discussion: Int64
-    /// 从 1 数，一段讨论里连续
+    /// Counted from 1, consecutive within a discussion
     public var seq: Int
     public var at: Date
     public var what: Happening
@@ -31,11 +31,11 @@ public struct DiscussionEvent: Sendable, Equatable, Identifiable {
     public var id: Int { seq }
 }
 
-/// 讨论里发生的事。以后要加一种，只是多一个 case，不用改表
+/// What happens in a discussion. Adding a kind later is just one more case, no table change
 public enum Happening: Sendable, Equatable {
     case question(String)
     case answer(Answer)
-    /// 模型要调用工具，一轮里可能同时要几个；said 是它同时说的话、thought 是它想的，都不显示，下一轮原样交回给它
+    /// The model wants to call tools, possibly several in one round; said is what it says alongside, thought is what it thinks, neither shown, both handed back to it as-is next round
     case calls(said: String, thought: String? = nil, [ToolCall])
     case result(ToolResult)
     case placed(CardMention)
@@ -43,11 +43,11 @@ public enum Happening: Sendable, Equatable {
     case renamed(String)
 }
 
-/// 回答：文字里带着通过检查的引用（[c12·p3] 这种写法），引用连同原话另存一份
+/// An answer: the text carries citations that passed checking (written like [c12·p3]), and the citations are saved separately along with the quoted words
 public struct Answer: Codable, Sendable, Equatable {
     public var text: String
     public var citations: [Citation]
-    /// 模型写这段回答前想的内容：不显示，接着聊时原样交回给它
+    /// What the model thought before writing this answer: not shown, handed back to it as-is when the chat continues
     public var thought: String?
 
     public init(text: String, citations: [Citation], thought: String? = nil) {
@@ -55,20 +55,20 @@ public struct Answer: Codable, Sendable, Equatable {
     }
 }
 
-/// 一个引用：指向某张卡的某一段、整张卡，或某次工具读回的某一项。原话存下来，卡的正文以后变了也照样显示当时那句
+/// A citation: points to a passage of a card, a whole card, or an item a tool call read back. The quoted words are saved, so it still shows that sentence after the card's body changes
 public struct Citation: Codable, Sendable, Equatable {
-    /// 回答里的写法，不带方括号：c12·p3、c12、r5·2
+    /// How it's written in the answer, without brackets: c12·p3, c12, r5·2
     public var ref: String
     public var card: Int64?
-    /// 段落；整张卡时为 nil
+    /// Passage; nil for a whole card
     public var part: Passage.Part?
     public var number: Int?
-    /// 第几次工具调用（一段讨论里从 1 数）读回的第几项
+    /// Which item read back by which tool call (counted from 1 within a discussion)
     public var call: Int?
     public var item: Int?
-    /// 段落原文、整张卡的标题、工具读回的那一项
+    /// The passage text, the whole card's title, or the item the tool read back
     public var quote: String
-    /// 转录段的开始秒数：点了从这里播
+    /// Start second of a transcript passage: clicking plays from here
     public var seconds: Int?
 
     public init(ref: String, card: Int64? = nil, part: Passage.Part? = nil, number: Int? = nil, call: Int? = nil, item: Int? = nil,
@@ -78,12 +78,12 @@ public struct Citation: Codable, Sendable, Equatable {
 }
 
 public struct ToolCall: Codable, Sendable, Equatable {
-    /// 模型给这次调用起的编号，结果按它配对
+    /// The ID the model gives this call; results are matched by it
     public var id: String
     public var name: String
-    /// 模型填的参数（JSON）
+    /// Arguments the model filled in (JSON)
     public var arguments: String
-    /// 服务商附在这次调用上的东西（JSON），不解读，下一轮原样带回
+    /// What the provider attaches to this call (JSON), not interpreted, sent back as-is next round
     public var extra: String?
 
     public init(id: String, name: String, arguments: String, extra: String? = nil) {
@@ -92,23 +92,23 @@ public struct ToolCall: Codable, Sendable, Equatable {
 }
 
 public struct ToolResult: Codable, Sendable, Equatable {
-    /// 对应哪次调用（ToolCall.id）
+    /// Which call it answers (ToolCall.id)
     public var call: String
-    /// 对话里那行灰字：「找卡：上下文管理」「找卡没成功」
+    /// That gray line in the conversation: "Find cards: context management", "Find cards failed"
     public var label: String
-    /// 交给模型看的文字
+    /// Text for the model to read
     public var text: String
-    /// 能被引用的几项（[r5·2] 指第 2 项）
+    /// Items that can be cited ([r5·2] means item 2)
     public var items: [String]
-    /// 给你看的样子
+    /// How it's shown to you
     public var shown: Shown?
     public var failed: Bool
-    /// 另外花的钱（美元），计入这段讨论的花费
+    /// Extra money spent (USD), counted into this discussion's cost
     public var cost: Double
 
-    /// 讨论栏里能画的几种样子，新工具从里面挑，不另起
+    /// The few looks the discussion panel can draw; new tools pick from these instead of adding their own
     public enum Shown: Codable, Sendable, Equatable {
-        /// 候选卡，每张带「放上桌」
+        /// Candidate cards, each with "put on desk"
         case cards([Int64])
     }
 
@@ -117,7 +117,7 @@ public struct ToolResult: Codable, Sendable, Equatable {
     }
 }
 
-/// 放上桌、拿下桌的那张卡。卡名一起存：卡彻底删了，灰字照样写得出来
+/// The card put on or taken off the desk. The card name is saved with it, so the gray line can still be written after the card is permanently deleted
 public struct CardMention: Codable, Sendable, Equatable {
     public var card: Int64
     public var title: String
@@ -125,7 +125,7 @@ public struct CardMention: Codable, Sendable, Equatable {
     public init(card: Int64, title: String) { (self.card, self.title) = (card, title) }
 }
 
-/// 侧边栏一行要的：讨论、最近一次动静、有没有你还没看过的回答
+/// What a sidebar row needs: the discussion, last activity, whether there's an answer you haven't seen
 public struct DiscussionSummary: Sendable, Equatable, Identifiable {
     public var discussion: Discussion
     public var lastActivity: Date
@@ -133,14 +133,14 @@ public struct DiscussionSummary: Sendable, Equatable, Identifiable {
 
     public var id: Int64 { discussion.id! }
 
-    /// 3 天没有动静就收进「已归档」：到时间自然算进去，不用定时去改
+    /// After 3 days without activity it goes into "Archived": it falls in naturally when the time comes, no timer needed to change it
     public func isArchived(now: Date = .now) -> Bool { lastActivity < now.addingTimeInterval(-Self.archiveAfter) }
 
     public static let archiveAfter: TimeInterval = 3 * 86_400
 }
 
 extension Happening {
-    /// 存进 kind 列的种类名
+    /// The kind name stored in the kind column
     var kind: String {
         switch self {
         case .question: "question"
@@ -185,9 +185,9 @@ extension Happening {
 }
 
 extension Store {
-    // MARK: 写
+    // MARK: Writing
 
-    /// 发出第一句话时才建讨论：草稿桌上的卡和开头几条记录（问题，或「接着聊」带来的问答）同一次写入
+    /// The discussion is only created when the first message is sent: cards on the draft desk and the opening entries (a question, or the Q&A brought by "Continue in Discussion") in the same write
     public func startDiscussion(desk cards: [Int64], opening: [Happening]) async throws -> Int64 {
         try await db.write { db in
             var discussion = Discussion(name: nil, createdAt: .now, seen: 0)
@@ -199,13 +199,13 @@ extension Store {
         }
     }
 
-    /// 往讨论记录后面追加，返回写下的几条
+    /// Append to the discussion log, returning the entries written
     @discardableResult
     public func append(_ what: [Happening], to discussion: Int64) async throws -> [DiscussionEvent] {
         try await db.write { db in try Self.append(db, what, to: discussion) }
     }
 
-    /// 放上桌：桌上已经有的跳过，返回新放上的。对话开始后放上的，讨论记录里同时记一条「放上桌」
+    /// Put on desk: skip ones already on it, return the newly placed ones. Placed after the conversation started, the log also records a "put on desk" entry
     public func placeOnDesk(_ cards: [Int64], of discussion: Int64) async throws -> [Int64] {
         try await db.write { db in
             let started = try Self.hasEvents(db, discussion)
@@ -218,7 +218,7 @@ extension Store {
         }
     }
 
-    /// 拿下桌：桌和讨论记录同一次写入
+    /// Take off desk: desk and log in the same write
     public func takeOffDesk(_ card: Int64, of discussion: Int64) async throws {
         try await db.write { db in
             try db.execute(sql: "DELETE FROM discussionCard WHERE discussionID = ? AND cardID = ?", arguments: [discussion, card])
@@ -227,7 +227,7 @@ extension Store {
         }
     }
 
-    /// 改名：名字和一条「改名」记录同一次写入
+    /// Rename: the name and a "renamed" entry in the same write
     public func renameDiscussion(_ discussion: Int64, to name: String) async throws {
         try await db.write { db in
             try db.execute(sql: "UPDATE discussion SET name = ? WHERE id = ?", arguments: [name, discussion])
@@ -235,7 +235,7 @@ extension Store {
         }
     }
 
-    /// 看过了这段讨论到 seq 为止的记录
+    /// Seen this discussion's log up to seq
     public func markSeen(_ discussion: Int64, through seq: Int) async throws {
         try await db.write { db in
             try db.execute(sql: "UPDATE discussion SET seen = max(seen, ?) WHERE id = ?", arguments: [seq, discussion])
@@ -246,13 +246,13 @@ extension Store {
         try await db.write { db in _ = try Discussion.deleteOne(db, key: discussion) }
     }
 
-    // MARK: 读
+    // MARK: Reading
 
     public func discussion(_ id: Int64) async throws -> Discussion? {
         try await db.read { db in try Discussion.fetchOne(db, key: id) }
     }
 
-    /// 讨论记录，按顺序
+    /// The discussion log, in order
     public func events(of discussion: Int64) async throws -> [DiscussionEvent] {
         try await db.read { db in
             try Row.fetchAll(db, sql: "SELECT * FROM discussionEvent WHERE discussionID = ? ORDER BY seq", arguments: [discussion]).map {
@@ -261,7 +261,7 @@ extension Store {
         }
     }
 
-    /// 桌上的卡，按放上来的先后。进了废纸篓的也在：桌上显示成半透明，恢复了就回来
+    /// Cards on the desk, in the order they were placed. Trashed ones are included: shown semi-transparent on the desk, back once restored
     public func desk(of discussion: Int64) async throws -> [Card] {
         try await db.read { db in
             try Card.fetchAll(db, sql: """
@@ -271,19 +271,19 @@ extension Store {
         }
     }
 
-    /// 最近收的几张（讨论里 @ 还没打字时列出来）
+    /// The latest few collected cards (listed when @ is typed in a discussion before any other text)
     public func recentCards(limit: Int) async throws -> [Card] {
         try await db.read { db in
             try Card.fetchAll(db, sql: "SELECT * FROM liveCard WHERE extraction = ? ORDER BY collectedAt DESC LIMIT ?", arguments: [Extraction.complete, limit])
         }
     }
 
-    /// 全部讨论，最近有动静的在前
+    /// All discussions, most recently active first
     public func discussions() async throws -> [DiscussionSummary] {
         try await summaries("")
     }
 
-    /// 桌上有这几张卡之一的讨论，最近有动静的在前
+    /// Discussions with any of these cards on the desk, most recently active first
     public func discussions(about cards: [Int64]) async throws -> [DiscussionSummary] {
         guard !cards.isEmpty else { return [] }
         return try await summaries("WHERE d.id IN (SELECT discussionID FROM discussionCard WHERE cardID IN (\(cards.map(String.init).joined(separator: ","))))")
@@ -305,7 +305,7 @@ extension Store {
         }
     }
 
-    // MARK: 同一次写入里用的
+    // MARK: Used inside a single write
 
     @discardableResult
     static func append(_ db: Database, _ what: [Happening], to discussion: Int64) throws -> [DiscussionEvent] {
@@ -319,7 +319,7 @@ extension Store {
         }
     }
 
-    /// 放上桌这张表；已经在桌上返回 false
+    /// Put on the desk table; returns false if already on the desk
     @discardableResult
     private static func putOnDesk(_ db: Database, _ card: Int64, _ discussion: Int64) throws -> Bool {
         try db.execute(sql: "INSERT OR IGNORE INTO discussionCard (discussionID, cardID, placedAt) VALUES (?, ?, ?)",

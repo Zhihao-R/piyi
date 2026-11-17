@@ -1,30 +1,30 @@
 import CoreGraphics
 import Tokens
 
-/// 画布的网格：卡片横平竖直，彼此间隔一个网格单位。
-/// 拖动时边缘靠近邻居就吸过去（顶边对顶边、底边对底边、或者隔一个间距贴着）；附近没有可对齐的，松手时左上角吸到网格。
+/// The canvas grid: cards are axis-aligned, one grid unit apart.
+/// When dragging, edges near a neighbor snap to it (top to top, bottom to bottom, or one gap apart); with nothing nearby to align to, the top-left corner snaps to the grid on release.
 enum Grid {
-    /// 网格单位（世界坐标），也是卡片之间的标准间距。搜索、灵感这类直接按屏幕排的版面，同一个数当屏幕点用
+    /// Grid unit (world coordinates), also the standard spacing between cards. Layouts arranged directly in screen space, like search and inspiration, use the same number as screen points
     static let unit = CGFloat(Space.unit)
-    /// 边缘相差多少屏幕点以内就吸附
+    /// Snap when edges are within this many screen points
     static let tolerance: CGFloat = 10
-    /// 只和屏幕上这个距离以内的邻居对齐（约一张卡宽），避免和画布另一头的卡片莫名其妙地对上
+    /// Only align with neighbors within this distance on screen (about one card wide), so it doesn't line up oddly with cards on the far side of the canvas
     static let reach: CGFloat = 200
 
     static func snap(_ v: CGFloat) -> CGFloat { (v / unit).rounded() * unit }
 
-    /// 左上角吸到网格，尺寸不变
+    /// Snap the top-left corner to the grid, keeping the size
     static func snapped(_ rect: CGRect) -> CGRect {
         CGRect(origin: CGPoint(x: snap(rect.minX), y: snap(rect.minY)), size: rect.size)
     }
 
-    /// 对齐辅助线（世界坐标）
+    /// Alignment guides (world coordinates)
     struct Guide: Equatable {
         var from: CGPoint
         var to: CGPoint
     }
 
-    /// 吸附结果：每个方向上要挪多少（nil 表示这个方向附近没有可对齐的），以及要画的辅助线
+    /// Snap result: how far to move in each direction (nil means nothing nearby to align to in that direction), plus the guides to draw
     struct Alignment: Equatable {
         var dx: CGFloat?
         var dy: CGFloat?
@@ -33,7 +33,7 @@ enum Grid {
         var offset: CGSize { CGSize(width: dx ?? 0, height: dy ?? 0) }
     }
 
-    /// 一个候选：自己的某条边要挪到 target。flush 是同边对齐（画线），否则是隔一格贴着（不画线）
+    /// A candidate: one of its own edges moves to target. flush means same-edge alignment (draws a guide); otherwise it sits one gap away (no guide)
     private struct Candidate {
         var edge: CGFloat
         var target: CGFloat
@@ -42,7 +42,7 @@ enum Grid {
         var distance: CGFloat { abs(target - edge) }
     }
 
-    /// 把 rect 的边吸到邻居的边上。两个方向分开找，各取挪动最少的那个。tolerance、reach 都已换算成世界坐标
+    /// Snaps rect's edges to neighbors' edges. The two directions are searched separately, each taking the smallest move. tolerance and reach are already converted to world coordinates
     static func align(_ rect: CGRect, to others: [CGRect], tolerance: CGFloat, reach: CGFloat) -> Alignment {
         var xs: [Candidate] = [], ys: [Candidate] = []
         for o in others {
@@ -75,12 +75,12 @@ enum Grid {
         return result
     }
 
-    /// 两段区间之间的空隙，重叠时为 0
+    /// The gap between two intervals; 0 when they overlap
     private static func gap(_ a0: CGFloat, _ a1: CGFloat, _ b0: CGFloat, _ b1: CGFloat) -> CGFloat {
         max(0, max(a0, b0) - min(a1, b1))
     }
 
-    /// 要把 bounds 往下挪多少，才不压住任何一张别的卡（隔一个网格单位，顶边仍在网格上）
+    /// How far to move bounds down so it doesn't cover any other card (one grid unit apart, top edge still on the grid)
     static func clearance(for bounds: CGRect, avoiding others: [CGRect]) -> CGFloat {
         var dy: CGFloat = 0
         while let hit = others.first(where: { $0.insetBy(dx: -unit / 2, dy: -unit / 2).intersects(bounds.offsetBy(dx: 0, dy: dy)) }) {
@@ -89,25 +89,25 @@ enum Grid {
         return dy
     }
 
-    /// 一组卡排成整齐的行：行宽让整体接近 16:10（常见窗口的比例），最窄也要放得下最宽的那张。aspects 是各张的高 / 宽
+    /// Arrange a set of cards into neat rows: the row width keeps the whole close to 16:10 (a common window ratio), and at least wide enough for the widest card. aspects are each card's height / width
     static func arrange(aspects: [CGFloat], origin: CGPoint) -> [CGRect] {
         guard !aspects.isEmpty else { return [] }
         return justify(aspects: aspects, width: rowWidth(aspects), rowHeight: CGFloat(Space.rowHeight), origin: origin)
     }
 
-    /// 这些卡排成整齐的行时用多宽的行
+    /// What row width to use when arranging these cards into neat rows
     static func rowWidth(_ aspects: [CGFloat]) -> CGFloat {
         let rowHeight = CGFloat(Space.rowHeight)
         let area = aspects.reduce(0) { $0 + (rowHeight + unit) * (rowHeight / $1 + unit) }
         return snap(max(sqrt(area * 1.6), aspects.map { rowHeight / $0 }.max() ?? 0))
     }
 
-    /// 整齐排版：按顺序排成等高的行，每行恰好撑满同一宽度（最后一行不拉伸），行距、列距都是一个网格单位。
-    /// 为了左右两边都齐，行高不取整到网格；整理完的卡片靠彼此的边对齐，而不是靠网格。
-    /// 返回每张卡片的矩形（世界坐标），左上角从 origin 开始
+    /// Neat layout: in order, into rows of equal height, each row exactly filling the same width (the last row isn't stretched); row and column spacing are both one grid unit.
+    /// So that both left and right edges line up, row heights aren't rounded to the grid; tidied cards align with each other's edges rather than with the grid.
+    /// Returns each card's rect (world coordinates), with the top-left corner starting at origin
     static func justify(aspects: [CGFloat], width: CGFloat, rowHeight: CGFloat, origin: CGPoint) -> [CGRect] {
         var rects: [CGRect] = []
-        var row: [CGFloat] = []           // 当前行各卡片的 宽 / 高
+        var row: [CGFloat] = []           // Width / height of each card in the current row
         var y = origin.y
         func flush(stretch: Bool) {
             let gaps = unit * CGFloat(row.count - 1)

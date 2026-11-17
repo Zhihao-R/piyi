@@ -4,18 +4,18 @@ import GRDB
 import ImageIO
 import UniformTypeIdentifiers
 
-/// 收一样东西的结果
+/// The result of collecting one thing
 public enum Collected: Equatable, Sendable {
     case created(card: Int64)
-    /// 已经收过：restored 表示它原来在废纸篓里，placed 表示这次放进了目标画板
+    /// Already collected: restored means it was in the trash, placed means it was put on the target board this time
     case existing(card: Int64, restored: Bool, placed: Bool)
 }
 
 extension Store {
-    // MARK: 收集
-    // 收集协调者按这个顺序调：网址查重 → 放占位卡 → 抽取 → 填进内容（按内容指纹查重）→ 定最终尺寸
+    // MARK: Collecting
+    // The collect coordinator calls these in order: check URL duplicates → place a placeholder card → extract → fill in content (checking duplicates by content fingerprint) → set the final size
 
-    /// 收一样已经抽取好的东西放进画板：先按网址、再按内容指纹查重；收过的就复用那张卡，画板里已经有也再放一份
+    /// Collect one already-extracted thing onto a board: check duplicates by URL, then by content fingerprint; if collected before, reuse that card, placing another copy even if the board already has it
     public func collect(_ m: Material, into board: Int64, frame: CGRect) async throws -> Collected {
         if let url = m.url, let existing = try await card(forURL: url) { return try await reuse(existing, on: board, frame: frame) }
         let id = try await placeholder(m.kind, url: m.url, sourceURL: m.sourceURL, title: m.title, on: board, frame: frame)
@@ -28,19 +28,19 @@ extension Store {
         }
     }
 
-    /// 按网址查重：只管「收的就是这个网址」的卡，和收的网址跳转到这个网址的卡（短链接、长链接是同一张）。废纸篓里的也算
+    /// URL duplicate check: only cards "collected from exactly this URL", and cards whose collected URL redirected to this URL (a short link and the long link are the same card). Trashed ones count too
     public func card(forURL url: String) async throws -> Card? {
         guard let key = URLKey.of(url) else { return nil }
         return try await db.read { db in try Self.card(db, forKey: key) }
     }
 
-    /// 收的就是这个网址的那张优先，其次才是跳转到这个网址的
+    /// The card collected from exactly this URL comes first, then ones that redirected to it
     private static func card(_ db: Database, forKey key: String, except id: Int64? = nil) throws -> Card? {
         try Card.fetchOne(db, sql: "SELECT * FROM card WHERE (urlKey = ?1 OR finalKey = ?1) AND id != ?2 ORDER BY urlKey = ?1 DESC LIMIT 1",
                           arguments: [key, id ?? -1])
     }
 
-    /// 占位卡：内容还没抽取，先在画板上占个位置（board 为 nil 时只进资料库）
+    /// Placeholder card: content not extracted yet, it holds a spot on the board first (with board nil it only goes into the library)
     public func placeholder(_ kind: Kind, url: String? = nil, sourceURL: String? = nil, note: String? = nil, title: String? = nil,
                             on board: Int64?, frame: CGRect) async throws -> Int64 {
         try await db.write { db in
@@ -58,35 +58,35 @@ extension Store {
 
     public enum Filled: Sendable, Equatable {
         case filled
-        /// 同样的内容已经收过：占位卡已删掉，这是已有那张；placed 表示占位卡的摆放转给了它
+        /// The same content was already collected: the placeholder card has been deleted, this is the existing one; placed means the placeholder's placement was handed to it
         case duplicate(of: Card, placed: Bool)
-        /// 抽取期间卡被删了
+        /// The card was deleted during extraction
         case gone
     }
 
-    /// 抽取结果填进卡（占位卡，或重新抓取的残缺卡）：按内容指纹、再按跳转后的最终地址查重，存文件，写内容。换下来的旧文件没人用就删掉
+    /// Fill extraction results into a card (a placeholder, or a partial card being refetched): check duplicates by content fingerprint, then by the final redirected address, save files, write content. Old files swapped out are deleted if unused
     public func fill(_ id: Int64, with m: Material) async throws -> Filled {
-        // 抽取器为这次下载的临时文件，存进文件库后就删掉；你自己的文件不动
+        // Temporary files the extractor downloaded for this run are deleted once in the file store; your own files are left alone
         defer { if let original = m.original, original.path.hasPrefix(FileExtractor.downloads.path) { try? FileManager.default.removeItem(at: original) } }
-        // 重新抓取没抓全：已有的内容留着，只更新原因
+        // Refetch didn't get everything: keep existing content, only update the reason
         if m.partial != nil, let card = try await card(id), card.hasContent {
             try await db.write { db in try db.execute(sql: "UPDATE card SET partial = ?, extraction = ? WHERE id = ?",
                                                       arguments: [try Self.json(m.partial), Extraction.complete, id]) }
             return .filled
         }
         let fingerprint = try m.fingerprint
-        // 抓全了才认最终地址：没抓全时它常是登录页、报错页的地址，不同的内容会撞到一起
+        // Only trust the final address when fully fetched: otherwise it's often a login or error page address, and different content would collide
         let finalKey = m.partial == nil ? m.url.flatMap(URLKey.of) : nil
         let stored = try store(m)
         enum Outcome { case gone, duplicate(Card, placed: Bool, orphans: [String]), filled(replaced: [String]) }
         let outcome = try await db.write { db -> Outcome in
             guard var card = try Card.fetchOne(db, key: id) else { return .gone }
-            // 查重和写入在同一次写入里：同时收进两份同样的东西也只留一张。这张卡的摆放交给已有那张
-            // 收的网址跳转到了别处（短链接）：最终地址收过，也是同一样东西。跳到首页之类更泛的地方不算（URLKey.lands）
+            // Duplicate check and write in the same write: collecting two copies of the same thing at once still leaves one card. This card's placements go to the existing one
+            // The collected URL redirected elsewhere (a short link): if the final address was collected, it's the same thing. Landing somewhere broader like a home page doesn't count (URLKey.lands)
             let landed = finalKey.flatMap { $0 != card.urlKey && URLKey.lands($0, from: card.urlKey) ? $0 : nil }
             if let existing = try fingerprint.flatMap({ try Card.filter(Column("fingerprint") == $0 && Column("id") != id).fetchOne(db) })
                 ?? landed.flatMap({ try Self.card(db, forKey: $0, except: id) }) {
-                // 已有那张在废纸篓里：恢复后它回到原来的画板，那些画板上这张的摆放就不要了
+                // The existing one is in the trash: once restored it returns to its old boards, so this card's placements on those boards are dropped
                 if existing.trashedAt != nil {
                     try db.execute(sql: "DELETE FROM placement WHERE cardID = ?2 AND boardID IN (SELECT boardID FROM placement WHERE cardID = ?1)", arguments: [existing.id, id])
                 }
@@ -100,11 +100,11 @@ extension Store {
             let old = try [card.cover, card.original].compactMap { $0 } + CardImage.filter(Column("cardID") == id).fetchAll(db).map(\.file)
             card.kind = m.kind
             card.form = m.form
-            // 网址按你收的那个保留（跳转后的地址不覆盖它），再收同一个链接才查得到
+            // Keep the URL you collected (the redirected address doesn't overwrite it), so collecting the same link again finds it
             card.url = card.url ?? m.url
             card.urlKey = card.url.flatMap(URLKey.of)
             if m.partial == nil { card.finalKey = landed }
-            // 收的网址跳转到了别处：最终页面记作出处
+            // The collected URL redirected elsewhere: record the final page as the source
             card.sourceURL = m.sourceURL ?? (m.url != card.url ? m.url : nil) ?? card.sourceURL
             card.fingerprint = fingerprint
             card.title = m.title ?? card.title
@@ -113,9 +113,9 @@ extension Store {
             card.text = m.text
             card.body = m.body
             card.transcript = nil
-            // 内容换了，正文要按新内容重新补全
+            // Content changed, so the body needs completing again from the new content
             card.bodyCompleted = false
-            // 封面换了颜色重算；内容变了，上次理解失败的原因作废，依据对不上会自动重新排队
+            // Cover changed, so recompute colors; content changed, so the last understanding failure is void, and a mismatched basis automatically re-queues
             if card.cover != stored.cover { card.colors = nil }
             card.understandError = nil
             card.cover = stored.cover
@@ -125,7 +125,7 @@ extension Store {
             card.duration = m.duration
             card.extraction = .complete
             card.partial = m.partial
-            // 没抓到内容：之前按失败页理解出的标题、描述和向量不能留，不然看着、搜着都像抓到了
+            // Got no content: the title, description and vectors understood from the failure page can't stay, or it would look and search as if it had been fetched
             if card.isEmpty {
                 (card.generatedTitle, card.caption, card.detail, card.tags, card.summary, card.summaryAnchors, card.understoodBasis) = (nil, nil, nil, [], nil, nil, nil)
                 try Vector.filter(Column("cardID") == id).deleteAll(db)
@@ -149,18 +149,18 @@ extension Store {
         }
     }
 
-    /// 重新抓取前标成「正在抽取」
+    /// Mark as "Fetching" before refetching
     public func markExtracting(_ id: Int64) async throws {
         try await db.write { db in try db.execute(sql: "UPDATE card SET extraction = ? WHERE id = ?", arguments: [Extraction.extracting, id]) }
     }
 
-    /// 残缺卡（不含废纸篓里的）
+    /// Partial cards (excluding trashed ones)
     public func partialCards() async throws -> [Card] {
         try await db.read { db in try Card.fetchAll(db, sql: "SELECT * FROM liveCard WHERE partial IS NOT NULL") }
     }
 
-    /// 上次退出时还在抽取的卡。没有任何内容的占位卡：有网址的转成残缺卡，打开后自动重新抓；
-    /// 没网址的丢掉，原件还在收件箱里，会重收一遍。重新抓取到一半的老卡留着，回到抽取完成
+    /// Cards still extracting at last quit. Placeholders with no content at all: those with a URL become partial cards, refetched automatically when opened;
+    /// those without a URL are dropped, the original is still in the inbox and gets collected again. Old cards halfway through a refetch are kept and return to extraction-complete
     public func recoverUnfinished() async throws {
         try await db.write { db in
             let empty = "extraction = ? AND cover IS NULL AND body IS NULL AND text IS NULL AND original IS NULL"
@@ -172,9 +172,9 @@ extension Store {
 
     private static func json(_ partial: Partial?) throws -> String { String(decoding: try JSONEncoder().encode(partial), as: UTF8.self) }
 
-    /// 以前被当成正常卡留下的拦截页（「Sina Visitor System」）：认一遍，认出来的标成残缺，打开后自动重新抓。
-    /// 内容不动：重抓成功会整个换掉，失败时旧的还在。认地址；或者认标题，且没有封面、正文没几个字（正常文章的标题里也可能有「安全验证」）。
-    /// 只做一次：之后收的在抽取时就认出来了
+    /// Block pages kept as normal cards in the past ("Sina Visitor System"): check them once, mark the recognized ones partial, refetched automatically when opened.
+    /// Content untouched: a successful refetch replaces it entirely, a failure keeps the old. Match by address; or by title, with no cover and hardly any body text (a normal article title can also contain 「安全验证」, "security check").
+    /// Done only once: later collections are recognized during extraction
     public func demoteChallengePagesOnce() async throws {
         let done = "challengePagesDemoted"
         guard try await setting(done, as: Bool.self) != true else { return }
@@ -189,7 +189,7 @@ extension Store {
         try await setSetting(done, true)
     }
 
-    /// 补全正文识别出的图中文字补进正文，和其它正文一样能搜、能读
+    /// Text recognized in images while completing the body is appended to the body, searchable and readable like the rest of it
     public func appendRecognizedText(_ id: Int64, _ text: String) async throws {
         guard !text.isEmpty else { return }
         try await db.write { db in
@@ -199,7 +199,7 @@ extension Store {
         }
     }
 
-    /// 记下转录（本机转录或平台字幕）。已经有的不换：同一张卡同时补两次（补到一半又重新抓取）时只留一份
+    /// Record the transcript (local transcription or platform subtitles). Don't replace an existing one: if one card gets completed twice at once (refetched halfway through), keep only one
     public func setTranscript(_ id: Int64, _ text: String) async throws {
         guard !text.isEmpty else { return }
         try await db.write { db in
@@ -207,9 +207,9 @@ extension Store {
         }
     }
 
-    /// 又收到已有的卡：提到最前（收集时间不动，那是第一次收的时间），记一次回看；在废纸篓里就恢复；放进目标画板，已经有也再放一份。
-    /// 只有刚从废纸篓恢复、它原本就在这个画板上时不再放：恢复已经让它回到原位了
-    /// note 是这次和网址一起带来的那句话：卡上还没有才记，已有的不动
+    /// An existing card collected again: bring it to the front (collection time stays, that's the first collection), record a revisit; restore it if trashed; place it on the target board, another copy even if already there.
+    /// Except when it was just restored from the trash and was already on this board: restoring already put it back in place
+    /// note is the line that came with the URL this time: recorded only if the card has none yet, an existing one is left alone
     public func reuse(_ card: Card, on board: Int64?, frame: CGRect, note: String? = nil) async throws -> Collected {
         try await db.write { db in
             let now = Date.now
@@ -230,7 +230,7 @@ extension Store {
 
     private struct Stored { var cover: String?, original: String?, gallery: [String] = [] }
 
-    /// 图片、原文件写进文件库，封面先生成最小一档缩略图，收进来马上就能显示
+    /// Write images and the original file into the file store; generate the smallest thumbnail tier for the cover first so it shows right after collecting
     private func store(_ m: Material) throws -> Stored {
         var out = Stored()
         if let original = m.original { out.original = try files.put(contentsOf: original) }
@@ -242,7 +242,7 @@ extension Store {
         return out
     }
 
-    /// 大的两档缩略图在后台补，一次收进几十张时不用等它们
+    /// The two larger thumbnail tiers are filled in in the background, so collecting dozens at once doesn't wait for them
     func backfillThumbnails(_ cover: String, long: Bool) {
         let files = self.files
         Task.detached(priority: .utility) {
@@ -250,7 +250,7 @@ extension Store {
         }
     }
 
-    /// 补齐所有封面缺的缩略图档位：上次退出时没补完的、导入时只生成了最小一档的
+    /// Fill in all missing thumbnail tiers for covers: ones unfinished at last quit, and imports that only made the smallest tier
     public func completeThumbnails() async throws {
         let covers = try await db.read { db in
             try Row.fetchAll(db, sql: "SELECT DISTINCT cover, form FROM card WHERE cover IS NOT NULL").map { ($0[0] as String, $0[1] as String?) }
@@ -270,9 +270,9 @@ extension Store {
         return ext
     }
 
-    // MARK: 读
+    // MARK: Reading
 
-    /// 这几张里还没进废纸篓的
+    /// Those of these cards not in the trash
     public func live(_ cards: [Int64]) async throws -> Set<Int64> {
         try await db.read { db in
             Set(try Int64.fetchAll(db, sql: "SELECT id FROM liveCard WHERE id IN (\(cards.map { _ in "?" }.joined(separator: ",")))", arguments: StatementArguments(cards)))
@@ -283,21 +283,21 @@ extension Store {
         try await db.read { db in try Card.fetchOne(db, key: id) }
     }
 
-    /// 多图卡的其余图片，按顺序
+    /// The other images of a multi-image card, in order
     public func images(of card: Int64) async throws -> [String] {
         try await db.read { db in try CardImage.filter(Column("cardID") == card).order(Column("position")).fetchAll(db).map(\.file) }
     }
 
-    /// 这张卡出现在哪些画板里
+    /// Which boards this card appears on
     public func boards(containing card: Int64) async throws -> [Board] {
         try await db.read { db in
             try Board.fetchAll(db, sql: "SELECT DISTINCT board.* FROM board JOIN placement ON placement.boardID = board.id WHERE placement.cardID = ? ORDER BY board.openedAt DESC", arguments: [card])
         }
     }
 
-    // MARK: 废纸篓
+    // MARK: Trash
 
-    /// 进废纸篓只写时间，摆放记录保留，恢复时原样回到各个画板
+    /// Trashing only writes a time; placements are kept, so restoring puts it back on each board as it was
     public func trash(_ cards: [Int64]) async throws {
         try await db.write { db in try Self.setTrashed(db, cards, at: .now) }
     }
@@ -310,12 +310,12 @@ extension Store {
         try Card.filter(keys: cards).updateAll(db, Column("trashedAt").set(to: date))
     }
 
-    /// 清空废纸篓：删卡（摆放、图片、向量随之删除），再删掉已经没有任何卡引用的文件
+    /// Empty the trash: delete cards (placements, images, vectors go with them), then delete files no card references anymore
     public func emptyTrash() async throws {
         try await purge(nil)
     }
 
-    /// 彻底删除：废纸篓里的这几张（nil 是全部），做法同清空废纸篓。不在废纸篓里的不删
+    /// Delete permanently: these cards in the trash (nil means all), same as emptying the trash. Ones not in the trash aren't deleted
     public func purge(_ cards: [Int64]?) async throws {
         let orphans = try await db.write { db -> [String] in
             let trashed = Card.filter(Column("trashedAt") != nil)

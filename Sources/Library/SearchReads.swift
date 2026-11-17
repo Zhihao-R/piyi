@@ -1,23 +1,23 @@
 import Foundation
 import GRDB
 
-/// 搜索、灵感要读的一张卡：检索文字、颜色、向量、在哪些画板里。打分规则在智能块
+/// A card as search and inspiration need to read it: search text, colors, vector, which boards it's on. Scoring rules live in the intelligence module
 public struct SearchRow: Sendable {
     public var card: Card
-    /// 向量的原始字节和模型名；还没算的为 nil
+    /// The vector's raw bytes and model name; nil if not computed yet
     public var vector: Data?
     public var model: String?
     public var boards: Set<Int64>
 }
 
-/// 一张卡在别的画板里的摆法：聚拢时按它保留裁剪和比例，并标出出处
+/// How a card is placed on another board: gathering keeps its crop and proportions from it and shows where it came from
 public struct Home: Sendable, Equatable {
     public var placement: Placement
     public var boardName: String
 }
 
 extension Store {
-    /// 全部未删除、已抽完的卡（正在抽取的内容没到，搜不到也说不出什么）
+    /// All non-deleted, fully extracted cards (content still being extracted hasn't arrived, so it can't be found or say anything)
     public func searchRows() async throws -> [SearchRow] {
         try await db.read { db in
             let cards = try Card.fetchAll(db, sql: "SELECT * FROM liveCard WHERE extraction = ?", arguments: [Extraction.complete])
@@ -31,7 +31,7 @@ extension Store {
         }
     }
 
-    /// 按编号取卡片外观，顺序跟着传进来的编号
+    /// Card appearances by ID, in the order of the IDs passed in
     public func faces(_ ids: [Int64]) async throws -> [CardFace] {
         guard !ids.isEmpty else { return [] }
         let faces = try await db.read { db in
@@ -41,7 +41,7 @@ extension Store {
         return ids.compactMap { byID[$0] }
     }
 
-    /// 这些卡在别的画板里的摆法，取最近打开的那个画板；哪个画板都没放的不在结果里
+    /// How these cards are placed on other boards, taken from the most recently opened board; cards on no board are left out
     public func homes(of cards: [Int64], excluding board: Int64?) async throws -> [Int64: Home] {
         guard !cards.isEmpty else { return [:] }
         return try await db.read { db in

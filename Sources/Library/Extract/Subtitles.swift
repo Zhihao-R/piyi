@@ -1,15 +1,15 @@
 import Foundation
 
-/// 补全正文里的平台字幕：YouTube、B 站的视频不下载、不转录，有字幕就取字幕
+/// Platform subtitles for body completion: YouTube and Bilibili videos aren't downloaded or transcribed; take subtitles if there are any
 extension WebExtractor {
-    /// 一条字幕：语言、是不是平台自动生成的、字幕文件的地址
+    /// One subtitle track: language, whether the platform auto-generated it, the subtitle file's address
     struct Track: Equatable {
         var language: String
         var automatic: Bool
         var url: String
     }
 
-    /// 字幕，一句一句带着时间。没有字幕、取不到（B 站没连上浏览器或者没登录、接口变了）时返回 nil
+    /// Subtitles, line by line with times. Returns nil if there are none or they can't be fetched (Bilibili with no browser connected or not logged in, the API changed)
     public func subtitles(for url: URL) async -> [Cue]? {
         let host = url.host()?.lowercased() ?? ""
         let cues: [Cue]? = switch true {
@@ -21,9 +21,9 @@ extension WebExtractor {
         return cues
     }
 
-    /// 挑一条：原声语言的人工字幕 → 原声的自动字幕 → 界面语言的字幕 → 随便一条。
-    /// 要视频里实际说的话：别的语言的人工字幕多半是翻译。原声是哪种语言看自动字幕（平台按声音识别的，排在第一条的是原声）；
-    /// 没有自动字幕就认不出原声，按界面语言挑
+    /// Pick one: human subtitles in the spoken language → auto subtitles in the spoken language → subtitles in the interface language → any.
+    /// We want what's actually said in the video: human subtitles in other languages are mostly translations. The spoken language comes from the auto subtitles (the platform recognizes it from the audio; the first one listed is the original);
+    /// without auto subtitles the spoken language can't be told, so pick by interface language
     static func pick(_ tracks: [Track]) -> Track? {
         guard let spoken = tracks.first(where: \.automatic) else {
             return tracks.first { base($0.language) == interfaceLanguage } ?? tracks.first
@@ -31,14 +31,14 @@ extension WebExtractor {
         return tracks.first { !$0.automatic && base($0.language) == base(spoken.language) } ?? spoken
     }
 
-    /// zh-CN、zh-Hans 都算 zh
+    /// zh-CN and zh-Hans both count as zh
     private static func base(_ language: String) -> String {
         language.split(separator: "-").first.map(String.init) ?? language
     }
 
     // MARK: YouTube
 
-    /// 网页版播放器给的字幕地址要带一个只有播放器算得出的令牌（2025 年起，不带就是空的）；VR 客户端的公开播放接口给的地址不用。不用登录
+    /// Subtitle addresses from the web player need a token only the player can compute (since 2025; without it they're empty); those from the VR client's public player API don't. No login needed
     private func youtubeSubtitles(_ url: URL) async throws -> [Cue]? {
         guard let id = Self.youtubeID(url) else { return nil }
         var request = URLRequest(url: URL(string: "https://www.youtube.com/youtubei/v1/player?prettyPrint=false")!, timeoutInterval: 15)
@@ -54,14 +54,14 @@ extension WebExtractor {
             guard let language = t["languageCode"] as? String, let url = t["baseUrl"] as? String else { return nil }
             return Track(language: language, automatic: t["kind"] as? String == "asr", url: url)
         }
-        // 地址里自带 fmt=srv3（XML），换成 JSON
+        // The address comes with fmt=srv3 (XML); switch it to JSON
         guard let track = Self.pick(tracks), var address = URLComponents(string: track.url) else { return nil }
         address.queryItems = (address.queryItems ?? []).filter { $0.name != "fmt" } + [URLQueryItem(name: "fmt", value: "json3")]
         guard let events = try await json(address.string ?? "")?["events"] as? [[String: Any]] else { return nil }
         return Self.youtubeCues(events)
     }
 
-    /// json3 格式：每个 event 是一句（毫秒），句子拆成几段（自动字幕一个词一段）
+    /// json3 format: each event is one line (milliseconds), split into several segments (one word per segment for auto subtitles)
     static func youtubeCues(_ events: [[String: Any]]) -> [Cue] {
         events.compactMap { event in
             let text = (event["segs"] as? [[String: Any]] ?? []).compactMap { $0["utf8"] as? String }.joined()
@@ -70,10 +70,10 @@ extension WebExtractor {
         }
     }
 
-    // MARK: B 站
+    // MARK: Bilibili
 
-    /// 字幕地址要登录才给（不登录时列表里的地址是空的），借浏览器的登录状态请求；字幕文件本身不用登录。
-    /// 分 P 的视频按网址里的 ?p= 取那一 P
+    /// Subtitle addresses require login (without it the addresses in the list are empty), so request with the browser's login state; the subtitle files themselves don't need login.
+    /// Multi-part videos take the part given by ?p= in the URL
     private func bilibiliSubtitles(_ url: URL) async throws -> [Cue]? {
         guard let browser, let (target, video) = try await bilibiliVideo(url), let bvid = video["bvid"] as? String else { return nil }
         let p = URLComponents(url: target, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "p" }?.value.flatMap(Int.init) ?? 1
@@ -82,7 +82,7 @@ extension WebExtractor {
               let raw = try await browser.request(URL(string: "https://api.bilibili.com/x/player/wbi/v2?bvid=\(bvid)&cid=\(cid)")!),
               let player = try JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any] else { return nil }
         let list = ((player["data"] as? [String: Any])?["subtitle"] as? [String: Any])?["subtitles"] as? [[String: Any]] ?? []
-        // 自动生成的语言写成 ai-zh、ai-en；地址以 // 开头
+        // Auto-generated languages are written ai-zh, ai-en; addresses start with //
         let tracks = list.compactMap { t -> Track? in
             guard let lan = t["lan"] as? String, let address = t["subtitle_url"] as? String, !address.isEmpty else { return nil }
             let automatic = lan.hasPrefix("ai-")
@@ -90,7 +90,7 @@ extension WebExtractor {
                          url: address.hasPrefix("//") ? "https:" + address : address)
         }
         guard let track = Self.pick(tracks), let body = try await json(track.url)?["body"] as? [[String: Any]] else { return nil }
-        // 每句的 from、to 是秒
+        // from and to of each line are in seconds
         return body.compactMap { line in
             guard let text = line["content"] as? String, let from = line["from"] as? Double else { return nil }
             return Cue(start: from, end: line["to"] as? Double ?? from, text: text)

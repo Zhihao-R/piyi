@@ -3,11 +3,11 @@ import CryptoKit
 import ImageIO
 import UniformTypeIdentifiers
 
-/// 按内容指纹存放的文件：同样的内容只存一份，文件名就是「指纹.扩展名」。
-/// 缩略图按宽度分三档，放在 thumbs/<档>/<指纹>.jpg。
+/// Files stored by content fingerprint: the same content is stored once, and the file name is "<fingerprint>.<extension>".
+/// Thumbnails come in three width tiers, at thumbs/<tier>/<fingerprint>.jpg.
 public struct FileStore: Sendable {
     public static let tiers = [256, 512, 1024]
-    /// 卡片最高显示到宽度的 1.7 倍；更长的图是长图，只露开头一截
+    /// Cards show at most 1.7 times their width in height; taller images are long images, showing only the top part
     public static let maxAspect: CGFloat = 1.7
 
     let directory: URL
@@ -23,12 +23,12 @@ public struct FileStore: Sendable {
 
     public func url(of name: String) -> URL { directory.appending(path: name) }
 
-    /// 某一档缩略图的位置（文件不一定已经生成）
+    /// Where a thumbnail tier lives (the file may not exist yet)
     public func thumbnailURL(of name: String, tier: Int) -> URL {
         thumbnails.appending(path: "\(tier)/\(Self.stem(name)).jpg")
     }
 
-    /// 存一份数据，返回文件名。已经有同样内容的文件就不再写
+    /// Store some data and return the file name. Skip writing if a file with the same content already exists
     func put(_ data: Data, ext: String) throws -> String {
         let name = Self.fingerprint(data) + Self.suffix(ext)
         let target = url(of: name)
@@ -36,7 +36,7 @@ public struct FileStore: Sendable {
         return name
     }
 
-    /// 复制一个文件进来，返回文件名
+    /// Copy a file in and return the file name
     func put(contentsOf file: URL) throws -> String {
         let name = try Self.fingerprint(file) + Self.suffix(file.pathExtension)
         let target = url(of: name)
@@ -48,15 +48,15 @@ public struct FileStore: Sendable {
         return name
     }
 
-    /// 删掉文件和它的各档缩略图
+    /// Delete the file and all its thumbnail tiers
     func remove(_ name: String) {
         try? FileManager.default.removeItem(at: url(of: name))
         for tier in Self.tiers { try? FileManager.default.removeItem(at: thumbnailURL(of: name, tier: tier)) }
     }
 
-    // MARK: 缩略图
+    // MARK: Thumbnails
 
-    /// 生成缩略图：宽度不超过这一档，原图更窄就按原宽。长图只取卡片上露出的那一截
+    /// Make a thumbnail: no wider than this tier, or the original width if narrower. For long images, only the part showing on the card
     @discardableResult
     func makeThumbnail(of name: String, tier: Int, long: Bool) -> Bool {
         let target = thumbnailURL(of: name, tier: tier)
@@ -79,11 +79,11 @@ public struct FileStore: Sendable {
         return CGImageDestinationFinalize(dest)
     }
 
-    // MARK: 指纹
+    // MARK: Fingerprint
 
     public static func fingerprint(_ data: Data) -> String { hex(SHA256.hash(data: data)) }
 
-    /// 大文件分段读，不一次读进内存
+    /// Read large files in chunks instead of all into memory at once
     static func fingerprint(_ file: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }

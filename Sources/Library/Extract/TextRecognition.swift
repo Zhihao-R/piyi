@@ -3,10 +3,10 @@ import CoreGraphics
 import ImageIO
 import Vision
 
-/// 图中文字识别：截图、长图、海报、帖子配图、扫描版 PDF 里的字。用系统自带的图像识别，简体中文和英文，只留把握大的行
+/// Text recognition in images: text in screenshots, long images, posters, post images, scanned PDFs. Uses the system's built-in image recognition, Simplified Chinese and English, keeping only lines with high confidence
 enum TextRecognition {
     static func text(in image: CGImage) async -> String {
-        // 长图按屏切开识别：整张缩成一张小图，字会小得认不出
+        // Recognize long images screen by screen: shrinking the whole thing into one small image makes the text too small to read
         let screen = image.width * 3 / 2
         guard image.height > screen * 2 else { return await recognize(image) }
         var parts: [String] = []

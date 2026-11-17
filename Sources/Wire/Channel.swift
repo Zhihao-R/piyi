@@ -1,7 +1,7 @@
 import Foundation
 import Synchronization
 
-/// 一个阻塞读写的文件描述符：socket、stdin、stdout 都用它。读只在一条线程上做，写可以多条线程同时来
+/// A file descriptor with blocking reads and writes: used for the socket, stdin and stdout. Reads happen on one thread only; writes can come from several threads at once
 public final class Channel: @unchecked Sendable {
     public let fd: Int32
     private let writing = Mutex(())
@@ -9,7 +9,7 @@ public final class Channel: @unchecked Sendable {
 
     public init(fd: Int32) { self.fd = fd }
 
-    /// 浏览器协议的一帧：读到 nil 表示对面关了
+    /// One frame of the browser protocol: reading nil means the other side closed
     public func readFrame() -> Data? {
         guard let header = readExactly(4) else { return nil }
         let length = header.withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
@@ -22,7 +22,7 @@ public final class Channel: @unchecked Sendable {
     }
 
     public func readLine() -> Data? {
-        var scanned = 0  // 已经找过的部分不再重找，几 MB 的整页 HTML 才不会越读越慢
+        var scanned = 0  // Don't search the part already searched again, so whole-page HTML of several MB doesn't get slower as it's read
         while true {
             if let newline = buffer[(buffer.startIndex + scanned)...].firstIndex(of: 0x0A) {
                 let line = buffer[buffer.startIndex..<newline]
@@ -75,7 +75,7 @@ extension sockaddr_un {
     }
 }
 
-/// 连上一个 Unix socket；连不上返回 nil
+/// Connect to a Unix socket; returns nil if it can't
 public func connectSocket(_ path: String) -> Channel? {
     let fd = socket(AF_UNIX, SOCK_STREAM, 0)
     var address = sockaddr_un(path: path)
@@ -87,7 +87,7 @@ public func connectSocket(_ path: String) -> Channel? {
     return nil
 }
 
-/// 在 path 上监听；socket 一创建就只有当前用户能连，不留 chmod 之前的空档
+/// Listen on path; only the current user can connect from the moment the socket is created, with no gap before chmod
 func listenSocket(_ path: String) -> Int32? {
     unlink(path)
     let mask = umask(0o077)

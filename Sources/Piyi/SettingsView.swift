@@ -2,7 +2,7 @@ import SwiftUI
 import Library
 import Intelligence
 
-/// 设置：语言、云端服务商和密钥（模型和写法要求在详细设置里）、下载本机模型、浏览器扩展、手机
+/// Settings: language, cloud provider and key (model and writing instructions are in Advanced), local model download, browser extension, phone
 struct SettingsView: View {
     let model: AppModel
 
@@ -67,8 +67,8 @@ struct SettingsView: View {
     }
 }
 
-/// 界面语言：跟随系统，或者给片羽单独定一种。和系统设置里给单个 App 选语言是同一个开关（App 自己的 AppleLanguages），
-/// 所以要重新打开才生效；AI 写的标题、描述也跟着界面语言（interfaceLanguage）
+/// Interface language: follow the system, or set one just for Piyi. Same switch as choosing a per-app language in System Settings (the App's own AppleLanguages),
+/// so it takes effect after reopening; titles and descriptions written by AI also follow the interface language (interfaceLanguage)
 struct LanguagePicker: View {
     @State private var choice = Self.saved
 
@@ -83,18 +83,18 @@ struct LanguagePicker: View {
         }
     }
 
-    /// 只看 App 自己记的，不看系统的：standard 读到的 AppleLanguages 没单独定时是系统的语言列表
+    /// Only look at what the App itself stored, not the system's: AppleLanguages read via standard is the system language list when not set separately
     private static var saved: String {
         let own = Bundle.main.bundleIdentifier.flatMap { UserDefaults.standard.persistentDomain(forName: $0)?["AppleLanguages"] as? [String] }
         return own?.first.flatMap { ["zh-Hans", "en"].first(where: $0.hasPrefix) } ?? ""
     }
 }
 
-/// 一个服务方的密钥：填了显示「已填」，被拒了提示换一把，可以换或删
+/// A provider's key: shows "Saved" when entered, prompts for another one when rejected, can be replaced or removed
 struct KeyField: View {
     let provider: any Keyed
     let model: AppModel
-    /// 引导里没有每行左边的标题，提示语要自己说明填什么
+    /// Onboarding has no title to the left of each row, so the placeholder has to say what to enter
     var labeled = true
     @State private var key = ""
 
@@ -123,7 +123,7 @@ struct KeyField: View {
     }
 }
 
-/// 本机向量模型：下载、进度、已就绪
+/// Local embedding model: download, progress, ready
 struct LocalModelRow: View {
     let model: AppModel
 
@@ -144,7 +144,7 @@ struct LocalModelRow: View {
     }
 }
 
-/// 窗口底部一行，有事才出现：正在处理几张、等待密钥、失败几张（带重试）、离线。平时画布一直铺到窗口底
+/// A row at the bottom of the window, shown only when there's something: how many processing, waiting for a key, how many failed (with retry), offline. Normally the canvas extends to the window bottom
 struct StatusBar: View {
     let model: AppModel
     @Environment(\.openSettings) private var openSettings

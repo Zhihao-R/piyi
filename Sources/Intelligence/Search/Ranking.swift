@@ -1,20 +1,20 @@
 import Foundation
 import Library
 
-/// 搜索看一张卡要用到的：字面匹配的文字、颜色、向量、在哪些画板里
+/// What search needs to look at a card: text for literal matching, colors, embedding, which boards it's on
 public struct SearchCard: Sendable {
     public var id: Int64
     public var kind: Kind
     public var collectedAt: Date
-    /// 小写的检索文字：标题、描述、检索用的长描述、标签、格式、全部正文和字幕、出处
+    /// Lowercased search text: title, description, long description for search, tags, format, all body text and subtitles, source
     public var text: String
-    /// 各种颜色占画面的比例；文字类的卡没有像素，为 nil
+    /// Share of the image each color takes; text cards have no pixels, so nil
     public var colors: [ColorName: Float]?
     public var vector: [Float]?
     public var boards: Set<Int64>
-    /// 给模型看的一行：类型、标题、描述、详细描述、标签
+    /// One line for the model: type, title, description, detailed description, tags
     public var brief: String
-    /// 封面文件：要看图时给模型附小图
+    /// Cover file: a small image is attached for the model when it needs to see the image
     public var cover: String?
 
     public init(id: Int64, kind: Kind, collectedAt: Date, text: String, colors: [ColorName: Float]?, vector: [Float]?,
@@ -24,31 +24,31 @@ public struct SearchCard: Sendable {
     }
 }
 
-/// 粗找：向量和字面一起打分。分数线按本机向量调过
+/// Rough search: embedding and literal scores together. The thresholds are tuned for the local embeddings
 public enum Ranking {
-    /// 最多展示几张
+    /// At most how many to show
     public static let maxResults = 24
-    /// 入选门槛：不低于 floor，也不低于最高分的 relative 倍。查询很明确时只留真正相关的几张，宽泛时多给一些
+    /// Cutoff: no lower than floor, and no lower than relative times the top score. A very specific query keeps only the truly relevant few; a broad one gets more
     public struct Cutoff: Sendable {
         public var floor: Double, relative: Double
         public static let standard = Cutoff(floor: 1.2, relative: 0.45)
     }
 
-    /// 字面命中的卡（打字时原地亮起）：查询词至少命中一半，并且符合类型、时间、颜色条件
+    /// Cards with a literal hit (lit up in place while typing): at least half the query words hit, and the type, time and color conditions are met
     public static func literal(_ cards: [SearchCard], _ q: Query, now: Date = .now) -> [Int64] {
         guard !q.tokens.isEmpty else { return [] }
         return eligible(cards, q, now: now).filter { lexical($0, q) >= 0.5 && colorOK($0, q) }.map(\.id)
     }
 
-    /// 一张候选和它的分数。pinned：还没算出向量、查询词又字面全中的卡，按意思打不了分，不看分数线直接入选
+    /// A candidate and its score. pinned: cards with no embedding yet but every query word hit literally can't be scored by meaning, so they're included regardless of the threshold
     public typealias Scored = (id: Int64, score: Double, pinned: Bool)
 
-    /// 排好序的全部候选和分数（不截断）；semantic 是查询语义部分的向量，没有时只用字面和颜色
+    /// All candidates with scores, sorted (not truncated); semantic is the embedding of the query's semantic part; without it only literal and color are used
     public static func scored(_ cards: [SearchCard], _ q: Query, semantic vector: [Float]?, now: Date = .now) -> [Scored] {
         guard !q.isEmpty else { return [] }
         let pool = eligible(cards, q, now: now)
 
-        // 相似度换算成「比全库平均高出几个标准差」。平均值和标准差在全库上算，这样同一句话开不开类型筛选，门槛都一样
+        // Similarity is converted to "how many standard deviations above the library average". Mean and standard deviation are computed over the whole library, so the cutoff is the same for one sentence with or without a type filter
         let known = vector.map { v in cards.compactMap { $0.vector.map { Double(dot(v, $0)) } } } ?? []
         if let vector, !q.semantic.isEmpty, !known.isEmpty {
             let mean = known.reduce(0, +) / Double(known.count)
@@ -70,11 +70,11 @@ public enum Ranking {
         if !q.colors.isEmpty {
             return pool.map { ($0.id, colorScore($0, q), false) }.filter { $0.1 >= 0.12 }.sorted { $0.1 > $1.1 }
         }
-        // 只有时间、类型条件：按收集时间从新到旧
+        // Only time and type conditions: newest collected first
         return pool.sorted { $0.collectedAt > $1.collectedAt }.enumerated().map { ($0.element.id, -Double($0.offset), false) }
     }
 
-    /// 展示哪些：有向量时按分数线截（pinned 的不看线：刚收的卡记得原话就找得回来），没有向量时按条数截
+    /// What to show: with embeddings, cut by threshold (pinned ones ignore it: a card just collected can be found by remembering its exact words); without embeddings, cut by count
     public static func shown(_ scored: [Scored], semantic: Bool, cutoff c: Cutoff = .standard) -> [Int64] {
         guard semantic else { return scored.prefix(maxResults).map(\.id) }
         let cutoff = max(c.floor, (scored.first?.score ?? 0) * c.relative)
@@ -99,7 +99,7 @@ public enum Ranking {
         q.colors.map { Double(card.colors?[$0] ?? 0) }.max() ?? 0
     }
 
-    /// 文字卡没有像素，颜色条件对它只是不加分，不排除
+    /// Text cards have no pixels; a color condition just adds no points for them, it doesn't exclude them
     static func colorOK(_ card: SearchCard, _ q: Query) -> Bool {
         q.colors.isEmpty || card.colors == nil || colorScore(card, q) >= 0.06
     }

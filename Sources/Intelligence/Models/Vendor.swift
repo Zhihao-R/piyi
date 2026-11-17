@@ -1,24 +1,24 @@
 import Foundation
 
-/// 云端服务商。除了 Claude 用自己的接口（见 Claude.swift），各家的请求格式相同（chat/completions），
-/// 不同的只有这里列的几处：地址、默认模型、思考怎么调、认不认几个附加参数。加一家就是加一个 case，把这几处填上。
-/// 各家的写法和默认模型按 2026-11 的官方文档定
+/// Cloud providers. Apart from Claude, which uses its own API (see Claude.swift), all use the same request format (chat/completions);
+/// the only differences are the few listed here: address, default model, how thinking is set, whether a few extra parameters are accepted. Adding a provider is adding a case and filling these in.
+/// Each provider's format and default model follow the official docs as of 2026-11
 public enum Vendor: String, CaseIterable, Sendable, Identifiable {
-    /// 密钥文件、偏好设置都按 rawValue 记，改了就读不到老的；OpenRouter 沿用原来存密钥的名字
+    /// The key file and preferences are keyed by rawValue, so changing it loses the old ones; OpenRouter keeps the name its key was originally stored under
     case openRouter = "OpenRouter"
     case deepSeek, volcano, bailian, siliconFlow, zhipu, kimi, miniMax, anthropic, gemini, openAI, custom
 
     public var id: Self { self }
 
-    /// 设置里下拉的分组：转接多家的、国内的、海外的、自己填的
+    /// Groups in the Settings dropdown: aggregators, China-based, overseas, custom
     public static let groups: [[Vendor]] = [[.openRouter], [.deepSeek, .volcano, .bailian, .siliconFlow, .zhipu, .kimi, .miniMax],
                                             [.anthropic, .gemini, .openAI], [.custom]]
 
-    /// 请求格式：多数是 chat/completions；Claude 用 Anthropic 自己的 messages，密钥放的请求头也不同
+    /// Request format: mostly chat/completions; Claude uses Anthropic's own messages, and the key goes in a different request header
     enum Wire { case chat, messages }
     var wire: Wire { self == .anthropic ? .messages : .chat }
 
-    /// 给人看的名字
+    /// Name for people
     public var name: String {
         switch self {
         case .openRouter: "OpenRouter"
@@ -36,7 +36,7 @@ public enum Vendor: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// 接口地址，后面接 /chat/completions（Claude 接 /messages）。自定义的由用户填
+    /// API address, followed by /chat/completions (/messages for Claude). Custom ones are entered by the user
     var address: String? {
         switch self {
         case .openRouter: "https://openrouter.ai/api/v1"
@@ -54,7 +54,7 @@ public enum Vendor: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// 不填模型名时用哪个：要能看图、能调工具，偏快偏省。自定义的没有
+    /// Which model to use when none is entered: must see images and call tools, leaning fast and cheap. Custom has none
     public var defaultModel: String? {
         switch self {
         case .openRouter: "deepseek/deepseek-v4.1-flash"
@@ -72,34 +72,34 @@ public enum Vendor: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// 不填判断模型时用哪个：判断是搜索时有人在等的，取这家更快的一档；nil 表示和 defaultModel 相同（默认的已经是快的那档，
-    /// 或者还没查到这家更快又能看图的型号）。OpenRouter 默认用 Jev，不走这里（见 CloudSetup.usesJev）
+    /// Which model to use when no judge model is entered: someone is waiting on judging during search, so take this provider's faster tier; nil means same as defaultModel (the default is already the fast tier,
+    /// or no faster image-capable model has been found for this provider yet). OpenRouter uses Jev by default and skips this (see CloudSetup.usesJev)
     public var defaultJudgeModel: String? { self == .openAI ? "gpt-6-luna" : nil }
 
-    /// 请求里调思考的那几项。多数模型默认开着思考，所以关也要明说；关不掉的那几家，「关」就是想得最少的那一档
+    /// The request fields that control thinking. Most models think by default, so off must be said explicitly; for the few that can't turn it off, "off" means the lowest thinking tier
     func thinkingFields(on: Bool) -> [String: Any] {
         switch self {
-        // OpenRouter 的统一写法，由它翻译给各家
+        // OpenRouter's unified form, which it translates for each provider
         case .openRouter: ["reasoning": ["enabled": on]]
         case .deepSeek, .volcano: ["thinking": ["type": on ? "enabled" : "disabled"]]
         case .bailian: ["enable_thinking": on]
-        // 只在打开时发：不认这个参数的模型收到会不会报错，文档没说
+        // Only sent when on: the docs don't say whether models that don't accept this parameter would error on it
         case .siliconFlow: on ? ["enable_thinking": true] : [:]
-        // 这三家的默认模型关不掉思考，只分档
+        // These three providers' default models can't turn thinking off, only choose a tier
         case .zhipu, .kimi, .gemini: ["reasoning_effort": on ? "high" : "low"]
-        // reasoning_split：想的内容单独放，不混在回答里
+        // reasoning_split: put thinking separately instead of mixing it into the answer
         case .miniMax: ["reasoning_effort": on ? "high" : "low", "reasoning_split": true]
         case .openAI: ["reasoning_effort": on ? "high" : "none"]
-        // Claude 的接口另写；自定义的不知道怎么写，不发，由模型自己的默认决定
+        // Claude's API is handled separately; custom ones we don't know how to write, so nothing is sent and the model's own default decides
         case .anthropic, .custom: [:]
         }
     }
 
-    /// 思考开关对这家管不管用
+    /// Whether the thinking switch works for this provider
     public var canSetThinking: Bool { self != .custom }
 
-    /// 模型上一轮想的内容要不要随讨论记录带回去。文档要求带回的才带：DeepSeek 带着工具时不带会报错，Kimi、MiniMax 要靠它接着想；
-    /// OpenRouter 转给它们。别家带回去只是多花钱。自定义的：收到过这种内容，说明它讲的就是这种写法，也带回
+    /// Whether the model's previous-round thinking is sent back with the discussion record. Only where the docs require it: DeepSeek errors without it when tools are present, Kimi and MiniMax rely on it to keep thinking;
+    /// OpenRouter forwards to them. For others sending it back only costs more. Custom: if we've received such content, it speaks this format, so send it back too
     var sendsThoughtsBack: Bool {
         switch self {
         case .openRouter, .deepSeek, .kimi, .miniMax, .custom: true
@@ -107,20 +107,20 @@ public enum Vendor: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
-    /// 服务商附在工具调用上的东西要不要带回：Gemini 靠它接着想。别家没有这东西，换服务商接着聊时不能把 Gemini 的发给它们
+    /// Whether what the provider attaches to tool calls is sent back: Gemini relies on it to keep thinking. Others have no such thing, and when switching providers mid-chat Gemini's must not be sent to them
     var sendsCallExtrasBack: Bool { self == .gemini || self == .custom }
 
-    /// 认不认「按 JSON 回答」这个参数。其余几家要么只有部分模型认，要么和思考、看图冲突，就不发：提示词里已经要求只输出 JSON
+    /// Whether the "answer in JSON" parameter is accepted. Of the rest, either only some models accept it or it conflicts with thinking or images, so it's not sent: the prompt already asks for JSON only
     var jsonMode: Bool { self == .openRouter || self == .deepSeek }
 
-    /// 只有 OpenRouter 才有的几项
+    /// The few fields only OpenRouter has
     var extras: [String: Any] {
-        // 同一个模型有几十家服务商，默认按价格挑，常落到慢的那几家；按最近的响应速度挑，一次判断从 3 秒左右降到 1.7 秒左右。
-        // 后台理解卡片也这样挑（有意的：自用阶段，单价最多贵一倍，一张卡仍不到一分钱）
+        // One model has dozens of providers; picking by price (the default) often lands on slow ones. Picking by recent response speed cuts one judgment from about 3 s to about 1.7 s.
+        // Cards understood in the background are picked this way too (on purpose: during personal use, the unit price is at most double, still under a cent per card)
         self == .openRouter ? ["provider": ["sort": "latency"]] : [:]
     }
 
-    /// 流式回答的用量：OpenRouter、DeepSeek、智谱默认带在最后一段，别家要明说才带
+    /// Usage for streamed answers: OpenRouter, DeepSeek and Zhipu include it in the last piece by default; others must be asked explicitly
     var streamExtras: [String: Any] {
         switch self {
         case .openRouter, .deepSeek, .zhipu: [:]
@@ -129,32 +129,32 @@ public enum Vendor: String, CaseIterable, Sendable, Identifiable {
     }
 }
 
-/// 云端怎么接：哪家、哪个模型、要不要思考。设置里改
+/// How to connect to the cloud: which provider, which model, whether to think. Changed in Settings
 public struct CloudSetup: Sendable, Equatable {
     public var vendor: Vendor
-    /// 自定义服务商的接口地址
+    /// API address of a custom provider
     public var address: String
-    /// 留空用这家默认的
+    /// Leave empty to use this provider's default
     public var model: String
-    /// 判断另用哪个模型（搜索时理解一句话、给结果排序）；留空用这家默认的：OpenRouter 是 Jev，多数和 model 相同
+    /// Which model to use separately for judging (understanding a search sentence, ranking results); leave empty for this provider's default: Jev for OpenRouter, mostly the same as model
     public var judgeModel: String
-    /// 讨论时先想一遍再答：更仔细，也更慢
+    /// Think first before answering in discussions: more careful, and slower
     public var thinking: Bool
 
     public init(vendor: Vendor = .openRouter, address: String = "", model: String = "", judgeModel: String = "", thinking: Bool = false) {
         (self.vendor, self.address, self.model, self.judgeModel, self.thinking) = (vendor, address, model, judgeModel, thinking)
     }
 
-    /// 实际用的模型；自定义的没填时为 nil
+    /// The model actually used; nil for custom when none is entered
     public var chosenModel: String? { model.isEmpty ? vendor.defaultModel : model }
 
-    /// 判断交给 Jev：只有 OpenRouter 转接它，是那里默认的；填了别的判断模型就不用它
+    /// Judging goes to Jev: only OpenRouter routes it, and it's the default there; not used if another judge model is entered
     public var usesJev: Bool { vendor == .openRouter && (judgeModel.isEmpty || judgeModel == Jev.model) }
 
-    /// 拿生成模型来判断时用哪个
+    /// Which model to use when judging with a generation model
     var chosenJudgeModel: String? { judgeModel.isEmpty || usesJev ? vendor.defaultJudgeModel ?? chosenModel : judgeModel }
 
-    /// 请求发到哪：自定义的地址容许带着结尾的斜杠或整条 /chat/completions
+    /// Where requests go: custom addresses may include a trailing slash or the whole /chat/completions
     var base: URL? {
         guard vendor == .custom else { return URL(string: vendor.address!) }
         var text = address.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -3,27 +3,27 @@ import CoreGraphics
 import ImageIO
 import simd
 
-/// 12 种叫得出名字的颜色。搜索里的「绿色」「white」会映射到这里
+/// 12 nameable colors. 「绿色」 (green) and "white" in search map to these
 public enum ColorName: String, Codable, CaseIterable, CodingKeyRepresentable, Sendable {
     case red, orange, yellow, green, cyan, blue, purple, pink, brown, black, white, gray
 }
 
-/// 颜色统计：每种颜色占画面的比例，和按面积排的几个主色。存在卡片的 colors 字段里
+/// Color stats: each color's share of the image, and a few dominant colors by area. Stored in the card's colors field
 public struct ColorProfile: Codable, Equatable, Sendable {
     /// 0～1
     public var share: [ColorName: Float]
-    /// 十六进制，按面积从大到小
+    /// Hex, by area from largest to smallest
     public var swatches: [String]
 }
 
 extension ColorProfile {
-    /// 存在卡片 colors 字段里的写法读回来
+    /// Read back what's stored in the card's colors field
     public init?(json: String) {
         guard let profile = try? JSONDecoder().decode(Self.self, from: Data(json.utf8)) else { return nil }
         self = profile
     }
 
-    /// 一眼看上去是什么颜色：占得最多的彩色，占到 15% 才算；不够就是黑、白、灰里占得最多的。资料库按颜色分组用
+    /// What color it looks like at a glance: the most common chromatic color, counted only at 15% or more; otherwise the most common of black, white and gray. Used to group the library by color
     public var main: ColorName? {
         let neutral: Set<ColorName> = [.black, .white, .gray]
         if let hue = share.filter({ !neutral.contains($0.key) }).max(by: { $0.value < $1.value }), hue.value >= 0.15 { return hue.key }
@@ -31,9 +31,9 @@ extension ColorProfile {
     }
 }
 
-/// 从像素算颜色，不用模型：结果确定，几毫秒完成
+/// Colors computed from pixels, without a model: deterministic, done in milliseconds
 enum ColorAnalysis {
-    /// 存进卡片 colors 字段的写法
+    /// How it's written into the card's colors field
     static func json(ofImageAt url: URL) -> String? {
         profile(ofImageAt: url).flatMap { try? JSONEncoder().encode($0) }.map { String(decoding: $0, as: UTF8.self) }
     }
@@ -64,13 +64,13 @@ enum ColorAnalysis {
         return ColorProfile(share: counts.mapValues { Float($0) / total }, swatches: dominant(samples, k: 5).map(hex))
     }
 
-    /// 按色相、饱和度、明度把一个像素归到一种颜色
+    /// Assign a pixel to a color by hue, saturation and brightness
     static func classify(_ c: SIMD3<Float>) -> ColorName {
         let maxC = max(c.x, c.y, c.z), minC = min(c.x, c.y, c.z)
         let v = maxC, d = maxC - minC
         let s = maxC == 0 ? 0 : d / maxC
         if v < 0.2 { return .black }
-        if s < 0.22 && v > 0.8 { return .white }          // 米白、旧纸也算白
+        if s < 0.22 && v > 0.8 { return .white }          // Off-white and old paper count as white too
         if s < 0.14 || d < 0.07 { return v < 0.35 ? .black : .gray }
         var h: Float
         if maxC == c.x { h = (c.y - c.z) / d } else if maxC == c.y { h = 2 + (c.z - c.x) / d } else { h = 4 + (c.x - c.y) / d }
@@ -88,7 +88,7 @@ enum ColorAnalysis {
         }
     }
 
-    /// 简单 k-means 取主色
+    /// Simple k-means for dominant colors
     private static func dominant(_ samples: [SIMD3<Float>], k: Int) -> [SIMD3<Float>] {
         guard samples.count >= k else { return samples }
         var centers = (0..<k).map { samples[$0 * samples.count / k] }

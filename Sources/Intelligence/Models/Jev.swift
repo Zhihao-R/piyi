@@ -1,11 +1,11 @@
 import Foundation
 
-/// Jev：专做判断的云端模型，经 OpenRouter 转接，用同一把密钥。
-/// 不写文字，直接给每个选项的概率；一次请求里的几道题同时答，搜一句话从 2.7 秒降到 1.3 秒。不能看图
+/// Jev: a cloud model made just for judging, routed through OpenRouter with the same key.
+/// It writes no text, just gives each option a probability; several questions in one request are answered together, cutting a search sentence from 2.7 s to 1.3 s. Can't see images
 public struct Jev: Judgment {
     public let name = "Jev"
     public let seesImages = false
-    /// 只在主题筛选上试过：0.85 时最准，照搬 deepseek 的 0.75 要差一截
+    /// Only tried on topic filtering: most accurate at 0.85; reusing deepseek's 0.75 is noticeably worse
     public let sureEnough = 0.85
     static let model = "typesafe/jev-1.13"
 
@@ -13,7 +13,7 @@ public struct Jev: Judgment {
 
     public init(via cloud: Cloud) { self.cloud = cloud }
 
-    /// 只有 OpenRouter 转接它；设置里另填了判断模型就不用它
+    /// Only OpenRouter routes it; not used if a separate judge model is entered in Settings
     public var isReady: Bool { cloud.isReady && cloud.setup.usesJev }
 
     public func judge(_ facts: Facts, _ questions: [Question], images: [Data]) async throws -> [Verdict] {
@@ -39,7 +39,7 @@ public struct Jev: Judgment {
         }
     }
 
-    /// 结论取概率最高的选项，把握就是它的概率（回答里另有一个 confidence，口径不同，选型时没用它定线）
+    /// The conclusion is the option with the highest probability, and the confidence is that probability (the answer also has a confidence field, measured differently; it wasn't used to set thresholds when choosing models)
     static func verdict(_ answer: [String: Any], for question: Question) throws -> Verdict {
         let probabilities: [Double]
         switch question.answers {

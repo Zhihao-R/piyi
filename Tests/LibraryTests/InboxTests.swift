@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import Library
 
-/// 手机收件箱里的文件 → 要收的东西：快捷指令存的 .txt 按文字收，其它文件和拖进来的一样收
+/// Files in the phone inbox → things to collect: .txt saved by Shortcuts are collected as text, other files the same as dragged-in ones
 @Suite struct InboxTests {
     private func shared(_ name: String, _ data: Data) -> [Source]? {
         let dir = FileManager.default.temporaryDirectory.appending(path: "inbox-\(UUID().uuidString)", directoryHint: .isDirectory)

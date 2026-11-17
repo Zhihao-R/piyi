@@ -1,17 +1,17 @@
 import Foundation
 import Library
 
-/// 拼法：把讨论记录和桌变成发给模型的那串消息。针对模型眼下的长度和价格定的做法会过时，所以单独成一部分，可以整个换掉；
-/// 讨论记录和内核的其余部分不跟着动
+/// Recipe: turns the discussion record and the desk into the list of messages sent to the model. Approaches tuned to today's model lengths and prices will go stale, so it's a separate part that can be swapped out whole;
+/// the discussion record and the rest of the kernel don't change with it
 public protocol Recipe: Sendable {
     func chat(desk: [DeskCard], events: [DiscussionEvent], tools: [ToolSpec]) -> Chat
 }
 
-/// 桌上的一张卡，内核替拼法备好的：段落切好、编好号，图片卡带上图
+/// One card on the desk, prepared by the kernel for the recipe: paragraphs split and numbered, image cards carry the image
 public struct DeskCard: Sendable {
     public var card: Card
     public var passages: [Passage]
-    /// 图片卡附上的图（JPEG）
+    /// The image attached to an image card (JPEG)
     public var pictures: [Data]
 
     public init(card: Card, passages: [Passage], pictures: [Data] = []) {
@@ -21,9 +21,9 @@ public struct DeskCard: Sendable {
     public var id: Int64 { card.id! }
 }
 
-/// 第一种拼法：桌上的卡整篇原文放进去。按固定顺序拼，越靠前的越少变，第 2 轮起大部分内容命中服务方的缓存：
-/// 工具说明 → 规则 → 桌 → 讨论记录。对话开始后放上桌的卡追加在记录里它放上来的地方；
-/// 拿下桌时整份重拼，当时桌上的卡全部写进开头的桌，拿下的卡就不在了
+/// First recipe: the desk's cards go in as full original text. Assembled in a fixed order, least-changing first, so from round 2 most content hits the provider's cache:
+/// tool descriptions → rules → desk → discussion record. Cards put on the desk after the conversation starts are appended in the record where they were added;
+/// when one is taken off, everything is reassembled: cards then on the desk all go into the desk at the start, and the removed card is gone
 public struct WholeText: Recipe {
     public init() {}
 
@@ -42,7 +42,7 @@ public struct WholeText: Recipe {
 
     public func chat(desk: [DeskCard], events: [DiscussionEvent], tools: [ToolSpec]) -> Chat {
         let live = Dictionary(uniqueKeysWithValues: desk.filter { $0.card.trashedAt == nil }.map { ($0.id, $0) })
-        // 最后一次拿下桌之后放上来的卡跟在记录里，其余在桌上的卡写进开头的桌
+        // Cards put on after the last removal follow in the record; the other cards on the desk go into the desk at the start
         let lastRemoval = events.lastIndex { if case .removed = $0.what { true } else { false } } ?? -1
         let inline = Set(events[(lastRemoval + 1)...].compactMap { if case .placed(let m) = $0.what { m.card } else { nil } })
         let opening = desk.filter { live[$0.id] != nil && !inline.contains($0.id) }
@@ -51,7 +51,7 @@ public struct WholeText: Recipe {
 
         var messages: [ChatMessage] = [.text(.system, Self.rules), ChatMessage(.user, deskParts)]
         let answered = Set(events.compactMap { if case .result(let r) = $0.what { r.call } else { nil } })
-        // 工具结果要紧跟在调用后面：等结果的时候放上桌、拿下桌的灰字先攒着，结果交完再说
+        // A tool result must directly follow its call: gray notes about cards put on or taken off while waiting are held until the result is in
         var pending = Set<String>(), held: [ChatMessage.Part] = []
         func say(_ parts: [ChatMessage.Part]) {
             if pending.isEmpty { messages.append(ChatMessage(.user, parts)) } else { held += parts }
@@ -63,7 +63,7 @@ public struct WholeText: Recipe {
             case .answer(let answer):
                 messages.append(ChatMessage(.assistant, [.text(answer.text)], thought: answer.thought))
             case .calls(let said, let thought, let calls):
-                // 中途停下、没等到结果的调用不交给模型
+                // Calls stopped midway that never got a result aren't given to the model
                 let done = calls.filter { answered.contains($0.id) }
                 guard !done.isEmpty else { continue }
                 messages.append(ChatMessage(.assistant, said.isEmpty ? [] : [.text(said)], calls: done, thought: thought))
@@ -88,7 +88,7 @@ public struct WholeText: Recipe {
         return Chat(messages: Self.merged(messages), tools: tools, stableThrough: Chat.Position(message: 1, part: deskParts.count - 1))
     }
 
-    /// 相邻的用户消息并成一条：有的服务方不收连着两条用户消息（没答完又问了一句、桌后面紧跟第一个问题）
+    /// Merge adjacent user messages into one: some providers reject two user messages in a row (asked again before an answer finished, the first question right after the desk)
     static func merged(_ messages: [ChatMessage]) -> [ChatMessage] {
         var out: [ChatMessage] = []
         for message in messages {
@@ -97,7 +97,7 @@ public struct WholeText: Recipe {
         return out
     }
 
-    /// 一张卡：卡号、类型、标题、出处，然后是按段落编号的原文。图片附上图本身和理解出的描述
+    /// One card: card number, type, title, source, then the original text with numbered paragraphs. Images attach the image itself and the description from understanding
     static func block(_ desk: DeskCard) -> [ChatMessage.Part] {
         let card = desk.card
         var lines = ["<card id=\"c\(desk.id)\">", "类型：\([Prompt.label(card.kind), card.format].compactMap { $0 }.joined(separator: " · "))",

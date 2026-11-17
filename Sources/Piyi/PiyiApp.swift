@@ -15,14 +15,14 @@ struct PiyiApp: App {
                     await model.start(quickCollect: app.quickCollect)
                 }
         }
-        // 每次启动都打开主窗口：上次关着窗口退出时，系统默认不再打开它，资料库和理解队列也就没人启动
+        // Open the main window on every launch: if the window was closed at last quit, the system won't reopen it by default, and nothing would start the library and understanding queue
         .defaultLaunchBehavior(.presented)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("新建画板") { model.newBoard() }.keyboardShortcut("n")
             }
             CommandMenu("画布") {
-                // 读一下，选中和裁剪状态变了菜单就刷新
+                // Read it so the menu refreshes when selection and crop state change
                 let _ = model.canvasTick
                 Button("搜索") { model.searchFocus += 1 }.keyboardShortcut("f")
                 Button("回到全景") { model.canvas?.fitAll(animated: true) }.keyboardShortcut("0")
@@ -56,10 +56,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var model: AppModel?
     @MainActor let quickCollect = QuickCollect()
 
-    /// 快捷键和「服务」菜单在窗口出来之前就要接住
+    /// The shortcut and the Services menu must be caught before the window appears
     @MainActor func applicationWillFinishLaunching(_ notification: Notification) { quickCollect.listen() }
 
-    /// 退出前先把正在写的文字卡存好：⌘Q 不会让文本框失去焦点，不等它的话写到一半的字就丢了
+    /// Save the text card being written before quitting: ⌘Q doesn't make the text field lose focus, and without waiting, half-written text would be lost
     @MainActor func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let saving = model?.canvas?.finishEditing() else { return .terminateNow }
         Task {

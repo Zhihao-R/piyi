@@ -1,6 +1,6 @@
 import Foundation
 
-/// 抓下来的网页和几个读取方法
+/// A fetched web page and a few ways to read it
 struct Page: Sendable {
     let html: String
     let url: URL
@@ -10,7 +10,7 @@ struct Page: Sendable {
         self.url = url
     }
 
-    /// 按页面声明的编码解码（GBK 页面不少），否则宽松地按 UTF-8：截断在半个字上也不会整页变乱码
+    /// Decode with the encoding the page declares (plenty of GBK pages), otherwise leniently as UTF-8: being cut in the middle of a character doesn't garble the whole page
     init?(data: Data, url: URL) {
         let bytes = data.prefix(3_000_000)
         let head = String(decoding: bytes.prefix(2048), as: UTF8.self).lowercased()
@@ -23,8 +23,8 @@ struct Page: Sendable {
         }
     }
 
-    /// <meta property="og:title" content="…">，属性顺序不限；content 里可以有另一种引号（Don't）。
-    /// 先一遍找出所有 meta 标签，再只在标签里面读属性：整页一个式子去匹配，碰上没有 content 的标签会一路扫到页尾，小页面也要几秒
+    /// <meta property="og:title" content="…">, attributes in any order; content may contain the other kind of quote (Don't).
+    /// First find all meta tags in one pass, then read attributes only inside each tag: matching the whole page with one pattern scans to the end of the page on a tag without content, taking seconds even on small pages
     func meta(_ name: String) -> String? {
         for tag in html.allMatches(#"<meta\b[^>]*>"#) {
             guard tag.firstMatch(#"(?:property|name)\s*=\s*["']([^"']*)["']"#, group: 1)?.caseInsensitiveCompare(name) == .orderedSame,
@@ -40,7 +40,7 @@ struct Page: Sendable {
         html.firstMatch(#"<title[^>]*>([^<]+)</title>"#, group: 1).map(Page.decode)?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// 网页里所有 <p> 段落的文字
+    /// The text of all <p> paragraphs in the page
     static func paragraphs(in html: String) -> String {
         withoutScripts(html).allMatches(#"<p[^>]*>([\s\S]*?)</p>"#)
             .map { decode($0.replacing(#/<[^>]+>/#, with: "")).trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -48,7 +48,7 @@ struct Page: Sendable {
             .joined(separator: "\n")
     }
 
-    /// 正文按原顺序切成文字段和配图：块级标签（p、section、div…）之间的文字算一段，<img> 记下懒加载地址
+    /// Split the body into text segments and images in original order: text between block-level tags (p, section, div…) is one segment, <img> records the lazy-load address
     static func blocks(in html: String, image pattern: String) -> [Block] {
         var blocks: [Block] = [], text = ""
         func flush() {
@@ -56,7 +56,7 @@ struct Page: Sendable {
             if line.count > 1 { blocks.append(.text(line)) }
             text = ""
         }
-        // 逐个读标签和文字：块级标签断段，<img> 断段并记下图，行内标签（span、strong…）不断
+        // Read tags and text one by one: block-level tags break segments, <img> breaks and records the image, inline tags (span, strong…) don't
         for token in withoutScripts(html).allMatches(#"<[^>]*>|[^<]+"#) {
             guard token.hasPrefix("<") else { text += token; continue }
             guard let name = token.firstMatch(#"^</?\s*([a-z0-9]+)"#, group: 1)?.lowercased() else { continue }

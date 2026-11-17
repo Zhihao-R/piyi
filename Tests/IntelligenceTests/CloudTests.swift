@@ -4,7 +4,7 @@ import Testing
 @testable import Library
 @testable import Intelligence
 
-/// 各家服务商的请求差在哪：这些写错了要等真连上那家才发现
+/// How each provider's requests differ: mistakes here would only show up once actually connected to that provider
 @Suite struct CloudTests {
     private func cloud(_ vendor: Vendor, thinking: Bool = false, address: String = "") -> Cloud {
         Cloud(CloudSetup(vendor: vendor, address: address, model: "m", thinking: thinking), key: { _ in "k" })
@@ -21,11 +21,11 @@ import Testing
         #expect(Vendor.deepSeek.thinkingFields(on: false) as NSDictionary == ["thinking": ["type": "disabled"]])
         #expect(Vendor.volcano.thinkingFields(on: true) as NSDictionary == ["thinking": ["type": "enabled"]])
         #expect(Vendor.bailian.thinkingFields(on: false) as NSDictionary == ["enable_thinking": false])
-        // 硅基流动只在打开时发，自定义的不发
+        // SiliconFlow only sends it when on; custom doesn't send it
         #expect(Vendor.siliconFlow.thinkingFields(on: false).isEmpty)
         #expect(Vendor.siliconFlow.thinkingFields(on: true) as NSDictionary == ["enable_thinking": true])
         #expect(Vendor.custom.thinkingFields(on: true).isEmpty)
-        // 关不掉思考的几家，「关」是最低一档
+        // For providers whose thinking can't be turned off, "off" is the lowest level
         #expect(Vendor.kimi.thinkingFields(on: false) as NSDictionary == ["reasoning_effort": "low"])
         #expect(Vendor.openAI.thinkingFields(on: false) as NSDictionary == ["reasoning_effort": "none"])
     }
@@ -68,7 +68,7 @@ import Testing
         #expect(cloud.keyState == .ready)
     }
 
-    // MARK: Claude 的接口
+    // MARK: Claude's API
 
     @Test func claudeGetsItsOwnShape() throws {
         let body = cloud(.anthropic, thinking: true).claudeBody(Chat(messages: [
@@ -86,7 +86,7 @@ import Testing
         let said = try #require(messages[1]["content"] as? [[String: Any]])
         #expect(said.map { $0["type"] as? String } == ["text", "tool_use"])
         #expect((said[1]["input"] as? [String: String]) == ["q": "猫"])
-        // 工具结果和紧跟着的那句话并成用户的一条
+        // A tool result and the message right after it are merged into one user message
         let back = try #require(messages[2]["content"] as? [[String: Any]])
         #expect(back.map { $0["type"] as? String } == ["tool_result", "text"])
         #expect(back[0]["tool_use_id"] as? String == "a")
@@ -100,13 +100,13 @@ import Testing
             ChatMessage(.tool, [.text("结果")], callID: "a"),
         ], tools: []), thinking: false)
         let said = try #require((body["messages"] as? [[String: Any]])?[1]["content"] as? [[String: Any]])
-        // 没等到结果的那次调用去掉，其余原样
+        // The call that never got a result is dropped; the rest stays as is
         #expect(said.map { $0["type"] as? String } == ["thinking", "tool_use"])
         #expect(said[0]["signature"] as? String == "sig")
-        // 换到别家接着聊：这段不是文字，不当成想的内容发过去
+        // Switching to another provider mid-conversation: this part isn't text, so it isn't sent as thinking content
         let chat = Chat(messages: [ChatMessage(.assistant, [.text("答")], thought: stored)], tools: [])
         #expect((self.cloud(.deepSeek).body(chat)["messages"] as? [[String: Any]])?[0]["reasoning_content"] == nil)
-        // 反过来，别家的文字给 Claude：照常拼这一轮，不丢
+        // The other way round, another provider's text going to Claude: this turn is assembled as usual, nothing dropped
         let turn = cloud(.anthropic).claudeBody(Chat(messages: [.text(.user, "问"), ChatMessage(.assistant, [.text("答")], thought: "[]")], tools: []), thinking: false)
         #expect((turn["messages"] as? [[String: Any]])?.count == 2)
     }
@@ -135,7 +135,7 @@ import Testing
     @Test func jevIsTheDefaultJudgeOnOpenRouterOnly() {
         #expect(Jev(via: cloud(.openRouter)).isReady)
         #expect(!Jev(via: cloud(.deepSeek)).isReady)
-        // 另填了判断模型就不用它
+        // With a separate judgment model set, it isn't used
         #expect(!Jev(via: Cloud(CloudSetup(judgeModel: "google/gemini-4-hydrogen"), key: { _ in "k" })).isReady)
         #expect(CloudSetup(vendor: .openAI).chosenJudgeModel == "gpt-6-luna")
         #expect(CloudSetup(vendor: .deepSeek).chosenJudgeModel == "deepseek-flash")
@@ -158,7 +158,7 @@ private struct FakeGeneration: Generation {
     func generate(_ prompt: String, images: [Data], careful: Bool) async throws -> String { reply() }
 }
 
-/// 想的内容跟着讨论记录存下来；加这一项之前存的记录照样读得出
+/// Thinking content is saved with the discussion record; records saved before this field was added still read fine
 @Suite struct ThoughtRecordTests {
     @Test func thoughtsSurviveStorage() throws {
         let call = ToolCall(id: "a", name: "search", arguments: "{}")

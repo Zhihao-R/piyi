@@ -1,18 +1,18 @@
 import Foundation
 
-/// 正文里记着配图位置的文章（目前只有公众号）：图的位置单独一行 imageMark，第 k 个对应多图卡的第 k 张其余图片（不算封面）。
-/// 标记跟着正文走，截断、补字都不会错位；凡是把正文当纯文字用的地方（模型、搜索、卡片摘录）都先过 plain
+/// An article whose body records where its images go (currently only WeChat Official Accounts): each image position is its own imageMark line, the k-th matching the k-th other image of the multi-image card (not counting the cover).
+/// The marks travel with the body, so truncating or adding text doesn't shift them; anywhere the body is used as plain text (model, search, card excerpt) passes through plain first
 public enum Article {
     public static let imageMark = "\u{FFFC}"
 
-    /// 去掉配图标记。卡片摘录在数据库里做同样的事（Boards.swift 的 CardFace.columns），改一处要一起改
+    /// Remove image marks. The card excerpt does the same in the database (CardFace.columns in Boards.swift); change both together
     public static func plain(_ body: String) -> String {
         body.replacingOccurrences(of: imageMark + "\n", with: "").replacingOccurrences(of: imageMark, with: "")
     }
 
     public enum Segment: Equatable { case text(String), image(Int) }
 
-    /// 正文切成文字段和配图，按原顺序。没被标记用上的配图（以前抓的、或正文被模型改写过的）依次放在文末
+    /// Split the body into text segments and images, in original order. Images no mark used (fetched earlier, or the body was rewritten by the model) go at the end in order
     public static func segments(_ body: String, images: Int) -> [Segment] {
         var segments: [Segment] = [], text: [String] = [], k = 0
         let flush = { if !text.isEmpty { segments.append(.text(text.joined(separator: "\n"))); text = [] } }
@@ -25,7 +25,7 @@ public enum Article {
         return segments + (min(k, images)..<images).map(Segment.image)
     }
 
-    /// 公众号开头几行的署名：「👤 采访: 壹小姐」→「采访 壹小姐」。后半截要像个名字（短、不带句读），正文句子不会被当成署名
+    /// Bylines in the first few lines of a WeChat Official Accounts article: 「👤 采访: 壹小姐」→「采访 壹小姐」 ("Interview: Ms. Yi"). The second half must look like a name (short, no punctuation), so body sentences aren't taken as bylines
     public static func credit(_ line: String) -> String? {
         guard let match = line.firstMatch(of: #/^[^\p{L}\p{N}]*((?:采访|整理|编辑|排版|作者|撰文|责编|校对|统筹|摄影)[^:：|｜\s]{0,4})\s*[:：|｜]\s*([^，。！？；,.!?;]{1,12})$/#)
         else { return nil }

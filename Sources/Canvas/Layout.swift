@@ -2,18 +2,18 @@ import CoreGraphics
 import Library
 import Tokens
 
-/// 新卡落在哪由画布决定：收集、移到别的画板、放画板入口都从这里取位置
+/// Where new cards land is decided by the canvas: collecting, moving to another board, and placing board entries all get their position here
 public enum Layout {
-    /// 画板入口的尺寸
+    /// Size of a board entry
     public static let entrySize = CGSize(width: 240, height: 180)
 
-    /// 一批卡按收进来的顺序排成等高的整齐几行，左上角从 origin 开始；压到别的卡就整批往下挪到空处
+    /// Arrange a batch of cards in collection order into neat rows of equal height, top-left corner at origin; if it covers other cards, move the whole batch down to free space
     public static func arranged(_ sizes: [CGSize], from origin: CGPoint, avoiding others: [CGRect]) -> [CGRect] {
         let rects = Grid.arrange(aspects: sizes.map { $0.height / $0.width }, origin: CGPoint(x: Grid.snap(origin.x), y: Grid.snap(origin.y)))
         return clear(rects, of: others)
     }
 
-    /// 一批卡保持各自的尺寸，从左往右排成一行，放在已有卡片的下方（移到另一个画板时用）
+    /// A batch of cards keeping their own sizes, laid left to right in one row below the existing cards (used when moving to another board)
     public static func below(_ others: [CGRect], sizes: [CGSize]) -> [CGRect] {
         let bounds = others.reduce(CGRect.null) { $0.union($1) }
         var x = bounds.isNull ? 0 : Grid.snap(bounds.minX)
@@ -24,7 +24,7 @@ public enum Layout {
         }
     }
 
-    /// 一组卡保持彼此的位置，整组的中心对准 point；压到别的卡就整批往下挪到空处（粘贴时用）
+    /// A group of cards keeping their relative positions, with the group's center on point; if it covers other cards, move the whole batch down to free space (used when pasting)
     public static func around(_ point: CGPoint, frames: [CGRect], avoiding others: [CGRect]) -> [CGRect] {
         let bounds = frames.reduce(CGRect.null) { $0.union($1) }
         guard !bounds.isNull else { return frames }
@@ -32,12 +32,12 @@ public enum Layout {
         return clear(frames.map { $0.offsetBy(dx: dx, dy: dy) }, of: others)
     }
 
-    /// 一张卡接在已有卡片的最后：最下面那一行右边还有地方就接在右边，行满了另起一行。
-    /// 自动分拣找不到相似的卡时用它，一张张放进来排成几行，不摞成一竖条
+    /// One card appended after the existing cards: to the right of the bottom row if there's room, otherwise on a new row.
+    /// Used when auto sorting finds no similar card, so cards placed one at a time form rows instead of piling into a vertical strip
     public static func appended(_ size: CGSize, to others: [CGRect]) -> CGRect {
         let bounds = others.reduce(CGRect.null) { $0.union($1) }
         guard !bounds.isNull else { return CGRect(origin: .zero, size: size) }
-        // 最下面那一行：和最靠下的卡在竖直方向有重叠的那些
+        // The bottom row: cards that overlap vertically with the lowest card
         let lowest = others.max { $0.maxY < $1.maxY }!, row = others.filter { $0.maxY > lowest.minY }
         let x = Grid.snap(row.map(\.maxX).max()! + Grid.unit), top = row.map(\.minY).min()!
         let limit = bounds.minX + max(bounds.width, Grid.rowWidth([size.height / size.width]) * 3)
@@ -45,16 +45,16 @@ public enum Layout {
         return below(others, sizes: [size])[0]
     }
 
-    /// 一张卡放在 point 附近，压到别的卡就往下挪到空处
+    /// One card placed near point; if it covers other cards, move it down to free space
     public static func spot(_ size: CGSize, near point: CGPoint, avoiding others: [CGRect]) -> CGRect {
         clear([CGRect(x: Grid.snap(point.x - size.width / 2), y: Grid.snap(point.y - size.height / 2), width: size.width, height: size.height)], of: others)[0]
     }
 
-    /// 聚拢：一组卡按顺序排成等高的整齐几行，尽量大、又放得进 area（屏幕点）；放不下时缩到最小行高，往下延伸。
-    /// 整块在 area 里居中。张数少时不撑满宽度，免得一两张卡被拉成巨幅
+    /// Gathering: arrange a set of cards in order into neat rows of equal height, as large as possible while fitting in area (screen points); when they don't fit, shrink to the minimum row height and extend downward.
+    /// The whole block is centered in area. With few cards it doesn't fill the width, so one or two cards don't get blown up huge
     static func gathered(aspects: [CGFloat], in area: CGRect) -> [CGRect] {
         guard !aspects.isEmpty, area.width > 0, area.height > 0 else { return [] }
-        // 两边留出呼吸的空间：铺满到窗边会显得挤
+        // Leave breathing room on both sides: filling all the way to the window edge feels cramped
         let area = area.insetBy(dx: area.width * 0.06, dy: 0)
         let tallest = min(area.height * (aspects.count == 1 ? 0.75 : 0.45), 360)
         var rowHeight = max(tallest, gatheredMinRow)
@@ -70,9 +70,9 @@ public enum Layout {
         return rects.map { $0.offsetBy(dx: dx, dy: dy) }
     }
 
-    /// 资料库（不分组时是一整组）：各组依次往下排，每组上方空出写标题的地方；所有组同一行宽，组里排成等高的整齐几行。
-    /// 像一页长文那样往下读：行宽有上限，卡再多也不会排成一大块、缩到看不清。
-    /// groups 是每组各张卡的高 / 宽，limit 是行宽上限；返回每组标题区的左上角和组里各张卡的矩形
+    /// Library (one whole group when ungrouped): groups go one after another downward, each with room above for its title; all groups share one row width, and each group is laid out in neat rows of equal height.
+    /// Read downward like a long page: the row width is capped, so however many cards there are they never form one big block shrunk too small to see.
+    /// groups are each card's height / width per group, limit is the row-width cap; returns each group's title-area top-left corner and the rects of the cards in it
     static func shelves(_ groups: [[CGFloat]], width limit: CGFloat = shelfWidth) -> [(title: CGPoint, rects: [CGRect])] {
         let all = groups.flatMap { $0 }, rowHeight = CGFloat(Space.rowHeight)
         let width = max(min(Grid.rowWidth(all), limit), all.map { rowHeight / $0 }.max() ?? 0)
@@ -84,12 +84,12 @@ public enum Layout {
         }
     }
 
-    /// 分组标题占的高度、组与组之间多空的距离（世界坐标）
+    /// Height taken by a group title, and the extra space between groups (world coordinates)
     static let shelfTitle = Grid.unit * 3, shelfGap = Grid.unit * 2
-    /// 资料库的行宽上限（世界坐标）：约十张卡，常用窗口按宽取景时缩放在一半上下，标题和卡都看得清
+    /// Row-width cap for the library (world coordinates): about ten cards; at common window sizes fitted to width the zoom is around half, so titles and cards are both readable
     static let shelfWidth = Grid.unit * 120
 
-    /// 聚拢时最小的行高（屏幕点）：再小就看不清了，宁可往下延伸
+    /// Minimum row height when gathering (screen points): any smaller is unreadable, so extend downward instead
     static let gatheredMinRow: CGFloat = 96
 
     private static func clear(_ rects: [CGRect], of others: [CGRect]) -> [CGRect] {
@@ -101,9 +101,9 @@ public enum Layout {
 }
 
 extension CanvasView {
-    /// 当前画板上已有的卡占的地方
+    /// The area taken by cards already on the current board
     public var occupied: [CGRect] { items.values.map(\.bounds) }
 
-    /// 当前视野的中央（世界坐标）：粘贴的东西放这里
+    /// Center of the current view (world coordinates): pasted things go here
     public var visibleCenter: CGPoint { worldPoint(CGPoint(x: viewport.midX, y: viewport.midY)) }
 }

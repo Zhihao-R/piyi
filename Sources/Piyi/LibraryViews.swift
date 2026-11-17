@@ -3,7 +3,7 @@ import Library
 import Intelligence
 import Canvas
 
-/// 资料库（全部卡片、未归类、废纸篓）的几种看法：默认从新到旧一整片，或者按天、按颜色、按来源分组
+/// Ways to view the library (All Cards, Unsorted, Trash): by default newest to oldest in one stretch, or grouped by day, color, or source
 enum LibraryView: String, CaseIterable, Codable, Sendable {
     case recent, day, color, source
 
@@ -25,7 +25,7 @@ enum LibraryView: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// 每天一组，新的在前
+    /// One group per day, newest first
     private static let byDay = Grouping { face in
         let calendar = Calendar.current
         let day = calendar.startOfDay(for: face.collectedAt)
@@ -40,7 +40,7 @@ enum LibraryView: String, CaseIterable, Codable, Sendable {
         return Grouping.Group(title: title, rank: -day.timeIntervalSince1970)
     }
 
-    /// 按主色一组，组按色环排，黑白灰在后；没有画面的（文字卡、没封面的链接）排在最后，文字卡在前
+    /// One group per main color, groups ordered around the color wheel, black/white/gray after; cards with no visual (text cards, links without a cover) last, text cards first
     private static let byColor = Grouping { face in
         let colors = ColorName.allCases
         guard let color = face.colors.flatMap(ColorProfile.init(json:))?.main else {
@@ -49,7 +49,7 @@ enum LibraryView: String, CaseIterable, Codable, Sendable {
         return Grouping.Group(title: color.label, rank: Double(colors.firstIndex(of: color)!))
     }
 
-    /// 按从哪收来的一组：网站用大家叫惯的名字，你写的一组，本机文件和剪贴板一组；张数多的在前
+    /// One group per source: websites by their familiar names, one group for what you wrote, one for local files and the clipboard; larger groups first
     private static let bySource = Grouping { face in
         guard let host = face.site else {
             return Grouping.Group(title: face.isOwnText ? String(localized: "你写的") : String(localized: "本机"))

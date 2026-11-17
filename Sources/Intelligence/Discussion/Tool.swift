@@ -1,29 +1,29 @@
 import Foundation
 import Library
 
-/// AI 在回答过程中可以调用的一项能力。讨论内核不认识具体的工具，只认这份写法：加一个工具只是多写一个
+/// A capability the AI can call while answering. The discussion kernel doesn't know specific tools, only this description: adding a tool is just writing one more
 public protocol Tool: Sendable {
-    /// 给模型看的：英文名、什么时候该用、参数格式
+    /// For the model: English name, when to use it, parameter format
     var spec: ToolSpec { get }
-    /// 给你看的名字：「找卡」
+    /// The name shown to you: "Find cards"
     var title: String { get }
     var nature: ToolNature { get }
-    /// 拿到模型填的参数（JSON），执行。desk 是眼下桌上的卡。出错就抛，内核替它写「没成功」
+    /// Takes the parameters the model filled in (JSON) and runs. desk is the cards currently on the desk. Throw on error; the kernel writes "didn't succeed" for it
     func run(_ arguments: String, desk: Set<Int64>) async throws -> ToolOutput
 }
 
-/// 只读的直接执行；改资料的先摆成提议，你点了才执行（第一版没有改资料的工具）
+/// Read-only ones run directly; ones that change data are laid out as a proposal first and run only when you click (the first version has no data-changing tools)
 public enum ToolNature: Sendable { case reading, changing }
 
 public struct ToolOutput: Sendable {
-    /// 交给模型看的文字，内核截到 4000 字
+    /// Text handed to the model; the kernel truncates it to 4000 characters
     public var text: String
-    /// 对话里那行灰字冒号后面的：「找卡：上下文管理」的「上下文管理」
+    /// What follows the colon in the gray line in the conversation: "context management" in "Find cards: context management"
     public var detail: String
-    /// 能被引用的几项
+    /// The items that can be cited
     public var items: [String] = []
     public var shown: ToolResult.Shown?
-    /// 另外花的钱（美元）
+    /// Extra money spent (USD)
     public var cost = 0.0
 
     public init(text: String, detail: String, items: [String] = [], shown: ToolResult.Shown? = nil, cost: Double = 0) {
@@ -31,16 +31,16 @@ public struct ToolOutput: Sendable {
     }
 }
 
-/// 模型填的参数不是约定的格式
+/// The parameters the model filled in aren't in the agreed format
 struct BadArguments: LocalizedError {
     var errorDescription: String? { String(localized: "参数格式不对") }
 }
 
-/// 找卡：参数直接是搜索条件，构造查询调 Searcher.find。不让搜索再理解一遍这句话：讨论里的模型已经理解过了，再理解要多等约 3 秒。
-/// 找到的是候选卡：还没放上桌，只摆出来让你挑，不能当依据引用
+/// Find cards: the parameters are the search conditions themselves, used to build a query for Searcher.find. Search doesn't re-understand the sentence: the model in the discussion already did, and doing it again costs about 3 more seconds.
+/// What's found are candidate cards: not yet on the desk, only laid out for you to pick from, and can't be cited as evidence
 public struct FindCards: Tool {
     let searcher: Searcher
-    /// 最多交回几张
+    /// At most how many to return
     static let limit = 8
 
     public init(searcher: Searcher) { self.searcher = searcher }
@@ -73,9 +73,9 @@ public struct FindCards: Tool {
         q.kinds = Set(a.kinds ?? [])
         q.days = a.days
         q.colors = a.color.map { [$0] } ?? []
-        // 桌上已有的不算候选：模型手里已经有它的原文
+        // Cards already on the desk aren't candidates: the model already has their original text
         let found = Array(await searcher.find(q, online: true).filter { !desk.contains($0) }.prefix(Self.limit))
-        // 停下了：搜索不会抛错，这里补一句，免得把半截的结果当成「没找到」
+        // Stopped: search doesn't throw, so add it here so a half-finished result isn't mistaken for "nothing found"
         try Task.checkCancellation()
         let briefs = Dictionary(uniqueKeysWithValues: await searcher.snapshot().map { ($0.id, $0.brief) })
         let lines = found.compactMap { id in briefs[id].map { "c\(id) \($0)" } }
@@ -85,12 +85,12 @@ public struct FindCards: Tool {
     }
 }
 
-/// 随机抽卡：模型会按意思找，但不会碰运气，「抽一张帮我解读」「随便挑几张我看看」缺的就是这一样。
-/// 给了它这个工具，这类话由它自己理解，不用为每种说法写一条规则。
-/// 抽到的和找卡找到的一样是候选卡：摆出来让你挑，不能当依据引用
+/// Draw random cards: the model searches by meaning but never leaves things to chance, which is exactly what "draw one and interpret it for me" or "pick a few at random for me to look at" need.
+/// With this tool, the model understands such requests itself; no need to write a rule for every phrasing.
+/// Drawn cards are candidates just like those from Find cards: laid out for you to pick from, and can't be cited as evidence
 public struct PickRandomCards: Tool {
     let searcher: Searcher
-    /// 一次最多抽几张
+    /// At most how many to draw at once
     static let limit = 5
 
     public init(searcher: Searcher) { self.searcher = searcher }
@@ -122,7 +122,7 @@ public struct PickRandomCards: Tool {
         q.days = a.days
         q.colors = a.color.map { [$0] } ?? []
         let count = min(max(a.count ?? 1, 1), Self.limit)
-        // 桌上已有的不抽：模型手里已经有它的原文
+        // Cards already on the desk aren't drawn: the model already has their original text
         let pool = Ranking.eligible(await searcher.snapshot(), q, now: .now).filter { Ranking.colorOK($0, q) && !desk.contains($0.id) }
         let picked = Array(pool.shuffled().prefix(count))
         let text = picked.isEmpty ? "没有符合条件的卡。"

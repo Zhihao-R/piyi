@@ -4,7 +4,7 @@ import Synchronization
 import GRDB
 @testable import Library
 
-/// 一步收下、收了就不丢、同一样东西只有一张：最终地址查重、重复收提到最前、收件箱存好才删、短句带网址、老的拦截页
+/// Collected in one step, never lost once collected, one card per thing: duplicate check by final URL, recollecting moves it to the top, inbox deleted only after saving, short text with a URL, old block pages
 @Suite struct IntakeTests {
     private func page(_ url: String, body: String = "抓到的正文") -> Material {
         var m = Material(kind: .web)
@@ -13,9 +13,9 @@ import GRDB
         return m
     }
 
-    // MARK: 最终地址查重（4.2）
+    // MARK: Duplicate check by final URL (4.2)
 
-    /// 先收过长链接，再收跳转到它的短链接：抽取完认出是同一样，占位卡并进已有那张
+    /// Collect a long link first, then a short link that redirects to it: after extraction it's recognized as the same, and the placeholder merges into the existing card
     @Test func shortLinkLandingOnCollectedPageIsTheSameCard() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -28,19 +28,19 @@ import GRDB
         #expect(try await store.card(short) == nil)
     }
 
-    /// 先收的是短链接：以后收长链接、再收同一个短链接，按网址查重都查得到这张
+    /// The short link was collected first: later collecting the long link, then the same short link again, the URL duplicate check finds this card
     @Test func cardCollectedByShortLinkIsFoundByFinalAddress() async throws {
         let store = try temporaryStore()
         let id = try await store.placeholder(.web, url: "https://b23.tv/abc", on: nil, frame: someFrame)
         #expect(try await store.fill(id, with: page("https://www.bilibili.com/video/BV1Wrp76mEsW/")) == .filled)
         #expect(try await store.card(forURL: "https://bilibili.com/video/BV1Wrp76mEsW?vd_source=x")?.id == id)
         #expect(try await store.card(forURL: "https://b23.tv/abc")?.id == id)
-        // 网址还是你收的那个，最终地址记作出处
+        // The URL is still the one you collected; the final URL is recorded as the source
         let card = try #require(try await store.card(id))
         #expect(card.url == "https://b23.tv/abc" && card.sourceURL == "https://www.bilibili.com/video/BV1Wrp76mEsW/")
     }
 
-    /// 没抓全时的最终地址常是登录页：两篇不同的文章都跳到同一个登录页，不能并成一张
+    /// When not fully fetched, the final URL is often a sign-in page: two different articles both redirecting to the same sign-in page must not be merged
     @Test func partialPagesAreNotMergedByFinalAddress() async throws {
         let store = try temporaryStore()
         var login = page("https://example.com/login", body: "请登录")
@@ -52,7 +52,7 @@ import GRDB
         #expect(try await store.card(forURL: "https://example.com/login") == nil)
     }
 
-    /// 失效的链接被转到首页、上一级栏目：那不是它的最终地址。两条不同的失效链接各是各的卡，首页也不算收过
+    /// Dead links redirected to the home page or a parent section: that isn't their final URL. Two different dead links are separate cards, and the home page doesn't count as collected
     @Test func deadLinksRedirectedToTheHomePageStayApart() async throws {
         let store = try temporaryStore()
         let (a, b) = (try await store.placeholder(.web, url: "https://example.com/old/1", on: nil, frame: someFrame),
@@ -68,12 +68,12 @@ import GRDB
         #expect(try await store.card(c)?.finalKey == nil)
     }
 
-    /// 一个网址既是这张卡收的、又是那张卡跳到的：认收的就是它的那张
+    /// A URL that one card collected and another card redirected to: it's recognized as the card that collected it
     @Test func collectedAddressWinsOverFinalAddress() async throws {
         let store = try temporaryStore()
         let short = try await store.placeholder(.web, url: "https://b23.tv/abc", on: nil, frame: someFrame)
         #expect(try await store.fill(short, with: page("https://www.bilibili.com/video/BV1Wrp76mEsW/")) == .filled)
-        // 早先就各收了一张的老数据
+        // Old data where each was already collected separately
         let long = try await store.db.write { db in
             var card = Card(kind: .web)
             (card.url, card.urlKey, card.extraction) = ("https://www.bilibili.com/video/BV1Wrp76mEsW/", URLKey.of("https://www.bilibili.com/video/BV1Wrp76mEsW/"), .complete)
@@ -84,9 +84,9 @@ import GRDB
         #expect(try await store.card(forURL: "https://b23.tv/abc")?.id == short)
     }
 
-    // MARK: 重复收（4.5）
+    // MARK: Recollecting (4.5)
 
-    /// 又收一次：收集时间不动，另记的时间把它提到「全部卡片」最前，并记一次回看
+    /// Collected again: the collected time stays, a separate time moves it to the top of "All Cards", and a revisit is recorded
     @Test func collectingAgainResurfacesWithoutTouchingCollectedAt() async throws {
         let store = try temporaryStore()
         let intake = Intake(store: store, extractor: Extractor())
@@ -105,7 +105,7 @@ import GRDB
         #expect(revisits.map(\.0) == ["recollected"] && revisits.map(\.1) == [old])
     }
 
-    /// 查过重才回话：新的说收进了，收过的说收过；网址在查重之后就清楚，不等抽取
+    /// Reply only after the duplicate check: new ones say collected, already-collected ones say so; the URL is known after the duplicate check, no waiting for extraction
     @Test func receiptComesAfterDedup() async throws {
         let store = try temporaryStore()
         let intake = Intake(store: store, extractor: Extractor())
@@ -121,11 +121,11 @@ import GRDB
         #expect(try await store.cards(in: .all).count == 3)
     }
 
-    /// 没存进去不能说收下了：回话里数着没存好的，一样都没存好时另有说法
+    /// Can't say it's collected if it wasn't saved: the reply counts what wasn't saved, with different wording when nothing was saved
     @Test func failuresAreNotReportedAsCollected() async throws {
         let store = try temporaryStore()
         let heard = Mutex<[Receipt]>([])
-        // 原文件不在了：抽取出的素材存不进文件库
+        // The original file is gone: the extracted material can't be saved to the file store
         let missing = URL(fileURLWithPath: "/nonexistent-\(UUID().uuidString)/报告.pdf")
         let outcomes = try await Intake(store: store, extractor: Extractor()).collect([.file(missing), .text("一句话")], report: {
             if case .judged(let receipt) = $0 { heard.withLock { $0.append(receipt) } }
@@ -134,14 +134,14 @@ import GRDB
         #expect(!Intake.saved(outcomes))
         #expect(Receipt(new: 1, failed: 1).text == "已收进片羽；有 1 条没存好，下次打开片羽时再试")
         #expect(Receipt(failed: 1).text == "没存好，下次打开片羽时再试" && !Receipt(failed: 1).kept)
-        // 浏览器里右键收的：说出收的是什么；收过、没存好时和别的入口同一句
+        // Collected by right-click in the browser: say what was collected; already collected or not saved use the same sentence as other entry points
         let image = Source.image(png(gray: 0.1), page: nil), words = Source.text("话"), whole = Source.url(URL(string: "https://a.com")!)
         #expect(Receipt(new: 1).text(taking: image) == "已收下这张图" && Receipt(new: 1).text(taking: words) == "已收下这段话")
         #expect(Receipt(new: 1).text(taking: whole) == "已收下这一页")
         #expect(Receipt(existing: 1).text(taking: image) == "已经收过，提到了最前" && Receipt(failed: 1).text(taking: image) == "没存好，下次打开片羽时再试")
     }
 
-    /// 重复收时新带来的那句话：卡上还没有就记下，已经有的不动
+    /// The sentence newly brought by a recollect: recorded if the card doesn't have one yet, existing ones untouched
     @Test func wordsBroughtWhenCollectingAgainAreKept() async throws {
         let store = try temporaryStore()
         let intake = Intake(store: store, extractor: Extractor())
@@ -155,7 +155,7 @@ import GRDB
         #expect(try await store.card(id)?.note == "参考 example.com/a 的排版")
     }
 
-    /// 每一样填完就报一次，不等整批（4.6）
+    /// Report as each item is filled, not after the whole batch (4.6)
     @Test func eachSourceIsReportedWhenFilled() async throws {
         let store = try temporaryStore()
         let events = Mutex<[String]>([])
@@ -172,7 +172,7 @@ import GRDB
         #expect(Intake.saved(outcomes))
     }
 
-    // MARK: 收件箱（4.1）
+    // MARK: Inbox (4.1)
 
     private func temporaryInbox() -> Inbox {
         Inbox(folder: FileManager.default.temporaryDirectory.appending(path: "inbox-\(UUID().uuidString)", directoryHint: .isDirectory))
@@ -182,7 +182,7 @@ import GRDB
         (try? FileManager.default.contentsOfDirectory(at: inbox.folder, includingPropertiesForKeys: nil)) ?? []
     }
 
-    /// 存进收件箱的东西读出来还是原样：图带着所在网页，短句带着网址，文件只记路径；一次收的归成一份，记着要落回画布的哪里
+    /// Things saved to the inbox read back unchanged: images with their page, short text with its URL, files as paths only; one collect is one entry, remembering where on the canvas it should land
     @Test func entriesComeBackAsTheyWent() async throws {
         let inbox = temporaryInbox()
         let image = png(gray: 0.3), page = URL(string: "https://example.com/gallery")!, link = URL(string: "https://figma.com/pricing")!
@@ -206,7 +206,7 @@ import GRDB
         if case .file(let url) = sources[5] { #expect(url.path == "/tmp/报告.pdf") } else { Issue.record("第 6 样应是文件") }
     }
 
-    /// 扩展收的由中转程序原样存下：带图的收图，带选中文字的收成有出处的文字卡，带整页的收网页
+    /// What the extension collects is saved as is by the relay: with an image, collect the image; with selected text, a text card with a source; with a whole page, the web page
     @Test func extensionMessagesAreRead() throws {
         func source(_ json: String) throws -> Source? {
             try JSONDecoder().decode(Inbox.Entry.self, from: Data(json.utf8)).source
@@ -223,7 +223,7 @@ import GRDB
         #expect(rendered.url.absoluteString == "https://a.com/p")
     }
 
-    /// 卡存进资料库才删文件：没存好的留着，下次再交出来；正在收的不重复交；一份没存好不连累别的
+    /// Files are deleted only after the card is saved to the library: unsaved ones stay and are handed out again next time; ones being collected aren't handed out twice; one failing doesn't affect others
     @Test func filesStayUntilSaved() async throws {
         let inbox = temporaryInbox()
         try await inbox.put([.text("一句想法")], id: "a")
@@ -234,7 +234,7 @@ import GRDB
         let seen = Mutex<[String?]>([])
         await inbox.drain { arrival in
             seen.withLock { $0.append(arrival.id) }
-            // 还没收完又来看了一遍：正在收的不再交出来
+            // Looked again before collecting finished: ones being collected aren't handed out again
             await inbox.drain { _ in seen.withLock { $0.append("重复") }; return true }
             return arrival.id == "a"
         }
@@ -244,13 +244,13 @@ import GRDB
         #expect(files(in: inbox).isEmpty)
     }
 
-    /// 提示了就不丢：存进收件箱、放了占位卡之后退出。下次打开，有网址的占位卡留着、没网址的丢掉，
-    /// 收件箱里的原件重收一遍把内容补全，每样只有一张
+    /// Once a toast is shown it isn't lost: quit after saving to the inbox and placing a placeholder. On next launch, placeholders with a URL stay and ones without are dropped,
+    /// the originals in the inbox are recollected to fill in content, one card each
     @Test func interruptedCollectIsCompletedFromTheInbox() async throws {
         let store = try temporaryStore(), inbox = temporaryInbox()
         let intake = Intake(store: store, extractor: Extractor())
         try await inbox.put([.image(png(gray: 0.6), page: URL(string: "https://example.com/gallery")), .text("一句想法"), .url(URL(string: "https://example.com/a")!)], id: "a")
-        // 上一次：占位卡写进去了，内容还没填就退出，文件没删
+        // Last time: the placeholder was written, quit before content was filled, file not deleted
         _ = try await store.placeholder(.image, sourceURL: "https://example.com/gallery", on: nil, frame: .zero)
         _ = try await store.placeholder(.text, on: nil, frame: .zero)
         let link = try await store.placeholder(.web, url: "https://example.com/a", on: nil, frame: .zero)
@@ -260,7 +260,7 @@ import GRDB
         let collected = Mutex(0)
         await inbox.drain { arrival in
             collected.withLock { $0 += 1 }
-            // 网址那一样在测试里不去联网抓：只看它被认出是已有的那张
+            // The URL item isn't fetched online in tests: only check that it's recognized as the existing card
             let local = arrival.sources.filter { $0.url == nil }
             guard let known = try? await store.card(forURL: "https://example.com/a"), known.id == link else { return false }
             return (try? await intake.collect(local)).map(Intake.saved) ?? false
@@ -274,7 +274,7 @@ import GRDB
         #expect(files(in: inbox).isEmpty)
     }
 
-    /// 拖进、粘贴到画布上的也先进收件箱：抽取到一半退出，占位卡没了，下次打开按记着的画板重收，落回那个画板
+    /// Things dragged or pasted onto the canvas go through the inbox too: quit midway through extraction, the placeholder is gone, and on next launch it's recollected to the remembered board and lands back there
     @Test func canvasDropSurvivesACrash() async throws {
         let store = try temporaryStore(), inbox = temporaryInbox()
         let board = try await store.createBoard("A").id!
@@ -297,16 +297,16 @@ import GRDB
         #expect(files(in: inbox).isEmpty)
     }
 
-    // MARK: 短句带网址（4.7）
+    // MARK: Short text with a URL (4.7)
 
     @Test func sentenceWithOneLinkKeepsTheSentence() async throws {
         guard case .mentioned(let url, let words)? = FileExtractor.sources(inText: " 参考 figma.com 定价页的排版\n").first else { Issue.record("应收网址并带上这句话"); return }
         #expect(url.absoluteString == "http://figma.com" && words == "参考 figma.com 定价页的排版")
-        // 只有网址、一行一个网址：没有话可带
+        // Only URLs, one per line: no text to bring along
         if case .url? = FileExtractor.sources(inText: "https://figma.com/pricing\n").first {} else { Issue.record("只有网址时就是网址") }
         #expect(FileExtractor.sources(inText: "https://a.com/1\nb.com/2").compactMap(\.note).isEmpty)
 
-        // 那句话记在卡上，抽取、重新抓取都不动它
+        // The sentence is recorded on the card; extraction and refetching don't touch it
         let store = try temporaryStore()
         let source = Source.mentioned(url, in: words)
         let id = try await store.placeholder(source.kind, url: source.url?.absoluteString, note: source.note, on: nil, frame: .zero)
@@ -316,10 +316,10 @@ import GRDB
         #expect(card.note == "参考 figma.com 定价页的排版" && card.body == "重新抓到的" && card.text == nil)
     }
 
-    // MARK: 老的拦截页（4.3）
+    // MARK: Old block pages (4.3)
 
-    /// 以前被当成正常卡留下的拦截页：认出来只标成残缺等重新抓，内容不动（重抓失败时旧的还在）；
-    /// 标题里碰巧有「安全验证」的正常卡（有封面，或者正文不短）不动；只做一次
+    /// Block pages kept earlier as normal cards: once recognized, only marked partial to await refetching, content untouched (the old content stays if refetching fails);
+    /// normal cards whose title happens to contain "安全验证" (with a cover, or a body that isn't short) are left alone; runs only once
     @Test func oldChallengePagesBecomePartialOnce() async throws {
         let store = try temporaryStore()
         func collect(_ url: String, title: String, body: String, cover: CGFloat? = nil, landed: String? = nil) async throws -> Int64 {
@@ -344,7 +344,7 @@ import GRDB
         #expect(try await store.card(withCover)?.partial == nil, "有封面的正常卡不动")
         #expect(try await store.card(article)?.partial == nil, "正文不短的正常卡不动")
 
-        // 只做一次：之后再出现的不归它管
+        // Runs only once: ones appearing later aren't its concern
         let later = try await collect("https://example.com/later", title: "Just a moment...", body: "")
         try await store.demoteChallengePagesOnce()
         #expect(try await store.card(later)?.partial == nil)

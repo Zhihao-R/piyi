@@ -3,19 +3,19 @@ import Foundation
 import GRDB
 @testable import Library
 
-/// 网上的视频在放大查看里播：播放地址怎么来、怎么带开始时间、简介里哪些算章节时间点
+/// Online videos play in the detail view: where the playback URL comes from, how the start time is passed, which times in the description count as chapter points
 struct PlayerTests {
     @Test func embedsYouTubeAndBilibili() {
         #expect(Player.youtube(URL(string: "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=10")!) == "https://www.youtube.com/embed/dQw4w9WgXcQ")
         #expect(Player.youtube(URL(string: "https://youtu.be/dQw4w9WgXcQ")!) == "https://www.youtube.com/embed/dQw4w9WgXcQ")
-        // 分 P 播那一 P，没写是第一 P
+        // For multi-part videos, play that part; when unspecified, it's part 1
         #expect(Player.bilibili(bvid: "BV1GJ411x7h7", url: URL(string: "https://www.bilibili.com/video/av170001?p=3")!)
                 == "https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&p=3")
         #expect(Player.bilibili(bvid: "BV1GJ411x7h7", url: URL(string: "https://www.bilibili.com/video/BV1GJ411x7h7/")!)
                 == "https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&p=1")
     }
 
-    /// 升级：已经收的 YouTube、B 站视频补上播放地址；跳转过的短链看出处网址；名字里带 youtube.com 的别的网站不算
+    /// Upgrade: already collected YouTube and Bilibili videos get a playback URL; redirected short links use the source URL; other sites with youtube.com in their name don't count
     @Test func migrationBackfillsPlayers() throws {
         let path = FileManager.default.temporaryDirectory.appending(path: "piyi-migrate-\(UUID().uuidString).sqlite").path
         let db = try DatabaseQueue(path: path)
@@ -38,11 +38,11 @@ struct PlayerTests {
         #expect(Player.declared(twitter: "https://player.vimeo.com/video/1", video: "https://a.com/v.mp4", type: "video/mp4") == "https://player.vimeo.com/video/1")
         #expect(Player.declared(twitter: nil, video: "https://a.com/embed/1", type: "text/html") == "https://a.com/embed/1")
         #expect(Player.declared(twitter: nil, video: "https://a.com/v.mp4", type: nil) == "https://a.com/v.mp4")
-        // Flash、不是 https、没写类型又不像视频文件的都不要
+        // Flash, non-https, and ones with no type that don't look like video files are all rejected
         #expect(Player.declared(twitter: nil, video: "https://a.com/p.swf", type: "application/x-shockwave-flash") == nil)
         #expect(Player.declared(twitter: "http://a.com/player", video: nil, type: nil) == nil)
         #expect(Player.declared(twitter: nil, video: "https://a.com/watch/1", type: nil) == nil)
-        // 声明是视频文件、但看不出后缀的：播的时候会被当成网页，不要
+        // Declared as a video file but with no recognizable extension: it would be treated as a web page when played, so rejected
         #expect(Player.declared(twitter: nil, video: "https://a.com/get?id=1", type: "video/mp4") == nil)
     }
 
@@ -51,7 +51,7 @@ struct PlayerTests {
         #expect(Player.url(bilibili, start: 34)?.absoluteString == bilibili + "&autoplay=1&danmaku=0&high_quality=1&t=34")
         #expect(Player.url(bilibili, start: 0)?.absoluteString == bilibili + "&autoplay=1&danmaku=0&high_quality=1")
         #expect(Player.url("https://www.youtube.com/embed/abc", start: 76)?.absoluteString == "https://www.youtube.com/embed/abc?autoplay=1&rel=0&start=76")
-        // 别的网站的播放器不认得参数，原样打开
+        // Other sites' players don't recognize the parameter, so open as is
         #expect(Player.url("https://player.vimeo.com/video/1", start: 76)?.absoluteString == "https://player.vimeo.com/video/1")
         #expect(Player.canSeek(bilibili) && Player.canSeek("https://video.twimg.com/a/b.mp4?tag=12"))
         #expect(!Player.canSeek("https://player.vimeo.com/video/1"))
@@ -60,7 +60,7 @@ struct PlayerTests {
     @Test func findsChapters() {
         let text = "简介第一行，会议 10:30 开始\n00:01 勿写提示词\n  01:16 Pointers > Prose\n1:02:03 很后面\n9:99 不是时间\n04:31怎么用"
         let found = Player.chapters(in: text, duration: 300).map { ((text as NSString).substring(with: $0.range), $0.seconds) }
-        // 只认行首；超过时长的、秒数不对的、后面直接跟字的不算
+        // Only at the start of a line; ones past the duration, with invalid seconds, or followed directly by text don't count
         #expect(found.map(\.0) == ["00:01", "01:16"])
         #expect(found.map(\.1) == [1, 76])
         #expect(Player.chapters(in: "1:02:03 很后面", duration: nil).map(\.seconds) == [3723])

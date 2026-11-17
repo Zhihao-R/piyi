@@ -2,22 +2,22 @@ import AppKit
 import Library
 import Tokens
 
-/// 正在写的那张文字卡：画布上只有它临时盖一个真的文本框（开发规矩第一条），写完就拿掉，卡片回到一张画好的图。
-/// 文本框里是原文，标记变淡、标题变大，字号和卡片上一样。卡片多大文本框就多大，不自动长：写多了在框里滚动，卡片大小由你拉
+/// The text card being written: the only thing on the canvas that temporarily gets a real text box over it (the first coding rule in CONTRIBUTING.md); it's removed when done and the card goes back to a drawn image.
+/// The text box holds the source text, with markers faded and headings larger, at the same font size as on the card. The text box is as big as the card and doesn't grow by itself: write more and it scrolls inside the box; you set the card size by dragging
 @MainActor
 final class NoteEditor: NSView, NSTextViewDelegate {
-    /// 改的是哪条摆放；nil 是新写的，写完才进资料库
+    /// Which placement is being edited; nil for a new one, which only goes into the library once done
     let placement: Int64?
-    /// 改之前的文字和底色；新写的为 nil
+    /// The text and background color before editing; nil for a new one
     let original: Note?
-    /// 世界坐标里的框，就是卡片的框
+    /// The frame in world coordinates, i.e. the card's frame
     let world: CGRect
     let rotation: CGFloat
     let textView = NSTextView(usingTextLayoutManager: false)
     private let scroller = NSScrollView()
-    /// 写字时的撤销记录：写着字时 ⌘Z 撤字，写完才轮到画板的撤销
+    /// Undo history while typing: while typing ⌘Z undoes text; the board's undo only comes once done
     let history = UndoManager()
-    /// 文本框失去焦点（点了别处、按了 Esc）
+    /// The text box lost focus (clicked elsewhere, pressed Esc)
     var onEnd: (() -> Void)?
     private var scale: CGFloat = 0
 
@@ -28,7 +28,7 @@ final class NoteEditor: NSView, NSTextViewDelegate {
         super.init(frame: .zero)
         wantsLayer = true
         layer!.backgroundColor = Palette.tint(original?.tint).now.cg
-        // 写着的卡是拿起来的样子
+        // The card being written looks lifted
         layer!.shadowOpacity = Float(CardShape.lift.opacity)
         textView.delegate = self
         textView.drawsBackground = false
@@ -52,7 +52,7 @@ final class NoteEditor: NSView, NSTextViewDelegate {
 
     var text: String { textView.string }
 
-    /// 按镜头摆到卡片的位置上：center 是卡片中心在视图里的位置（AppKit 坐标，y 向上）
+    /// Placed over the card by the camera: center is the card center's position in the view (AppKit coordinates, y up)
     func layout(center: CGPoint, scale: CGFloat) {
         let size = CGSize(width: world.width * scale, height: world.height * scale)
         frameCenterRotation = 0
@@ -66,14 +66,14 @@ final class NoteEditor: NSView, NSTextViewDelegate {
         layer!.shadowRadius = CardShape.lift.radius * scale
         layer!.shadowOffset = CGSize(width: 0, height: -CardShape.lift.offset * scale)
         layer!.shadowPath = CGPath(roundedRect: bounds, cornerWidth: r, cornerHeight: r, transform: nil)
-        // 字号换了要重排：放在文本框定好宽度之后
+        // A changed font size needs relayout: do it after the text box's width is set
         if scale != self.scale {
             self.scale = scale
             restyle()
         }
     }
 
-    /// 淡出后拿掉
+    /// Removed after fading out
     func dismiss() {
         textView.isEditable = false
         NSAnimationContext.runAnimationGroup { context in
@@ -86,15 +86,15 @@ final class NoteEditor: NSView, NSTextViewDelegate {
         }
     }
 
-    // MARK: 排版
+    // MARK: Layout
 
-    /// 版式和卡片上同一套（CardArt.noteStyle），按镜头倍率换成屏幕点
+    /// Same layout as on the card (CardArt.noteStyle), converted to screen points by the camera scale
     private var style: Markdown.Style { CardArt.noteStyle(t: CardSize.typeWidth * scale, ink: Self.color) }
     private static let padding = CardSize.typeWidth * CardType.padding
 
     private static func color(_ c: RGBA) -> NSColor { NSColor(srgbRed: c.r, green: c.g, blue: c.b, alpha: c.a) }
 
-    /// 每改一个字重新上一遍样式（便签不长，整段重排也就一两毫秒）。拼音还没选字时不动，免得打断输入法
+    /// Reapply styles on every character change (notes are short; relaying out the whole thing takes a millisecond or two). Leave it alone while pinyin is still being composed, so the input method isn't interrupted
     private func restyle() {
         guard scale > 0, let storage = textView.textStorage, !textView.hasMarkedText() else { return }
         let styled = Markdown.styled(storage.string, style: style)
@@ -103,12 +103,12 @@ final class NoteEditor: NSView, NSTextViewDelegate {
             storage.setAttributes(attributes, range: range)
         }
         storage.endEditing()
-        // 新打的字先按正文样式出现，下一次重排再按它所在的写法上样式
+        // Newly typed text first appears in body style; the next relayout styles it by the form it's in
         let plain = Markdown.styled(" ", style: style)
         textView.typingAttributes = plain.attributes(at: 0, effectiveRange: nil)
     }
 
-    // MARK: 文本框
+    // MARK: Text box
 
     func textDidChange(_ notification: Notification) { restyle() }
 
@@ -116,7 +116,7 @@ final class NoteEditor: NSView, NSTextViewDelegate {
 
     func undoManager(for view: NSTextView) -> UndoManager? { history }
 
-    /// Esc：写完
+    /// Esc: done writing
     func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
         guard selector == #selector(cancelOperation(_:)) else { return false }
         window?.makeFirstResponder(superview)
@@ -125,14 +125,14 @@ final class NoteEditor: NSView, NSTextViewDelegate {
 }
 
 extension BoardItem {
-    /// 你写的文字卡
+    /// A text card you wrote
     public var isNote: Bool { if case .card(let card) = face { card.form == .note } else { false } }
 }
 
-// MARK: 画布上写字
+// MARK: Writing on the canvas
 
 extension CanvasView {
-    /// 改一张文字卡：取出全文，盖上文本框，底下那张图先藏起来
+    /// Edit a text card: take out the full text, put the text box over it, and hide the image underneath for now
     public func edit(_ id: Int64) {
         guard isEditable, let item = items[id], item.isNote, case .card(let card) = item.face else { return }
         Task {
@@ -141,7 +141,7 @@ extension CanvasView {
         }
     }
 
-    /// 写一张新的文字卡：point 附近找块空地（默认是视野中央），写完才进资料库，什么都没写就当没发生
+    /// Write a new text card: find free space near point (the center of the view by default); it only goes into the library once done, and if nothing was written it's as if nothing happened
     public func addNote(at point: CGPoint? = nil) {
         guard isEditable else { return }
         begin(NoteEditor(placement: nil, original: nil, frame: Layout.spot(CardSize.note, near: point ?? visibleCenter, avoiding: occupied), rotation: 0))
@@ -162,15 +162,15 @@ extension CanvasView {
         updateOverlay()
     }
 
-    /// 镜头动了：跟着卡片的位置摆
+    /// The camera moved: follow the card's position
     func layoutEditor() {
         guard let editor = noteEditor else { return }
         let c = screenPoint(CGPoint(x: editor.world.midX, y: editor.world.midY))
         editor.layout(center: CGPoint(x: c.x, y: bounds.height - c.y), scale: camera.scale)
     }
 
-    /// 写完：文字变了就存，写空了就删（都能撤销）；文本框淡出，卡片回到一张画好的图。
-    /// 返回写资料库的那件事，退出 App 前等它写完
+    /// Done writing: save if the text changed, delete if it was emptied (both undoable); the text box fades out and the card goes back to a drawn image.
+    /// Returns the library write task; quitting the App waits for it to finish
     @discardableResult
     public func finishEditing() -> Task<Void, Never>? {
         guard let editor = noteEditor else { return nil }
@@ -182,14 +182,14 @@ extension CanvasView {
             guard !text.isEmpty, let board else { editor.dismiss(); return nil }
             return Task {
                 await createNote(text, frame: editor.world, on: board, as: String(localized: "添加文字"))
-                // 画布读回新卡、开始画了再淡出，中间不空一下
+                // Fade out only after the canvas has read back the new card and started drawing, so there's no blank moment
                 editor.dismiss()
             }
         }
         editor.dismiss()
         live[id]?.isHidden = false
         guard items[id] != nil, let old = editor.original else { return nil }
-        // 写空了：这张卡进废纸篓，放了它的每个画板上都拿掉
+        // Emptied: this card goes to the trash and is removed from every board it was on
         if text.isEmpty { return apply(.trashed([old.card]), as: String(localized: "删除文字")) }
         guard text != old.text else { return nil }
         let new = Note(card: old.card, text: text, tint: old.tint)
@@ -197,7 +197,7 @@ extension CanvasView {
         return apply(.written(old: [old], new: [new]), as: String(localized: "编辑文字"))
     }
 
-    /// 把一段字写成文字卡，放在眼前的空处（讨论的回答收成文字卡）。和亲手写的走同一条路，⌘Z 撤回
+    /// Turns some text into a text card placed in free space in front of you (a discussion answer collected as a text card). Takes the same path as one written by hand; ⌘Z undoes it
     @discardableResult
     public func addNote(_ text: String, as name: String) -> Task<Void, Never>? {
         guard isEditable, let board else { return nil }
@@ -208,7 +208,7 @@ extension CanvasView {
     private func createNote(_ text: String, frame: CGRect, on board: Int64, as name: String) async {
         do {
             let p = try await store.createNote(text, on: board, frame: frame)
-            // 撤销「添加」就是把它放进废纸篓
+            // Undoing "add" means putting it in the trash
             let edit = Edit.restored([p.cardID!])
             record(edit, as: name, on: .board(board))
             await delegate?.canvas(self, didApply: edit)
@@ -217,7 +217,7 @@ extension CanvasView {
         }
     }
 
-    /// 文字卡的新样子先画上，不等资料库读回来；同一张卡在这个画板上的每一份都换
+    /// Draw the text card's new look right away without waiting for the library read; every copy of the card on this board is updated
     private func show(_ notes: [Note]) {
         for note in notes {
             for (id, var item) in items {

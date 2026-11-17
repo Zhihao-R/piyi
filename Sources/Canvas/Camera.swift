@@ -1,7 +1,7 @@
 import CoreGraphics
 import Tokens
 
-/// 视口：世界坐标里的中心点 + 缩放倍数。屏幕点 = (世界点 - center) × scale + 视图尺寸 / 2（y 向下）
+/// Viewport: a center point in world coordinates + a zoom factor. Screen point = (world point - center) × scale + view size / 2 (y down)
 public struct Camera: Equatable, Sendable {
     public var center: CGPoint
     public var scale: CGFloat
@@ -18,17 +18,17 @@ public struct Camera: Equatable, Sendable {
         return CGRect(x: center.x - w / 2, y: center.y - h / 2, width: w, height: h)
     }
 
-    /// 视图里的点（y 向下）对应的世界坐标
+    /// World coordinates of a point in the view (y down)
     public func world(at point: CGPoint, in size: CGSize) -> CGPoint {
         CGPoint(x: center.x + (point.x - size.width / 2) / scale, y: center.y + (point.y - size.height / 2) / scale)
     }
 
-    /// 世界坐标的点在视图里的位置（y 向下）
+    /// Where a world point sits in the view (y down)
     public func view(at point: CGPoint, in size: CGSize) -> CGPoint {
         CGPoint(x: (point.x - center.x) * scale + size.width / 2, y: (point.y - center.y) * scale + size.height / 2)
     }
 
-    /// 刚好看全一块区域，四周留一点边
+    /// Fit exactly one region in view, with a little margin around it
     public static func fitting(_ rect: CGRect, in size: CGSize, margin: CGFloat = 40) -> Camera {
         guard !rect.isNull, rect.width > 0, rect.height > 0 else { return Camera(center: .zero, scale: 1) }
         let scale = min((size.width - margin * 2) / rect.width, (size.height - margin * 2) / rect.height, 1)
@@ -36,15 +36,15 @@ public struct Camera: Equatable, Sendable {
     }
 }
 
-/// 窗口所在屏幕的参数，窗口上屏时读一次。位图按屏幕的颜色空间画，提交给图层时不必再在主线程整张转换
+/// Parameters of the window's screen, read once when the window goes on screen. Bitmaps are drawn in the screen's color space, so nothing has to be converted on the main thread when handing them to layers
 enum Screen {
-    /// 窗口现在是深色外观：纸样卡片按它取颜色（后台画位图时也读它）
+    /// The window currently has a dark appearance: paper-style cards take their colors from it (also read when drawing bitmaps in the background)
     nonisolated(unsafe) static var dark = false
     nonisolated(unsafe) static var scale: CGFloat = 2
     nonisolated(unsafe) static var colorSpace = CGColorSpace(name: CGColorSpace.displayP3)!
 }
 
 extension Themed {
-    /// 窗口当前外观下的那一个值
+    /// The value for the window's current appearance
     var now: Value { Screen.dark ? dark : light }
 }

@@ -1,22 +1,22 @@
-// 没有 Xcode（actool）时的备用 App 图标：把 AppIcon.icon 的底色和两层卡片叠成一张，转成普通的 AppIcon.icns，没有玻璃质感
-// 运行：swift scripts/flat_icon.swift <输出的 .icns 路径>（在仓库根目录，build_app.sh 会自动调用）
+// Fallback App icon without Xcode (actool): stacks the background color and two card layers of AppIcon.icon into one image, converted to a plain AppIcon.icns, without the glass effect
+// Run: swift scripts/flat_icon.swift <output .icns path> (from the repo root; build_app.sh calls it automatically)
 import AppKit
 
 let source = URL(fileURLWithPath: "Resources/AppIcon.icon")
 let output = URL(fileURLWithPath: CommandLine.arguments[1])
 
-// 底色从 icon.json 读，跟 Icon Composer 里的设置保持一致，例如 "srgb:0.11000,0.11000,0.10000,1.00000"
+// The background color is read from icon.json, matching the Icon Composer setting, e.g. "srgb:0.11000,0.11000,0.10000,1.00000"
 let json = try! JSONSerialization.jsonObject(with: Data(contentsOf: source.appending(path: "icon.json"))) as! [String: Any]
 let solid = (json["fill"] as! [String: Any])["solid"] as! String
 let rgba = solid.split(separator: ":")[1].split(separator: ",").map { CGFloat(Double($0)!) }
 let fill = CGColor(srgbRed: rgba[0], green: rgba[1], blue: rgba[2], alpha: rgba[3])
 
-// 图层按 icon.json 里从上到下列出，画的时候从下往上
+// Layers are listed top to bottom in icon.json, and drawn bottom to top
 let groups = json["groups"] as! [[String: Any]]
 let layerNames = groups.flatMap { ($0["layers"] as! [[String: Any]]).map { $0["image-name"] as! String } }.reversed()
 let layers = layerNames.map { NSImage(contentsOf: source.appending(path: "Assets/\($0)"))! }
 
-// macOS 图标网格：1024 的画布里，圆角方形占 824，四周留 100；图层画满这块圆角方形
+// macOS icon grid: on a 1024 canvas, the rounded square takes 824 with 100 around it; layers fill that rounded square
 func render(_ size: Int) -> Data {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4,
                                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!

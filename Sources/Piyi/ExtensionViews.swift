@@ -1,7 +1,7 @@
 import SwiftUI
 import Tokens
 
-/// 设置里的一行：扩展连没连上，没连上时给安装指引
+/// A row in settings: whether the extension is connected, with installation instructions when not
 struct ExtensionRow: View {
     let model: AppModel
     @State private var guiding = false
@@ -37,7 +37,7 @@ extension BrowserExtension.Status {
     }
 }
 
-/// 连上了是一个绿点，等着时是一个慢慢呼吸的灰点
+/// A green dot when connected, a slowly breathing gray dot while waiting
 struct StatusDot: View {
     let on: Bool
     @State private var breathing = false
@@ -52,7 +52,7 @@ struct StatusDot: View {
     }
 }
 
-/// 安装扩展的两步，连上后换成一句说明。引导和设置共用
+/// The two steps to install the extension, replaced by a sentence once connected. Shared by onboarding and settings
 struct ExtensionGuide: View {
     let model: AppModel
     private var browserExtension: BrowserExtension { model.browserExtension }
@@ -110,7 +110,7 @@ struct GuideStep<Content: View>: View {
     }
 }
 
-/// 打开扩展页：只装了一个浏览器就一个按钮，装了几个就让你选
+/// Open the extensions page: one button if only one browser is installed, a choice if several
 private struct OpenPageButton: View {
     let browserExtension: BrowserExtension
 
@@ -129,7 +129,7 @@ private struct OpenPageButton: View {
     }
 }
 
-/// 扩展文件夹：可以直接拖走，也可以在访达里找到它
+/// Extension folder: can be dragged away directly, or found in Finder
 private struct FolderTile: View {
     let browserExtension: BrowserExtension
     @State private var hovering = false

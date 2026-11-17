@@ -36,11 +36,11 @@ import CoreGraphics
         guard case .duplicate(let existing, _) = try await store.fill(id, with: text) else { Issue.record("应查到重复"); return }
         #expect(existing.id == original)
         #expect(try await store.card(id) == nil)
-        // 占位卡的摆放转给已有那张：同一画板里有两份
+        // The placeholder card's placement moves to the existing card: two copies on the same board
         #expect(try await store.items(on: board).map(\.placement.cardID) == [original, original])
     }
 
-    /// 抽取到一半就退出：有网址的占位卡留下、标成残缺，打开后自动重新抓；没网址的丢掉，由收件箱里的原件重收
+    /// Quitting midway through extraction: placeholder cards with a URL stay, marked partial, and are refetched automatically on next launch; ones without a URL are dropped and recollected from the original in the inbox
     @Test func unfinishedPlaceholdersWithURLBecomePartial() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -52,13 +52,13 @@ import CoreGraphics
         #expect(kept.partial?.waitsForNetwork == true)
         #expect(try await store.card(image) == nil)
         #expect(try await store.items(on: board).map(\.placement.cardID) == [link])
-        // 重收同一个网址：查重认出它，不出第二张
+        // Recollecting the same URL: the duplicate check recognizes it, no second card
         #expect(try await store.card(forURL: "https://example.com/b")?.id == link)
     }
 }
 
 @Suite struct RefetchTests {
-    /// 重新抓取没抓全（比如断网）：已有的封面和正文留着，只更新原因
+    /// A refetch that didn't get everything (say, offline): the existing cover and body stay, only the reason is updated
     @Test func failedRefetchKeepsContent() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -75,7 +75,7 @@ import CoreGraphics
         #expect(card.body == "抓到的正文" && card.cover != nil && card.partial == .offline)
     }
 
-    /// 收坏的卡（拿失败页当内容理解过）重新抓取还是没内容：理解出的标题、描述、向量清掉，不再看着、搜着像抓到了
+    /// A badly collected card (a failure page understood as content) still has no content after refetching: the understood title, description and vector are cleared, so it no longer looks or searches as if fetched
     @Test func emptyRefetchForgetsUnderstanding() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -97,7 +97,7 @@ import CoreGraphics
         #expect(try await store.vectorBases()[id] == nil)
     }
 
-    /// 正在重新抓取时退出：下次打开不删这张卡
+    /// Quitting during a refetch: the card isn't deleted on next launch
     @Test func refetchInterruptedKeepsCard() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!

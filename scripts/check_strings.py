@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""检查界面文字有没有漏翻：让编译器提取代码里所有要翻译的句子，和 Localization/en.lproj 里的英文对一遍。
-用法：python3 scripts/check_strings.py   （有漏的就列出来，并以非零状态退出）
+"""Check for untranslated interface text: have the compiler extract every string to translate from the code, and compare against the English in Localization/en.lproj.
+Usage: python3 scripts/check_strings.py   (lists anything missing and exits with a non-zero status)
 
-要翻译的句子怎么写：SwiftUI 里直接写的文字（Text、Button、Label、.help…）自动算；其余显示给人看的写成 String(localized: "…")。
-同一句中文在不同地方要翻成不同英文时，用 String(localized: "键名", defaultValue: "中文")。"""
+How to mark text for translation: text written directly in SwiftUI (Text, Button, Label, .help, …) counts automatically; any other user-facing text is written as String(localized: "…").
+When the same Chinese phrase needs different English in different places, use String(localized: "key", defaultValue: "中文")."""
 import glob, json, os, plistlib, re, subprocess, sys, tempfile
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -29,9 +29,9 @@ with tempfile.TemporaryDirectory() as out:
             for e in entries:
                 found.setdefault(e["key"], f"{source}:{e['location']['startingLine']}")
 
-# 存在数据里当标识用的中文名（格式、平台、服务商），显示时才翻（displayed），编译器提取不到：从抽取器里按写法找
+# Chinese names stored in data as identifiers (formats, platforms, providers), translated only when shown (displayed), which the compiler can't extract: find them in the extractors by how they're written
 label = re.compile(r'(?:\.format = |platform: |site: )"([^"]*[\u4e00-\u9fff][^"]*)"')
-vendor = re.compile(r'case \.\w+: "([^"]*[\u4e00-\u9fff][^"]*)"')  # 服务商的名字：密钥按它存
+vendor = re.compile(r'case \.\w+: "([^"]*[\u4e00-\u9fff][^"]*)"')  # provider names: keys are stored by them
 sources = [(p, label) for p in glob.glob(os.path.join(ROOT, "Sources/Library/Extract/*.swift"))] + [(os.path.join(ROOT, "Sources/Intelligence/Models/Vendor.swift"), vendor)]
 for path, pattern in sources:
     for n, line in enumerate(open(path, encoding="utf-8"), 1):
@@ -41,15 +41,15 @@ for path, pattern in sources:
 plurals = set(plistlib.load(open(f"{EN}/Localizable.stringsdict", "rb")))
 translated = {unescape(k) for k in strings_keys(f"{EN}/Localizable.strings")} | plurals
 missing = {k: where for k, where in found.items() if k not in translated}
-# 带数量的句子中文也要有一份，否则中文界面会退回英文
+# Sentences with counts need a Chinese entry too, otherwise the Chinese interface falls back to English
 chinese = set(plistlib.load(open(os.path.join(ROOT, "Localization/zh-Hans.lproj/Localizable.stringsdict"), "rb")))
 for key in sorted(plurals - chinese):
-    missing[key] = "zh-Hans.lproj/Localizable.stringsdict 里缺这一句"
-# 同一个键写了两遍时后一条生效，前一条悄悄失效：同一句中文要两种译法时改用 String(localized: "键名", defaultValue: "中文")
+    missing[key] = "missing from zh-Hans.lproj/Localizable.stringsdict"
+# When a key is written twice the later entry wins and the earlier one silently stops working: when the same Chinese needs two translations, use String(localized: "key", defaultValue: "Chinese") instead
 en_keys = re.findall(r'^"((?:[^"\\]|\\.)*)"\s*=', open(f"{EN}/Localizable.strings", encoding="utf-8").read(), re.M)
 for key in sorted({k for k in en_keys if en_keys.count(k) > 1}):
-    missing[unescape(key)] = "en.lproj/Localizable.strings 里这一句写了两遍"
+    missing[unescape(key)] = "listed twice in en.lproj/Localizable.strings"
 for key, where in sorted(missing.items(), key=lambda kv: kv[1]):
     print(f"{where}: {key}")
-print(f"共 {len(found)} 句，没翻译的 {len(missing)} 句")
+print(f"{len(found)} strings, {len(missing)} untranslated")
 sys.exit(1 if missing else 0)

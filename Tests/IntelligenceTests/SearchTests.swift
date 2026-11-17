@@ -3,7 +3,7 @@ import Foundation
 @testable import Intelligence
 @testable import Library
 
-/// 关键词规则：意图提示词、时间、类型、颜色
+/// Keyword rules: intent cue words, time, type, color
 @Suite struct Rules {
     @Test func intents() {
         #expect(QueryRules.parse("帮我抽一张塔罗牌").intent == .draw)
@@ -11,7 +11,7 @@ import Foundation
         #expect(QueryRules.parse("我收过的配色文章都在讲什么").intent == .ask)
         #expect(QueryRules.parse("这两种做法有什么区别？").intent == .ask)
         #expect(QueryRules.parse("古代文本").intent == .find)
-        // 英文界面的说法
+        // Phrasings from the English interface
         #expect(QueryRules.parse("Draw a card").intent == .draw)
         #expect(QueryRules.parse("Inspire me").intent == .inspire)
         #expect(QueryRules.parse("What is wabi-sabi").intent == .ask)
@@ -29,7 +29,7 @@ import Foundation
         #expect(q.semantic.isEmpty)
     }
 
-    /// 判断模型回来以后：它说了算有没有条件，规则只去掉它认的那几个词
+    /// Once the judgment model answers: it decides whether there are conditions, and the rules only remove the words it recognized
     @Test func judgedConditionsDecideWhichWordsGo() {
         let none = QueryRules.Judged(intent: .inspire, timed: false, kind: nil, color: nil, visual: false)
         let food = QueryRules.parse("今天吃什么", judged: none)
@@ -37,7 +37,7 @@ import Foundation
 
         let clear = QueryRules.parse("明白人说的话", judged: QueryRules.Judged(intent: .find, timed: false, kind: nil, color: nil, visual: false))
         #expect(clear.colors.isEmpty)
-        // 只有颜色字、模型说不算颜色条件：留着当要找的内容，不至于什么条件都没有
+        // Only a color word, and the model says it's not a color condition: keep it as the content to find, so we don't end up with no conditions at all
         #expect(!QueryRules.parse("白色", judged: QueryRules.Judged(intent: .find, timed: false, kind: nil, color: nil, visual: false)).isEmpty)
 
         let articles = QueryRules.parse("上周收的讲配色的文章", judged: QueryRules.Judged(intent: .find, timed: true, kind: .web, color: nil, visual: false))
@@ -53,39 +53,39 @@ import Foundation
     }
 }
 
-/// 会漏的几种情形
+/// Cases that would slip through
 @Suite struct Recall {
     static func judged(_ intent: Intent, timed: Bool = false) -> QueryRules.Judged {
         QueryRules.Judged(intent: intent, timed: timed, kind: nil, color: nil, visual: false)
     }
 
-    /// 5.1 模型说限定了时间、规则认不出是几天：不加时间条件，时间词留着按意思找
+    /// 5.1 The model says there's a time limit but the rules can't tell how many days: no time condition, the time words stay and are searched by meaning
     @Test func unknownTimeWordAddsNoCondition() {
         for text in ["去年收的海报", "三月的展览"] {
             let q = QueryRules.parse(text, judged: Self.judged(.find, timed: true))
             #expect(q.days == nil, "\(text)")
         }
         #expect(QueryRules.parse("去年收的海报", judged: Self.judged(.find, timed: true)).semantic.contains("去年"))
-        // 认得出的照旧；筛选按钮选的时间也照旧
+        // What can be recognized works as before; time chosen with the filter button also works as before
         #expect(QueryRules.parse("上周的海报", judged: Self.judged(.find, timed: true)).days == 14)
         var filters = Filters()
         filters.days = 7
         #expect(QueryRules.parse("去年收的海报", filters: filters, judged: Self.judged(.find, timed: true)).days == 7)
     }
 
-    /// 5.2 模型判为找卡片、提问：用原句，指令词是要找的东西
+    /// 5.2 The model judges it as finding cards or asking a question: use the original sentence, the command words are what to find
     @Test func judgedFindKeepsTheWholeSentence() {
         let tarot = QueryRules.parse("塔罗牌插画", judged: Self.judged(.find))
         #expect(tarot.intent == .find && tarot.semantic == "塔罗牌插画")
         let board = QueryRules.parse("灵感板参考", judged: Self.judged(.find))
         #expect(board.semantic == "灵感板参考" && board.tokens.joined().contains("灵感"))
         #expect(QueryRules.parse("塔罗牌是怎么来的", judged: Self.judged(.ask)).semantic.contains("塔罗"))
-        // 真是要灵感、抽一张时照旧去掉指令词，剩下的是主题
+        // For a real inspiration or draw-a-card request, the command words are still removed as before, and what remains is the topic
         let food = QueryRules.parse("今天吃什么，给我点灵感", judged: Self.judged(.inspire))
         #expect(food.semantic.contains("吃什么") && !food.semantic.contains("灵感"))
     }
 
-    /// 5.2 没有模型时：整句就是指令才当指令，否则当找卡片，词一个不少
+    /// 5.2 Without a model: only treated as a command when the whole sentence is the command, otherwise as finding cards, with every word kept
     @Test func withoutModelOnlyWholeSentenceCommands() {
         for text in ["抽一张", "抽一张！", "帮我抽一张塔罗牌", "随机一张"] { #expect(QueryRules.parse(text).intent == .draw, "\(text)") }
         for text in ["给我点灵感", "来点灵感"] { #expect(QueryRules.parse(text).intent == .inspire, "\(text)") }
@@ -102,7 +102,7 @@ import Foundation
         Searcher.searchCard(SearchRow(card: card, vector: nil, model: nil, boards: []), model: nil)
     }
 
-    /// 5.3 字面匹配查全部正文和字幕，不只开头
+    /// 5.3 Literal matching searches the whole body text and subtitles, not just the beginning
     @Test func literalMatchReadsWholeBodyAndTranscript() {
         var article = Card(kind: .web)
         article.id = 1
@@ -118,11 +118,11 @@ import Foundation
         #expect(Ranking.literal(cards, q) == [1])
         q.lookFor("景深合成")
         #expect(Ranking.literal(cards, q) == [2])
-        // 给模型看的一行仍然只带开头
+        // The line shown to the model still has only the beginning
         #expect(!cards[0].brief.contains("榫卯"))
     }
 
-    /// 5.4 还没算出向量的卡，查询词字面全中就保底入选；只中一部分的不保，有向量的照旧看分数线
+    /// 5.4 Cards without a vector yet are guaranteed a place if the query words all match literally; a partial match isn't, and cards with vectors still go by the score cutoff
     @Test func literalFullMatchAlwaysShown() {
         func card(_ id: Int64, _ text: String, _ vector: [Float]?) -> SearchCard {
             SearchCard(id: id, kind: .text, collectedAt: .now, text: text, colors: nil, vector: vector)
@@ -138,11 +138,11 @@ import Foundation
         #expect(scored.first?.id == 4)
         #expect(shown.contains(1))
         #expect(!shown.contains(2) && !shown.contains(3))
-        // 保底不改名次：分数高的仍然排在前面
+        // The guarantee doesn't change ranking: higher scores still come first
         #expect(shown.first == 4)
     }
 
-    /// 5.4 生成失败的卡照样算向量：记下失败，但按意思找得到
+    /// 5.4 Cards whose generation failed still get vectors: the failure is recorded, but they can be found by meaning
     @Test func failedGenerationStillGetsVector() async throws {
         let store = try temporaryStore()
         let id = try await collectPage(store, url: "https://example.com/offline")
@@ -153,13 +153,13 @@ import Foundation
     }
 }
 
-/// 生成总是失败的云端（断网时的样子）
+/// A cloud whose generation always fails (as when offline)
 struct BrokenCloud: Generation {
     let name = "断网的云端", isReady = true
     func generate(_ prompt: String, images: [Data], careful: Bool) async throws -> String { throw URLError(.notConnectedToInternet) }
 }
 
-/// 按卡片的一行简介预设相关程度的假判断服务方；没预设的答「无关」
+/// A fake judgment provider with relevance preset by each card's one-line brief; anything not preset is answered "irrelevant"
 struct GradingJudge: Judgment {
     let name = "假精排", isReady = true, seesImages = false, sureEnough = 0.5
     var grades: [String: Int]
@@ -173,9 +173,9 @@ struct GradingJudge: Judgment {
     }
 }
 
-/// 5.5 回车后结果分批到：本机的先给，云端精排回来只在换了一批卡时才再给
+/// 5.5 After pressing Return, results arrive in batches: on-device ones first, and when cloud reranking comes back, only given again if the set of cards changed
 @Suite struct Batches {
-    /// 四张卡：1、2 字面和向量都对得上「海报」，本机粗找只展示它们；3、4 是精排可能捞回来的
+    /// Four cards: 1 and 2 match "海报" both literally and by vector, so the on-device rough search shows only them; 3 and 4 are ones reranking might bring back
     static func searcher(grades: [String: Int]) async throws -> Searcher {
         let searcher = Searcher(store: try temporaryStore(), gateway: Gateway(embedder: FakeLocalEmbedder(), generators: [], judges: [GradingJudge(grades: grades)]))
         await searcher.replaceCards((1...4).map {
@@ -196,7 +196,7 @@ struct GradingJudge: Judgment {
         return all
     }
 
-    /// 云端只是换了顺序：只给本机那一批，卡片不动第二次
+    /// The cloud only changed the order: only the on-device batch is given, cards don't move a second time
     @Test func sameCardsReorderedByCloudAreNotGivenAgain() async throws {
         let searcher = try await Self.searcher(grades: ["卡1": 2, "卡2": 3])
         #expect(await searcher.find(Self.query, online: true) == [2, 1])
@@ -205,7 +205,7 @@ struct GradingJudge: Judgment {
         #expect(Set(batches[0]) == [1, 2])
     }
 
-    /// 云端捞回一张、去掉一张：再给一次云端的结果
+    /// The cloud brought one back and removed one: the cloud's result is given once more
     @Test func differentCardsFromCloudReplaceLocalOnes() async throws {
         let searcher = try await Self.searcher(grades: ["卡1": 3, "卡3": 2])
         let batches = await Self.batches(searcher.finding(Self.query, online: true))
@@ -214,25 +214,25 @@ struct GradingJudge: Judgment {
         #expect(batches[1] == [1, 3])
     }
 
-    /// 离线：只有本机那一批
+    /// Offline: only the on-device batch
     @Test func offlineGivesLocalOnly() async throws {
         let searcher = try await Self.searcher(grades: ["卡3": 3])
         #expect(await Self.batches(searcher.finding(Self.query, online: false)).map(Set.init) == [[1, 2]])
     }
 
-    /// 眼前已经聚拢着一批（回车时按规则先找的）：等云端的，同一批就什么都不给，不同才给一次
+    /// A batch is already gathered on screen (found by rules first on Return): wait for the cloud, give nothing if it's the same batch, give once if it differs
     @Test func alreadyGatheredWaitsForCloud() async throws {
         let same = try await Self.searcher(grades: ["卡1": 2, "卡2": 3])
         #expect(await Self.batches(same.finding(Self.query, online: true, over: [1, 2])).isEmpty)
         let different = try await Self.searcher(grades: ["卡3": 3])
         #expect(await Self.batches(different.finding(Self.query, online: true, over: [1, 2])) == [[3]])
-        // 云端判下来一张都不相关：给一个空批，界面据此散开
+        // The cloud judged none of them relevant: give an empty batch, and the interface scatters accordingly
         let none = try await Self.searcher(grades: [:])
         #expect(await Self.batches(none.finding(Self.query, online: true, over: [1, 2])) == [[]])
     }
 }
 
-/// 离线时搜索不等网络
+/// Offline search doesn't wait for the network
 @Suite struct SearchOffline {
     let store: Store
     let cloud = FakeCloud()
@@ -243,7 +243,7 @@ struct GradingJudge: Judgment {
         gateway = Gateway(embedder: FakeLocalEmbedder(), generators: [cloud])
     }
 
-    /// 离线时不等网络：不调模型，只用规则和本机向量
+    /// Offline it doesn't wait for the network: no model calls, only rules and on-device vectors
     @Test func offlineNeverCallsTheModel() async throws {
         for i in 0..<3 { _ = try await collectPage(store, url: "https://example.com/\(i)", body: "设计 正文 \(i)") }
         await Understander(store: store, gateway: gateway) {}.run()
@@ -255,14 +255,14 @@ struct GradingJudge: Judgment {
     }
 }
 
-/// 真实云端理解几句典型的话：OPENROUTER_API_KEY=… swift test --filter SearchRealCloud
+/// How the real cloud understands a few typical sentences: OPENROUTER_API_KEY=… swift test --filter SearchRealCloud
 @Suite struct SearchRealCloud {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] != nil))
     func interpretsSentences() async throws {
         let store = try temporaryStore()
         let cloud = Cloud(key: { _ in ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] })
         let searcher = Searcher(store: store, gateway: Gateway(embedder: FakeLocalEmbedder(), generators: [cloud], judges: [Jev(via: cloud)]))
-        // 两可的句子接受两种理解：「视频网站怎么赚钱」「明白人说的话」当成找卡片、提问都行（提问时依据的卡也会聚拢过来）
+        // Ambiguous sentences accept two readings: "视频网站怎么赚钱" and "明白人说的话" can be finding cards or asking a question (when asking, the cards it draws on gather too)
         let cases: [(String, Set<Intent>)] = [
             ("视频网站怎么赚钱", [.find, .ask]), ("今天吃什么，给我点灵感", [.inspire]), ("帮我抽一张塔罗牌", [.draw]),
             ("我收过的讲设计的文章都在说什么？", [.ask]), ("长得像狗狗的男人", [.find]), ("明白人说的话", [.find, .ask]), ("最近收的红色海报", [.find]),

@@ -2,8 +2,8 @@ import Testing
 import Foundation
 @testable import Intelligence
 
-/// 转录跟音频本身的语言走：用系统朗读声音做一段中文、一段英文，各转一遍，看转出来的是不是那种语言。
-/// 第一次跑会由系统下载中英文识别模型。`SPEECH_CHECK=1 swift test --filter SpeechLanguage`
+/// Transcription follows the audio's own language: make one Chinese and one English clip with the system speech voices, transcribe each, and check the output is in that language.
+/// The first run has the system download the Chinese and English recognition models. `SPEECH_CHECK=1 swift test --filter SpeechLanguage`
 @Suite struct SpeechLanguage {
     static let enabled = ProcessInfo.processInfo.environment["SPEECH_CHECK"] != nil
 

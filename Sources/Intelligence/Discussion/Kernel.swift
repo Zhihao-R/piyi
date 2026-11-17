@@ -1,21 +1,21 @@
 import Foundation
 import Library
 
-/// 讨论内核：读讨论记录、拼出发给模型的内容、调模型、执行工具、检查引用、写记录。
-/// 自己不存任何状态，每一步都从记录重新读：进程退出、换实现都不丢东西。生成到一半的文字只在内存里，停下就算「没答完」
+/// Discussion kernel: reads the discussion record, assembles what's sent to the model, calls the model, runs tools, checks citations, writes the record.
+/// It keeps no state of its own and rereads the record at every step: nothing is lost if the process exits or the implementation changes. Text halfway through generation lives only in memory; stopping counts as "didn't finish"
 public final class DiscussionKernel: Sendable {
     let store: Store
     let gateway: Gateway
     let tools: [any Tool]
     let recipe: any Recipe
 
-    /// 一个问题最多走几轮工具（暂定），到了就让模型用已有的信息作答
+    /// At most how many tool rounds one question can take (tentative); once reached, the model answers with what it already has
     public static let toolRounds = 20
-    /// 工具交给模型的文字最长多少字（暂定）
+    /// Max length of text a tool hands to the model, in characters (tentative)
     static let resultLimit = 4000
-    /// 桌上的卡最多占模型上下文的多少（暂定），剩下的留给对话和回答
+    /// At most what share of the model's context the desk's cards may take (tentative); the rest is left for the conversation and the answer
     static let deskShare = 0.5
-    /// 粗估长度：一个字约 1 个 token（偏保守），一张图按这么多算
+    /// Rough length estimate: about 1 token per character (on the safe side); an image counts as this many
     static let pictureTokens = 800
 
     public init(store: Store, gateway: Gateway, tools: [any Tool], recipe: any Recipe = WholeText()) {
@@ -23,36 +23,36 @@ public final class DiscussionKernel: Sendable {
     }
 
     public enum Progress: Sendable {
-        /// 正在生成的回答，到目前为止的全文
+        /// The answer being generated, full text so far
         case writing(String)
-        /// 讨论记录里写进了新的一条
+        /// A new entry was written to the discussion record
         case recorded
     }
 
-    /// 发给模型的内容超过了模型的上限：开一段新讨论
+    /// What's sent to the model exceeds its limit: start a new discussion
     public struct TooLong: LocalizedError {
         public var errorDescription: String? { String(localized: "这段讨论太长了") }
     }
 
-    /// 这一轮的花费、速度和缓存，测试集记下来
+    /// This round's cost, speed and caching, recorded by the test set
     public struct Report: Sendable {
         public var usage = ChatUsage()
-        /// 从开始到回答的第一个字
+        /// From start to the first character of the answer
         public var firstText: Duration?
     }
 
-    // MARK: 跑一轮
+    // MARK: Run one round
 
-    /// 下一步做什么：只看讨论记录，靠问题和回答、调用和结果有没有配对认出没做完的事
+    /// What to do next: looks only at the discussion record, spotting unfinished work by whether questions and answers, calls and results are paired up
     enum Step: Equatable {
         case idle
-        /// 调用了工具却没等到结果的（中途退出），先补上
+        /// A tool was called but no result arrived (exited midway): fill it in first
         case runTools([ToolCall], round: Int)
-        /// 调模型。round 是这个问题已经走了几轮工具
+        /// Call the model. round is how many tool rounds this question has already taken
         case ask(round: Int)
     }
 
-    /// 有问题没答完（中途退出、断网、出错、停下）：界面在这里显示「没答完」和重试
+    /// A question wasn't fully answered (exited midway, offline, error, stopped): the interface shows "Answer didn’t finish" and a retry here
     public static func isUnfinished(_ events: [DiscussionEvent]) -> Bool { next(events) != .idle }
 
     static func next(_ events: [DiscussionEvent]) -> Step {
@@ -70,7 +70,7 @@ public final class DiscussionKernel: Sendable {
         return .ask(round: round)
     }
 
-    /// 接着做完这段讨论没做完的事，直到写下回答。中途取消的话已经写下的记录留着，下次从那里接着
+    /// Finish whatever this discussion left undone until an answer is written. If cancelled midway, records already written stay and the next run picks up from there
     @discardableResult
     public func run(_ discussion: Int64, progress: @escaping @Sendable (Progress) -> Void = { _ in }) async throws -> Report {
         var report = Report()
@@ -85,7 +85,7 @@ public final class DiscussionKernel: Sendable {
                 let desk = Set(try await store.desk(of: discussion).compactMap(\.id))
                 for call in calls {
                     let result = try await execute(call, desk: desk)
-                    // 停下了：这次调用算没做，下次重来，不写半截的结果
+                    // Stopped: this call counts as not made and is redone next time; no half-finished result is written
                     try Task.checkCancellation()
                     try await store.append([.result(result)], to: discussion)
                     progress(.recorded)
@@ -124,8 +124,8 @@ public final class DiscussionKernel: Sendable {
         }
     }
 
-    /// 执行一次工具调用。出错、不认识的工具、改资料的工具（第一版不执行）都交回「没成功」，模型接着用已有的信息作答；
-    /// 停下了照样抛出去
+    /// Run one tool call. Errors, unknown tools, and tools that change data (not run in the first version) all report "didn't succeed", and the model answers with what it already has;
+    /// stopping is still thrown
     func execute(_ call: ToolCall, desk: Set<Int64>) async throws -> ToolResult {
         guard let tool = tools.first(where: { $0.spec.name == call.name }), tool.nature == .reading else {
             return ToolResult(call: call.id, label: String(localized: "\(call.name)没成功"), text: "工具失败：没有这个工具", failed: true)
@@ -141,9 +141,9 @@ public final class DiscussionKernel: Sendable {
         }
     }
 
-    // MARK: 桌
+    // MARK: Desk
 
-    /// 桌上的卡：每一轮现切段落、编号（切法够快，不必提前切好存着），图片卡带上图
+    /// Cards on the desk: paragraphs are split and numbered fresh each round (splitting is fast enough that there's no need to store it ahead), image cards carry the image
     func deskCards(_ discussion: Int64) async throws -> [DeskCard] {
         await deskCards(try await store.desk(of: discussion))
     }
@@ -157,14 +157,14 @@ public final class DiscussionKernel: Sendable {
         return out
     }
 
-    /// 这几张卡一起放得下桌吗：按拼法实际拼出的桌估，最多占模型上下文的一半。问不到上下文长度时不拦
+    /// Do these cards fit on the desk together: estimated from the desk as the recipe actually assembles it, taking at most half the model's context. Not blocked when the context length can't be found
     public func fits(_ cards: [Card]) async -> Bool {
         guard let length = await gateway.contextLength() else { return true }
         let chat = recipe.chat(desk: await deskCards(cards), events: [], tools: [])
         return Double(Self.estimate(chat)) <= Double(length) * Self.deskShare
     }
 
-    /// 发给模型的内容粗估有多少 token
+    /// Rough token count of what's sent to the model
     static func estimate(_ chat: Chat) -> Int {
         chat.messages.reduce(0) { total, message in
             total + message.parts.reduce(0) { sum, part in
@@ -176,7 +176,7 @@ public final class DiscussionKernel: Sendable {
         }
     }
 
-    /// 检查引用要对照的：桌上（不在废纸篓里）的卡的段落，和每次工具调用读回的几项
+    /// What citations are checked against: paragraphs of cards on the desk (not in the trash), and the items each tool call returned
     static func sources(_ desk: [DeskCard], _ events: [DiscussionEvent]) -> Citations.Sources {
         let cards = Dictionary(uniqueKeysWithValues: desk.filter { $0.card.trashedAt == nil }.map { ($0.id, (title: $0.card.displayTitle, passages: $0.passages)) })
         let order: [String] = events.flatMap { event -> [String] in if case .calls(_, _, let calls) = event.what { calls.map(\.id) } else { [] } }
@@ -187,10 +187,10 @@ public final class DiscussionKernel: Sendable {
         return Citations.Sources(cards: cards, results: results)
     }
 
-    // MARK: 起名
+    // MARK: Naming
 
-    /// 第一个回答出来后起一个 12 字（英文 6 个词）以内的名字，和提问用同一种语言。起不出来就还叫「新讨论」，不打扰。
-    /// 和跑一轮分开：答完就能接着问，不用等起名
+    /// After the first answer comes out, give it a name of at most 12 characters (6 words in English), in the same language as the question. If none comes out it stays "New Discussion", without bothering you.
+    /// Separate from running a round: you can ask again right after the answer without waiting for the name
     public func nameIfNeeded(_ discussion: Int64) async {
         guard (try? await store.discussion(discussion))??.name == nil, let events = try? await store.events(of: discussion),
               case .question(let asked)? = events.last(where: { if case .question = $0.what { true } else { false } })?.what,

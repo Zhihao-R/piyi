@@ -2,12 +2,12 @@ import SwiftUI
 import Library
 import Intelligence
 
-// 云端怎么接是这台 Mac 上的偏好，记在 UserDefaults。模型名、地址各家分开记：换回去时还在
+// How the cloud is connected is a preference of this Mac, stored in UserDefaults. Model names and addresses are stored per provider: still there when switching back
 
 extension CloudSetup {
     private static var defaults: UserDefaults { .standard }
 
-    /// 上次选的那家
+    /// The provider chosen last time
     static var saved: CloudSetup {
         saved(for: defaults.string(forKey: "cloudVendor").flatMap(Vendor.init) ?? .openRouter)
     }
@@ -28,10 +28,10 @@ extension CloudSetup {
     }
 }
 
-/// 选服务商、填这家的密钥；这家没有默认模型或地址时，把必填的也列出来。设置和引导共用
+/// Choose a provider and enter its key; if it has no default model or address, list the required ones too. Shared by settings and onboarding
 struct CloudAccess: View {
     let model: AppModel
-    /// 引导里没有每行左边的标题，提示语要自己说明填什么
+    /// Onboarding has no title to the left of each row, so the placeholder has to say what to enter
     var labeled = true
 
     var body: some View {
@@ -46,19 +46,19 @@ struct CloudAccess: View {
             CloudField(title: String(localized: "接口地址"), prompt: (labeled ? "" : String(localized: "接口地址，如 ")) + "https://api.example.com/v1", path: \.address, vendor: vendor, model: model)
         }
         ForEach(model.cloud, id: \.name) { KeyField(provider: $0, model: model, labeled: labeled) }
-        // 有默认模型的放进详细设置；没有的必填，留在这里
+        // Those with a default model go into Advanced; those without are required and stay here
         if vendor.defaultModel == nil {
             CloudField(title: String(localized: "模型"), prompt: labeled ? String(localized: "必填") : String(localized: "模型名，必填"), path: \.model, vendor: vendor, model: model)
         }
     }
 }
 
-/// 云端设置里的一项文字：回车、移开焦点或关掉设置时生效
+/// A text item in the cloud settings: takes effect on Return, losing focus, or closing settings
 struct CloudField: View {
     let title: String
     let prompt: String
     let path: WritableKeyPath<CloudSetup, String>
-    /// 这一项属于哪家：换了服务商后，旧的那一项消失时不能把字写到新的那家上
+    /// Which provider this item belongs to: after switching providers, when the old item disappears its text must not be written to the new provider
     let vendor: Vendor
     let model: AppModel
     @State private var text = ""
@@ -71,7 +71,7 @@ struct CloudField: View {
             .onChange(of: focused) { if !focused { save() } }
             .onAppear { text = model.cloudSetup[keyPath: path] }
             .onDisappear(perform: save)
-            // 带上是哪一项：设置的 Form 按行认身份，几项都只用 vendor 会被当成同一行，显示成重复的
+            // Include which item: the settings Form identifies rows by identity; using only vendor for several items makes them count as the same row and show up as duplicates
             .id("\(vendor.rawValue).\(title)")
     }
 
@@ -83,9 +83,9 @@ struct CloudField: View {
     }
 }
 
-// MARK: 详细设置
+// MARK: Advanced
 
-/// 云端的详细设置：用哪个模型、判断模型、深入思考，和给 AI 的写法要求。平时用不着，从设置里「详细设置」点进来
+/// Advanced cloud settings: which model, the judging model, deep thinking, and writing instructions for the AI. Rarely needed; reached via "Advanced" in settings
 struct CloudDetails: View {
     let model: AppModel
     @Environment(\.dismiss) private var dismiss
@@ -101,7 +101,7 @@ struct CloudDetails: View {
                     if model.cloudModelUnknown {
                         Text("OpenRouter 上未找到该模型").font(.caption).foregroundStyle(.secondary)
                     }
-                    // 判断可以另用一个更快的模型。OpenRouter 默认用专做判断的 Jev；别家默认和上面的模型相同，个别有另外推荐的
+                    // Judging can use a separate faster model. OpenRouter defaults to Jev, made for judging; other providers default to the same model as above, a few have a different recommendation
                     CloudField(title: String(localized: "判断模型"), prompt: vendor == .openRouter ? String(localized: "Jev（推荐）") : vendor.defaultJudgeModel ?? String(localized: "与上方模型相同"),
                                path: \.judgeModel, vendor: vendor, model: model)
                     if vendor.canSetThinking {
@@ -137,7 +137,7 @@ struct CloudDetails: View {
     }
 }
 
-/// 一样东西的写法要求：平时收着，点开改；改完即生效，清空或恢复默认就回到默认
+/// Writing instructions for one thing: collapsed normally, expand to edit; edits take effect immediately, clearing or restoring default goes back to the default
 struct StyleRow: View {
     let part: Writing.Part
     @State private var text = ""
@@ -166,7 +166,7 @@ struct StyleRow: View {
     private var edited: Bool { part.customized(text) != nil }
 }
 
-// 写法要求也是这台 Mac 上的偏好，记在 UserDefaults；只记改过的，没改的跟着界面语言用默认
+// Writing instructions are also a preference of this Mac, stored in UserDefaults; only edited ones are stored, unedited ones use the default for the interface language
 extension Writing.Part {
     private var key: String { "style.\(rawValue)" }
 
@@ -181,7 +181,7 @@ extension Writing.Part {
         }
     }
 
-    /// 改之前要知道的事
+    /// Things to know before editing
     var note: String? {
         switch self {
         case .card: String(localized: "仅对此后整理的卡片生效；标签最多保留 10 个。")

@@ -3,33 +3,33 @@ import Observation
 import Library
 import Intelligence
 
-/// 讨论栏和侧边栏讨论组的状态。讨论记录在资料库里，这里只是眼前这一段的读数和正在生成的那段字；
-/// 讨论内核跑在后台，换到别的讨论时照样跑完，答完了侧边栏那一行亮一个点
+/// State of the discussion bar and the sidebar's discussion group. Discussion records live in the library; this holds only the readout of the current one and the text being generated;
+/// the discussion engine runs in the background and finishes even after switching to another discussion; when done, a dot lights up on its sidebar row
 @MainActor @Observable
 final class DiscussionModel {
-    /// 讨论栏展开
+    /// Discussion bar expanded
     var isOpen = false { didSet { if isOpen, !oldValue { reload() } } }
-    /// 讨论栏里的讨论；nil 是草稿：还没发第一句，不进侧边栏
+    /// The discussion in the discussion bar; nil is a draft: no first message sent yet, not in the sidebar
     private(set) var current: Int64?
     private(set) var name = String(localized: "新讨论")
     private(set) var desk: [Card] = []
     private(set) var events: [DiscussionEvent] = []
-    /// 桌上这几张卡之前的讨论：还没说话时列在空白处
+    /// Earlier discussions about the cards on the table: listed in the blank space before anything is said
     private(set) var earlier: [DiscussionSummary] = []
-    /// 侧边栏的讨论组，最近有动静的在前
+    /// The sidebar's discussion group, most recently active first
     private(set) var all: [DiscussionSummary] = []
-    /// 找卡的候选卡、引用的卡：卡名
+    /// Candidate cards when looking for cards, cited cards: card names
     private(set) var titles: [Int64: String] = [:]
-    /// 正在跑的讨论和它们生成到一半的回答（只在内存里：停下就算没答完）
+    /// Running discussions and their half-generated answers (in memory only: stopping counts as unfinished)
     private(set) var writing: [Int64: String] = [:]
     private var running: [Int64: Task<Void, Never>] = [:]
-    /// 发给模型的内容超过了上限的讨论
+    /// Discussions whose content sent to the model exceeded the limit
     private(set) var tooLong: Set<Int64> = []
-    /// 正在重命名的讨论
+    /// The discussion being renamed
     var renaming: DiscussionSummary?
-    /// 点了桌上的「+」：输入框里起一个 @ 挑卡
+    /// "+" on the table clicked: start an @ card pick in the input field
     var picking = false
-    /// 草稿桌上的卡
+    /// Cards on the draft table
     private var draft: [Int64] = []
 
     private unowned let model: AppModel
@@ -40,12 +40,12 @@ final class DiscussionModel {
 
     var isRunning: Bool { current.map { running[$0] != nil } ?? false }
     var isTooLong: Bool { current.map(tooLong.contains) ?? false }
-    /// 有问题没答完、也没在跑：显示「没答完」和重试
+    /// A question left unanswered and not running: show "Answer didn’t finish" and retry
     var isUnfinished: Bool { !isRunning && DiscussionKernel.isUnfinished(events) }
-    /// 收起时有新回答：工具栏按钮上亮一个点
+    /// A new answer arrived while collapsed: a dot lights up on the toolbar button
     var hasUnread: Bool { all.contains { $0.unread && !(isOpen && $0.id == current) } }
 
-    /// 写死的几句建议问题，不调模型；只在还没开口时给，聊起来以后不再插话
+    /// A few hard-coded suggested questions, no model call; offered only before anything is said, no interjecting once the conversation starts
     var suggestions: [String] {
         guard events.isEmpty else { return [] }
         let live = desk.filter { $0.trashedAt == nil }.count
@@ -54,16 +54,16 @@ final class DiscussionModel {
 
     func onDesk(_ card: Int64) -> Bool { desk.contains { $0.id == card } }
 
-    // MARK: 入口
+    // MARK: Entry points
 
-    /// 入口上的叫法：讨论栏收起时是「讨论」，展开时是「引用」，都已引用是「已引用」（灰的）。界面上不说「桌」，用户不懂。
-    /// 放大查看的玻璃按钮、操作条、右键菜单都从这里取
+    /// The label on entry points: "Discuss" when the discussion bar is collapsed, "Cite" when expanded, "Cited" (gray) when all are cited. The UI never says "table"; users wouldn't get it.
+    /// The detail view's glass buttons, the action bar and the context menu all take it from here
     func entry(for cards: [Int64]) -> (title: String, enabled: Bool) {
         guard isOpen else { return (String(localized: "讨论"), true) }
         return cards.allSatisfy(onDesk) ? (String(localized: "已引用"), false) : (String(localized: "引用"), true)
     }
 
-    /// 讨论栏收起时开一段新讨论，展开时放上当前的桌
+    /// With the discussion bar collapsed, start a new discussion; when expanded, put on the current table
     func discuss(_ cards: [Int64]) {
         if !isOpen {
             newDiscussion()
@@ -72,7 +72,7 @@ final class DiscussionModel {
         place(cards)
     }
 
-    /// 放上讨论栏里的桌
+    /// Put on the table in the discussion bar
     func place(_ cards: [Int64]) {
         let target = current
         Task {
@@ -81,7 +81,7 @@ final class DiscussionModel {
         }
     }
 
-    /// 拖到侧边栏某一段讨论上：讨论栏不切换，顶部提示一句
+    /// Dragged onto a discussion in the sidebar: the discussion bar doesn't switch, a hint shows at the top
     func place(_ cards: [Int64], onto discussion: DiscussionSummary) {
         let name = discussion.discussion.displayName
         Task {
@@ -91,7 +91,7 @@ final class DiscussionModel {
         }
     }
 
-    /// 放上桌的唯一一条路（nil 是草稿桌）：桌上已有的跳过；放不下（超过模型上下文的一半）就都不放，返回 nil
+    /// The only way onto the table (nil is the draft table): cards already there are skipped; if they don't fit (over half the model's context), add none and return nil
     @discardableResult
     private func put(_ cards: [Int64], on discussion: Int64?) async -> [Int64]? {
         guard let store, let kernel else { return nil }
@@ -120,8 +120,8 @@ final class DiscussionModel {
         }
     }
 
-    /// 搜索提问的「接着聊」：依据的卡放上桌，问题和回答原样成为开头，不再答一遍。
-    /// 搜索只读了简介，说不出哪句话出自哪张卡：引用只记整张卡，不往回答里插小数字
+    /// "Continue in Discussion" from a search question: the supporting cards go on the table, the question and answer become the opening as is, not answered again.
+    /// Search read only the descriptions and can't tell which sentence came from which card: citations record whole cards only, no small numbers inserted into the answer
     func continueFromSearch(question: String, answer: String, cards: [Int64]) {
         guard let store else { return }
         Task {
@@ -139,7 +139,7 @@ final class DiscussionModel {
         reload()
     }
 
-    /// 太长了：带着桌上的卡开一段新讨论
+    /// Too long: start a new discussion with the cards on the table
     func startOver() {
         draft = desk.compactMap(\.id)
         current = nil
@@ -152,7 +152,7 @@ final class DiscussionModel {
         reload()
     }
 
-    // MARK: 说话
+    // MARK: Speaking
 
     func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -160,7 +160,7 @@ final class DiscussionModel {
         let target = current
         Task {
             do {
-                // 发到发问那一刻看着的讨论：等写入的工夫换到别处也不跑错
+                // Send to the discussion being viewed at the moment of asking: switching elsewhere while it's written doesn't misroute it
                 let id: Int64
                 if let target {
                     try await store.append([.question(text)], to: target)
@@ -178,7 +178,7 @@ final class DiscussionModel {
         }
     }
 
-    /// 停止：断开这次调用，这个问题算没答完
+    /// Stop: cut off this call; the question counts as unfinished
     func stop() {
         guard let current else { return }
         running[current]?.cancel()
@@ -201,7 +201,7 @@ final class DiscussionModel {
                         switch progress {
                         case .writing(let text): self.writing[discussion] = text
                         case .recorded:
-                            // 记下了一条（工具结果、回答）：生成中的字作废，从记录重读
+                            // An entry was recorded (tool result, answer): discard the text being generated and reread from the record
                             self.writing[discussion] = ""
                             await self.refresh()
                         }
@@ -216,15 +216,15 @@ final class DiscussionModel {
             running[discussion] = nil
             writing[discussion] = nil
             await refresh()
-            // 答完就能接着问；名字起好了再刷新一次
+            // Once answered you can ask again; refresh once more after the name is set
             await kernel.nameIfNeeded(discussion)
             await refresh()
         }
     }
 
-    // MARK: 回答
+    // MARK: Answers
 
-    /// 收成文字卡：去掉引用小数字，放进当前画板；不在画板里时进资料库
+    /// Save as a note: remove the small citation numbers and put it in the current board; into the library when not in a board
     func collect(_ answer: Answer) {
         let text = Citations.plain(answer.text).trimmingCharacters(in: .whitespacesAndNewlines)
         if model.canvas?.addNote(text, as: String(localized: "收成文字卡")) == nil {
@@ -241,7 +241,7 @@ final class DiscussionModel {
         NSPasteboard.general.setString(Citations.plain(answer.text).trimmingCharacters(in: .whitespacesAndNewlines), forType: .string)
     }
 
-    /// 点了引用：在画布上打开这张卡的放大查看，滚到那一段并闪一下，视频从那一秒播；讨论栏不动
+    /// Citation clicked: open this card's detail view on the canvas, scroll to that passage and flash it, video plays from that second; the discussion bar stays
     func open(_ citation: Citation) {
         guard let id = citation.card, let store else { return }
         Task {
@@ -259,7 +259,7 @@ final class DiscussionModel {
         }
     }
 
-    // MARK: 侧边栏
+    // MARK: Sidebar
 
     func rename(_ discussion: DiscussionSummary, to name: String) {
         let name = name.trimmingCharacters(in: .whitespaces)
@@ -270,7 +270,7 @@ final class DiscussionModel {
         }
     }
 
-    /// 删除讨论：不能撤回，所以问一句
+    /// Delete a discussion: can't be undone, so ask
     func delete(_ discussion: DiscussionSummary) {
         let alert = NSAlert()
         alert.messageText = String(localized: "删除讨论「\(discussion.discussion.displayName)」？")
@@ -286,12 +286,12 @@ final class DiscussionModel {
         }
     }
 
-    // MARK: 读
+    // MARK: Reading
 
     func reload() { Task { await refresh() } }
 
-    /// 从资料库重读眼前这段讨论和侧边栏的列表；讨论栏开着就算看过了。
-    /// 读的工夫换到了别的讨论：这次读的不算，免得显示成另一段的
+    /// Reread the current discussion and the sidebar list from the library; with the discussion bar open it counts as seen.
+    /// If another discussion was switched to while reading: discard this read so it isn't shown as the other one
     func refresh() async {
         guard let store else { return }
         let current = current, draft = draft
@@ -316,7 +316,7 @@ final class DiscussionModel {
         await loadTitles(store)
     }
 
-    /// 候选卡和引用的卡的卡名
+    /// Card names of candidate cards and cited cards
     private func loadTitles(_ store: Store) async {
         var ids = Set<Int64>()
         for event in events {
@@ -332,7 +332,7 @@ final class DiscussionModel {
         }
     }
 
-    /// @ 挑卡：按字找用搜索框同一套字面匹配；还没打字时列最近收的
+    /// @ card pick: finding by text uses the same literal matching as the search field; before typing, list the most recently collected
     func cards(matching text: String) async -> [Card] {
         guard let store else { return [] }
         guard !text.isEmpty, let searcher = model.searcher else { return (try? await store.recentCards(limit: Self.picks)) ?? [] }
@@ -343,6 +343,6 @@ final class DiscussionModel {
         return cards
     }
 
-    /// @ 挑卡最多列几张
+    /// The most cards an @ card pick lists
     static let picks = 6
 }

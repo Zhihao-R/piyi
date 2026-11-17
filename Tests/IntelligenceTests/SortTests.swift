@@ -4,7 +4,7 @@ import Synchronization
 @testable import Intelligence
 @testable import Library
 
-/// 按预设回答的假判断服务方：题目里写着哪个画板名，就按那个画板的预设回答；没预设的答「否」，把握 0.9
+/// A fake judgment provider with preset answers: whichever board name the question contains, it answers with that board's preset; anything not preset is answered "no", confidence 0.9
 final class FakeJudge: Judgment, Sendable {
     let name = "假判断", seesImages = false, sureEnough = 0.85
     let answers: [String: Verdict]
@@ -24,14 +24,14 @@ final class FakeJudge: Judgment, Sendable {
     }
 }
 
-/// 规则的向量按预设给，测试里卡片的向量直接写进快照
+/// Rule vectors are given as preset; card vectors in the tests are written straight into the snapshot
 struct FakeRuleEmbedder: Embedding {
     let name = "假本机", isReady = true, model = "fake-embedding"
     let vectors: [String: [Float]]
     func embed(_ text: String, as role: EmbeddingRole) async throws -> [Float] { vectors[text] ?? [0, 0, 1] }
 }
 
-/// 测试用的落位：都摆在原点
+/// Placement for tests: everything goes at the origin
 struct OriginPlacer: Placer {
     func placements(for card: Int64, into boards: [Sorter.Scored]) async throws -> [Placement] {
         boards.map { Placement(boardID: $0.board, frame: .zero, z: 0) }
@@ -47,7 +47,7 @@ struct OriginPlacer: Placer {
         Gateway(embedder: FakeRuleEmbedder(vectors: rules), generators: generators, judges: [judge])
     }
 
-    /// 一张卡：在哪些画板里、向量（nil 表示还没算）
+    /// A card: which boards it's on, and its vector (nil means not computed yet)
     static func card(_ id: Int64, _ vector: [Float]?, in boards: Set<Int64> = []) -> SearchCard {
         SearchCard(id: id, kind: .text, collectedAt: .now, text: "", colors: nil, vector: vector, boards: boards, brief: "卡\(id)")
     }
@@ -66,9 +66,9 @@ struct OriginPlacer: Placer {
 
     static let yes = Verdict(choice: 0, confidence: 0.95)
 
-    // MARK: 挑候选
+    // MARK: Picking candidates
 
-    /// 卡和卡的相似度普遍比规则和卡高：合成一个分数时只写了规则的画板永远排不进去，分开取就能
+    /// Card-to-card similarity is generally higher than rule-to-card: with one combined score, boards that only have a rule never make it in; taking them separately lets them
     @Test func ruleListIsTakenSeparately() {
         let v: [Float] = [1, 0]
         let pools = (1...6).map { Sorter.Pool(id: Int64($0), cards: [[0.9, 0.1]], rule: nil) } + [Sorter.Pool(id: 7, cards: [], rule: [0.3, 0.95])]
@@ -77,14 +77,14 @@ struct OriginPlacer: Placer {
         #expect(picked.contains(7))
     }
 
-    /// 只和最像的 3 张比；不到 3 张时用全部
+    /// Compare only with the 3 most similar cards; with fewer than 3, use them all
     @Test func comparesNearestThreeOrAll() {
         let v: [Float] = [1, 0]
-        // 画板 1：一张很像、三张不像，平均被拉低；画板 2：两张中等像，用全部两张
+        // Board 1: one very similar, three dissimilar, average dragged down; board 2: two moderately similar, both used
         let pools = [Sorter.Pool(id: 1, cards: [[1, 0], [0, 1], [0, 1], [0, 1]], rule: nil),
                      Sorter.Pool(id: 2, cards: [[0.5, 0.5], [0.5, 0.5]], rule: nil)]
         #expect(Sorter.candidates(v, among: pools) == [2, 1])
-        // 画板 1 换成三张很像加一堆不像的：只取最像的 3 张，排到前面
+        // Board 1 changed to three very similar plus a pile of dissimilar ones: only the 3 most similar are taken, and it ranks first
         let crowded = [Sorter.Pool(id: 1, cards: [[1, 0], [1, 0], [1, 0]] + Array(repeating: [0, 1], count: 10), rule: nil), pools[1]]
         #expect(Sorter.candidates(v, among: crowded) == [1, 2])
     }
@@ -97,7 +97,7 @@ struct OriginPlacer: Placer {
         #expect(Sorter.candidates([1, 0], among: rulesOnly) == [10, 9, 8])
     }
 
-    // MARK: 概率和放进线
+    // MARK: Probability and placement threshold
 
     @Test func noAnswerMeansOneMinus() {
         #expect(Sorter.probability(Verdict(choice: 0, confidence: 0.9)) == 0.9)
@@ -110,7 +110,7 @@ struct OriginPlacer: Placer {
         #expect(Sorter.pick(scored, line: 0.85, inner: [:]) == Array(scored.prefix(2)))
     }
 
-    // MARK: 嵌套
+    // MARK: Nesting
 
     @Test func onlyInnermostOfNestedBoards() async throws {
         let judge = FakeJudge(["外": Self.yes, "中": Self.yes, "里": Self.yes])
@@ -131,7 +131,7 @@ struct OriginPlacer: Placer {
         #expect(judge.asked.withLock { $0 }.isEmpty)
     }
 
-    // MARK: 参与的画板
+    // MARK: Participating boards
 
     @Test func closedEmptyAndRuleOnlyBoards() async throws {
         let judge = FakeJudge(["规则": Self.yes])
@@ -155,9 +155,9 @@ struct OriginPlacer: Placer {
         #expect(question.contains("卡2") && question.contains("卡3") && question.contains("卡4") && !question.contains("卡5") && !question.contains("卡7"))
     }
 
-    // MARK: 只认 Jev
+    // MARK: Jev only
 
-    /// 专门的判断服务方出错时，出口会退到生成模型；分拣不认那种回答，当作失败
+    /// When the dedicated judgment provider errors, the gateway falls back to the generation model; sorting doesn't accept that answer and treats it as a failure
     @Test func generatedAnswerCountsAsFailure() async throws {
         let judge = FakeJudge(fails: true), cloud = FakeCloud()
         let snapshot = Self.snapshot([Self.card(1, [1, 0]), Self.card(2, [1, 0], in: [10])], [Self.board(10, "甲")])
@@ -172,9 +172,9 @@ struct OriginPlacer: Placer {
         #expect(await sorter.score(1, in: snapshot) == nil)
     }
 
-    // MARK: 队列
+    // MARK: Queue
 
-    /// 收一张只在资料库里的卡（不放进画板）
+    /// Collects a card that's only in the library (not placed on a board)
     static func collect(_ store: Store, _ text: String, partial: Partial? = nil) async throws -> Int64 {
         var m = Material(kind: .text)
         m.text = text
@@ -184,7 +184,7 @@ struct OriginPlacer: Placer {
         return id
     }
 
-    /// 能分拣的才分：理解做完、补全正文结束、不是残缺卡。分进去的摆放带新放进标记，卡标成已分拣
+    /// Only sortable cards are sorted: understanding done, body completion finished, not a partial card. Placements made get the newly-added mark, and the card is marked sorted
     @Test func queueSortsOnlyReadyCards() async throws {
         let store = try temporaryStore()
         let judge = FakeJudge(["配色": Self.yes])
@@ -204,12 +204,12 @@ struct OriginPlacer: Placer {
         let placed = try await store.items(on: colors).filter { $0.placement.cardID == ready }
         #expect(placed.count == 1 && placed[0].placement.unseen)
         #expect(try await store.card(ready)?.sorted == true)
-        // 已经在「配色」里的那张没有别的候选：判过了，什么都不放，也标成已分拣
+        // The card already in "配色" has no other candidates: it was judged, nothing is placed, and it's still marked sorted
         #expect(try await store.card(inside)?.sorted == true)
         for id in [partial, bodyPending, notUnderstood] { #expect(try await store.card(id)?.sorted == false) }
     }
 
-    /// Jev 出错：卡保持未分拣，下次再分
+    /// Jev errors: the card stays unsorted and is sorted next time
     @Test func failedJudgmentLeavesCardUnsorted() async throws {
         let store = try temporaryStore()
         let gateway = Gateway(embedder: FakeLocalEmbedder(), generators: [FakeCloud()], judges: [FakeJudge(fails: true)])

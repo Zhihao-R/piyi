@@ -1,23 +1,23 @@
 import Foundation
 import CoreGraphics
 
-/// 收集入口交过来的一样东西
+/// One thing handed over by a collecting entry point
 public enum Source: Sendable {
     case file(URL)
     case url(URL)
-    /// 从浏览器拖来的图：图本身 + 所在页面的网址
+    /// An image dragged from the browser: the image itself + the URL of the page it's on
     case image(Data, page: URL?)
-    /// 网页上的一张图，只知道地址（扩展没取到图本身）：下载下来，出处记所在页面
+    /// An image on a web page with only its address known (the extension didn't get the image itself): download it, recording the page it's on as the source
     case imageAt(URL, page: URL?)
-    /// 一句话里带着的网址：收这个网址，那句话记在卡上
+    /// A URL inside a sentence: collect this URL, record the sentence on the card
     case mentioned(URL, in: String)
     case text(String)
-    /// 在浏览器里点了「收进片羽」：页面已经渲染好
+    /// "Collect to Piyi" was clicked in the browser: the page is already rendered
     case rendered(RenderedPage)
-    /// 已经抽取好的（示例数据里事先下载好的链接卡）
+    /// Already extracted (link cards pre-downloaded in the sample data)
     case ready(Material)
 
-    /// 抽取前先猜个类型，放占位卡用
+    /// Guess a kind before extracting, for the placeholder card
     public var kind: Kind {
         switch self {
         case .file(let url): FileExtractor.kind(of: url)
@@ -28,7 +28,7 @@ public enum Source: Sendable {
         }
     }
 
-    /// 收进来的就是这个网址（按网址查重用）
+    /// The collected thing is this URL itself (for the URL duplicate check)
     public var url: URL? {
         switch self {
         case .url(let url), .imageAt(let url, _), .mentioned(let url, _): url
@@ -38,7 +38,7 @@ public enum Source: Sendable {
         }
     }
 
-    /// 所在页面的网址，记作出处
+    /// The URL of the page it's on, recorded as the source
     public var page: URL? {
         switch self {
         case .image(_, let page), .imageAt(_, let page): page
@@ -46,11 +46,11 @@ public enum Source: Sendable {
         }
     }
 
-    /// 和网址一起带来的那句话
+    /// The line that came with the URL
     public var note: String? { if case .mentioned(_, let words) = self { words } else { nil } }
 }
 
-/// 内容抽取的唯一入口：任何来源 → 素材
+/// The single entry point for content extraction: any source → material
 public struct Extractor: Sendable {
     let web: WebExtractor
     let models: (any ExtractionModels)?
@@ -72,7 +72,7 @@ public struct Extractor: Sendable {
         }
     }
 
-    /// 网页上找到的图：出处记所在页面
+    /// An image found on a web page: record the page it's on as the source
     private static func found(_ image: Material, on page: URL?) -> Material {
         guard let page else { return image }
         var m = image
@@ -83,9 +83,9 @@ public struct Extractor: Sendable {
 }
 
 extension Extractor {
-    /// 补全正文：抽取的最后一步，在后台、较低的优先级做，结果和其它正文一样能搜、能读。做完记在卡上，分拣等它。
-    /// 图片卡、扫描版 PDF（有页数没正文）识别图中文字，补进正文；视频、音频有文件的在本机转录，
-    /// 平台上的视频不下载，取平台字幕，单独存成转录
+    /// Body completion: the last step of extraction, done in the background at lower priority; the results are searchable and readable like the rest of the body. Recorded on the card when done; sorting waits for it.
+    /// Image cards and scanned PDFs (pages but no body) get text recognized from the images, appended to the body; video and audio with a file are transcribed locally,
+    /// platform videos aren't downloaded, so platform subtitles are fetched and stored separately as the transcript
     public func completeBody(of id: Int64, in store: Store) async throws {
         guard let card = try await store.card(id) else { return }
         let scanned = card.kind == .document && card.format == "PDF" && (card.body ?? "").count < 50
@@ -96,7 +96,7 @@ extension Extractor {
             for name in names { parts.append(await TextRecognition.text(inImageAt: store.files.url(of: name))) }
             try await store.appendRecognizedText(id, parts.filter { !$0.isEmpty }.joined(separator: "\n"))
         }
-        // 同一份内容不再转。重新抓取会换掉正文，那时再取一遍
+        // Don't transcribe the same content again. A refetch replaces the body, and it's fetched again then
         if card.kind == .video || card.kind == .audio, card.transcript == nil {
             var cues: [Cue]?
             if let original = card.original {
@@ -106,7 +106,7 @@ extension Extractor {
             }
             if let cues { try await store.setTranscript(id, String(Transcript.text(cues).prefix(FileExtractor.bodyLimit))) }
         }
-        // 转不出来也算结束：分拣不再等它
+        // Failing to transcribe still counts as done: sorting stops waiting for it
         try await store.markBodyCompleted(id)
     }
 }

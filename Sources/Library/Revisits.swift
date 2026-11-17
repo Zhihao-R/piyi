@@ -1,25 +1,25 @@
 import Foundation
 import GRDB
 
-/// 收进来以后，你又在哪儿碰到了这张卡。只存不用，留给以后的回看洞察分清「收了就没再看」和「又翻出来用了」
-/// 。分拣、撤销替你做的摆放不算：那不是你的注意力
+/// Where you ran into this card again after collecting it. Stored but unused for now, kept for future revisit insights to tell "collected and never looked at again" from "dug out and used again"
+/// . Placements made for you by sorting or undo don't count: that's not your attention
 public enum Revisit: String, Sendable, DatabaseValueConvertible {
-    /// 放大查看
+    /// Detail view
     case opened
-    /// 出现在你要的结果里：搜索、提问、抽一张、灵感
+    /// Showed up in results you asked for: search, questions, Draw a Card, inspiration
     case found, asked, drawn, inspired
-    /// 你把已有的卡放进画板：移到、留下聚拢来的、又收一次时放进来的
+    /// You put an existing card on a board: moved there, kept from a gather, placed when collected again
     case placed
-    /// 已经收过的又收了一次
+    /// Collected again after already being collected
     case recollected
-    /// 打开原链接，或用别的 App 打开原文件
+    /// Opened the original link, or opened the original file in another app
     case followed
-    /// 放上讨论的桌
+    /// Put on a discussion's desk
     case discussed
 }
 
 extension Store {
-    /// 记下这些卡被碰到了一次；placed 带上放进的画板
+    /// Record that these cards were run into once; placed carries the board it was put on
     public func record(_ revisit: Revisit, _ cards: [Int64], board: Int64? = nil) async throws {
         guard !cards.isEmpty else { return }
         try await db.write { db in try Self.record(db, revisit, cards, board: board, at: .now) }

@@ -1,14 +1,14 @@
 import AppKit
 import Library
 
-/// 卡片进出剪贴板：每张卡一项。片羽自己认它的摆放（大小、裁剪、旋转、位置），粘贴是同一张卡再放一份；
-/// 别的 App 认原文件、网址或文字
+/// Cards in and out of the clipboard: one item per card. Piyi itself reads its placement (size, crop, rotation, position), and pasting adds the same card again;
+/// other apps read the original file, URL or text
 enum Clip {
     static let type = NSPasteboard.PasteboardType("piyi.placement")
 
     struct Original: Sendable { let title: String, file: URL }
 
-    /// text：文字卡的全文；file：给别的 App 的原文件（见 export）
+    /// text: full text of a text card; file: the original file for other apps (see export)
     static func item(for card: BoardItem, text: String?, file: URL?) -> NSPasteboardItem {
         let item = NSPasteboardItem()
         if let data = try? JSONEncoder().encode(card.placement) { item.setData(data, forType: type) }
@@ -23,15 +23,15 @@ enum Clip {
         (pasteboard.pasteboardItems ?? []).compactMap { $0.data(forType: type) }.compactMap { try? JSONDecoder().decode(Placement.self, from: $0) }
     }
 
-    /// 资料库里的文件按内容指纹起名，拿到别处是一串乱码：拷贝一份到临时文件夹，用卡片标题起名。
-    /// APFS 上拷贝是克隆，不占空间、不费时；在别处改它也碰不到资料库里的原件。上一次拷贝的先清掉
+    /// Files in the library are named by content fingerprint, which looks like gibberish elsewhere: copy one to a temp folder, named after the card title.
+    /// On APFS a copy is a clone, taking no space or time; editing it elsewhere doesn't touch the original in the library. The previous copies are cleared first
     static func export(_ originals: [Int64: Original]) async -> [Int64: URL] {
         await Task.detached(priority: .userInitiated) {
             let manager = FileManager.default, folder = manager.temporaryDirectory.appending(path: "piyi-clip")
             try? manager.removeItem(at: folder)
             var named = [Int64: URL]()
             for (card, original) in originals {
-                // 每张一个子文件夹：标题重了也不撞名
+                // One subfolder per card: duplicate titles don't collide
                 let target = folder.appending(path: "\(card)").appending(path: name(original.title, ext: original.file.pathExtension))
                 do {
                     try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -45,7 +45,7 @@ enum Clip {
         }.value
     }
 
-    /// 标题做文件名：路径符号换掉，太长的截断；没有标题叫「片羽」
+    /// Title as file name: path characters replaced, too-long ones truncated; with no title it's "Piyi"
     static func name(_ title: String, ext: String) -> String {
         let clean = title.components(separatedBy: CharacterSet(charactersIn: "/:\n")).joined(separator: " ").trimmingCharacters(in: .whitespaces)
         let stem = clean.isEmpty ? "片羽" : String(clean.prefix(60))

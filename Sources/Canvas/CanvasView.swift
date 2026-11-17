@@ -3,115 +3,115 @@ import QuartzCore
 import Library
 import Tokens
 
-/// 画布交给外壳决定的事：放大查看、右键菜单、删除、拖进来的东西、进出裁剪（Esc 由外壳统一管）
+/// What the canvas leaves to the shell: detail view, context menu, delete, dropped-in items, entering and leaving cropping (the shell handles Esc in one place)
 @MainActor
 public protocol CanvasDelegate: AnyObject {
-    /// 双击一张卡或一个画板入口
+    /// Double-clicked a card or a board entry
     func canvas(_ canvas: CanvasView, open item: BoardItem)
     func canvasMenu(_ canvas: CanvasView, for items: [BoardItem]) -> NSMenu?
-    /// 按了删除键
+    /// Pressed the delete key
     func canvas(_ canvas: CanvasView, delete items: [BoardItem])
-    /// 按了 ⌘C
+    /// Pressed ⌘C
     func canvas(_ canvas: CanvasView, copy items: [BoardItem])
-    /// 拖进来的东西落在世界坐标 point；收下了返回 true
+    /// Something dropped in landed at world point point; returns true if accepted
     func canvas(_ canvas: CanvasView, accept pasteboard: NSPasteboard, at point: CGPoint) -> Bool
-    /// 点了音频卡上的播放钮
+    /// Clicked the play button on an audio card
     func canvas(_ canvas: CanvasView, play item: BoardItem)
-    /// 进出裁剪、选中变化、开始和结束拖卡
+    /// Entering or leaving cropping, selection changes, starting and ending a card drag
     func canvasStateChanged(_ canvas: CanvasView)
-    /// 摆放改了（拖动、缩放、旋转、裁剪、整理）；error 不为空表示没存进资料库
+    /// Placements changed (drag, resize, rotate, crop, tidy); a non-nil error means it wasn't saved to the library
     func canvasDidEdit(_ canvas: CanvasView, error: Error?)
-    /// 撤销、重做、写文字卡改了资料库：外壳刷新（含画布重读）完再返回
+    /// Undo, redo, or writing a text card changed the library: return once the shell has refreshed (including the canvas reload)
     func canvas(_ canvas: CanvasView, didApply edit: Edit) async
-    /// 点了聚拢结果下面的出处：去那个画板，对准这张卡
+    /// Clicked the source under a gathering result: go to that board and point at this card
     func canvas(_ canvas: CanvasView, reveal card: Int64, on board: Int64)
 }
 
-/// 画布上显示的是什么：一个画板，或者几种不属于画板的卡片视图
+/// What the canvas shows: one board, or one of the card views that aren't boards
 public enum CanvasContent: Hashable, Sendable {
     case board(Int64)
     case collection(Store.Collection)
 }
 
-/// 画布：每张卡一个图层，内容画成位图交给显卡；平移缩放只改世界图层的变换，不碰卡片内容。
-/// 只放视野附近的卡，视野外的回收复用；停手约 0.1 秒后按新倍率重画可见的卡。
+/// The canvas: one layer per card, its content drawn as a bitmap handed to the GPU; panning and zooming only change the world layer's transform, never the card contents.
+/// Only cards near the view get layers; those outside it are recycled and reused. About 0.1 s after things settle, visible cards are redrawn at the new scale.
 public final class CanvasView: NSView {
     public weak var delegate: CanvasDelegate?
     let store: Store
     let world = QuietLayer()
-    /// 屏幕坐标的浮层：对齐线、框选框、选中的控制点、裁剪框
+    /// Overlay in screen coordinates: guides, marquee, selection handles, crop frame
     let overlay = Overlay()
     var items: [Int64: BoardItem] = [:]
     var index = SpatialIndex([:])
     var live: [Int64: CardLayer] = [:]
     private var pool: [CardLayer] = []
-    /// 已经放进图层的范围：视野四周各多留 1/4 屏，视野走出这块、或放大到它的四分之一以内才重算
+    /// The area already given layers: the view plus 1/4 screen on each side; recomputed when the view leaves it or zooms in to within a quarter of it
     private var region: CGRect = .null
     var renderScale: CGFloat = 1
     private var shadows = true
     private var settle: DispatchWorkItem?
-    /// 可见区域停稳后再重排资料库（侧边栏、讨论栏开合和拉窗口是一串连续的变化）
+    /// Re-lay out the library only after the visible area settles (opening and closing the sidebar or discussion panel and resizing the window are a run of continuous changes)
     private var reflow: DispatchWorkItem?
     var gesture = Gesture.none
     var hovered: Int64?
-    /// 鼠标在视图里的位置；移出画布时为 nil。旋转钮按它离得多近决定展不展开
+    /// Mouse position in the view; nil when outside the canvas. The rotate knob expands or not by how close it is
     var pointer: CGPoint?
-    /// 角度各不相同的一组整组转过多少：它们没有共同的朝向，组框按这个角度框住它们，换了选中才回正
+    /// How far a group with differing angles has rotated as a whole: they share no orientation, so the group frame encloses them at this angle, and resets only when the selection changes
     var groupRotation: CGFloat = 0
     var cropper: Cropper?
-    /// 正拖出画布的那几张：跟着鼠标的那一小摞怎么画（见 dragOut）
+    /// The cards being dragged off the canvas: how to draw the small pile following the mouse (see dragOut)
     var outgoing: Outgoing?
-    /// 拖去侧边栏时原位上变淡的卡：落下后等画布重读再拿走或复原
+    /// Cards dimmed in place while being dragged to the sidebar: removed or restored after the drop once the canvas reloads
     var dimmed: Set<Int64> = []
-    /// 按住空格时拖空白处是平移，否则是框选
+    /// With space held, dragging on empty space pans; otherwise it's a marquee
     var spaceHeld = false
-    /// 搜索、灵感的结果聚拢在眼前（见 Gather.swift）
+    /// Search and inspiration results gathered up front (see Gather.swift)
     var gathering: Gathering?
-    /// 打字时字面命中、原地亮起的卡（摆放编号）
+    /// Cards that literally match while typing, lit up in place (placement IDs)
     var lit: Set<Int64> = []
-    /// 聚拢、亮起时盖在其余卡片上的一层画布底色；聚拢的、亮起的卡排在它上面
+    /// A layer of canvas background covering the other cards while gathering or highlighting; gathered and lit cards sit above it
     let veil = QuietLayer()
     var veilZ: Double = 0
-    /// 正在飞的卡：视野外也不回收，飞完再说
+    /// Cards in flight: not recycled even outside the view, until they land
     var flying: Set<Int64> = []
-    /// 正在淡出的访客：淡出期间又被新的一组要回去时取回
+    /// Visitors fading out: taken back if a new set requests them during the fade
     var departing: [Int64: Visitor] = [:]
     var landing: UUID?
-    /// 聚拢时别处改了数据：退出聚拢后再重读，免得把眼前的结果冲散
+    /// Data changed elsewhere while gathering: reload after exiting gathering, so the results in front of you aren't scattered
     var needsReload = false
-    /// 每个画板、每种卡片视图各自的撤销记录（见 History.swift）
+    /// Undo history for each board and each card view (see History.swift)
     var undoHistories: [CanvasContent: UndoManager] = [:]
-    /// 正在写的文字卡（见 NoteEditor.swift）
+    /// The text card being written (see NoteEditor.swift)
     var noteEditor: NoteEditor?
-    /// 几种卡片视图分组时的各组（见 Shelves.swift）；鼠标停在哪一组的标题上
+    /// The groups of the card views when grouped (see Shelves.swift); which group's title the mouse is over
     var shelves: [Shelf] = []
     var hotShelf: Int?
-    /// ⇧ 选一段从哪张算起：上次 ⌘ 点、⇧ 点的那张，或选中的那一组的第一张
+    /// Where a ⇧ range selection starts: the last ⌘-clicked or ⇧-clicked card, or the first card of the selected group
     var anchor: Int64?
-    /// 每个画板、每种卡片视图上次看到哪：这次打开期间记着，再回来接着看
+    /// Where you last were on each board and each card view: remembered while the app is open, so you pick up there when you come back
     var cameras: [CanvasContent: Camera] = [:]
-    /// 镜头眼下对着的是哪块内容：读完、取过景才算（换内容时还在读的那一段不算）
+    /// Which content the camera is currently on: counts only once read and framed (a content switch still being read doesn't count)
     var shown: CanvasContent?
-    /// 最近一次取的全景。镜头还停在它上面时，窗口、侧边栏、讨论栏一变就跟着重新取景；挪开过就不动你的镜头
+    /// The most recent full-view framing. While the camera is still there, it reframes whenever the window, sidebar, or discussion panel changes; once you've moved it, your camera is left alone
     var home: Camera?
-    /// 镜头正在滑向哪（见 glide）
+    /// Where the camera is gliding to (see glide)
     var glide: (link: CADisplayLink, from: Camera, to: Camera, start: CFTimeInterval)?
-    /// 资料库是按多宽排的行（世界坐标）：可见区域的宽度变了就重排
+    /// The row width the library was laid out at (world coordinates): re-lay out when the visible area's width changes
     var shelfWidth: CGFloat = 0
-    /// 换内容时留在屏幕上的旧画面，和正在等着换上来的那一次（见 Swap.swift）
+    /// The old scene kept on screen while switching content, and the switch waiting to come up (see Swap.swift)
     var curtain: Curtain?
     var reveal: UUID?
-    /// 这次换内容不飞，只交叉淡化（放大查看开着：压暗的底下不该有东西在动）
+    /// This content switch doesn't fly, only cross-fades (detail view is open: nothing should move under the dimming)
     var still = false
-    /// 新画面换上来的那一刻要一起做的事
+    /// Things to do at the moment the new scene comes up
     var revealed: (@MainActor () -> Void)?
 
-    /// 几种卡片视图按什么分组；nil 是不分组，从新到旧排成一整片。换了就重排，卡片滑到新位置
+    /// How the card views are grouped; nil means ungrouped, one continuous sheet from newest to oldest. Changing it re-lays out, with cards sliding to new positions
     public var grouping: Grouping? {
         didSet { if case .collection? = content { Task { try? await reload() } } }
     }
 
-    /// 正在出声的那张音频卡，由外壳告诉画布：它的播放钮一直留着，显示成暂停
+    /// The audio card currently playing, told to the canvas by the shell: its play button stays, shown as pause
     public var sounding: Int64? {
         didSet { if sounding != oldValue { updatePlayButtons() } }
     }
@@ -121,12 +121,12 @@ public final class CanvasView: NSView {
         didSet { if selection != oldValue { selectionChanged(from: oldValue) } }
     }
 
-    /// 视口。设它就是「移动镜头」，性能基准也从这里驱动
+    /// The viewport. Setting it is "moving the camera"; performance benchmarks drive it from here too
     public var camera = Camera(center: .zero, scale: 1) {
         didSet { if camera != oldValue { apply() } }
     }
 
-    /// 缩放倍率低于这个值时不画实时阴影：阴影半径 3 点，缩到这里已不到 1 个像素
+    /// Below this zoom, no live shadows: the shadow radius is 3 points, which is under 1 pixel at this zoom
     static let shadowScale: CGFloat = 0.35
 
     public init(store: Store) {
@@ -135,7 +135,7 @@ public final class CanvasView: NSView {
         wantsLayer = true
         layer!.backgroundColor = Palette.canvas.light.cg
         layer!.masksToBounds = true
-        // 世界图层零尺寸、原点在左上，子图层按「y 向下」摆放
+        // The world layer has zero size with origin at top left; sublayers are placed "y down"
         world.anchorPoint = .zero
         world.bounds = .zero
         world.isGeometryFlipped = true
@@ -147,7 +147,7 @@ public final class CanvasView: NSView {
         world.addSublayer(veil)
         registerForDraggedTypes([.string, .fileURL, .URL, .tiff, .png])
         addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self))
-        // 双指捏合用手势识别器收：画布嵌在 SwiftUI 窗口里时，捏合事件到不了 magnify(with:)
+        // Pinch is received with a gesture recognizer: when the canvas is embedded in a SwiftUI window, pinch events don't reach magnify(with:)
         addGestureRecognizer(NSMagnificationGestureRecognizer(target: self, action: #selector(pinched(_:))))
     }
     required init?(coder: NSCoder) { fatalError() }
@@ -155,29 +155,29 @@ public final class CanvasView: NSView {
     public override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         adoptAppearance()
-        // 纸样卡片的颜色跟着外观走：眼前的卡按新颜色重画，新图到之前先换底色
+        // Paper-style card colors follow the appearance: visible cards are redrawn in the new colors, with the background changed before the new images arrive
         for l in live.values { l.repaint(files: store.files) }
         updateShelves()
     }
 
-    /// 窗口是深是浅：记下来给画卡片的用，画布和幕的底色跟着换
+    /// Whether the window is dark or light: recorded for card drawing, and the canvas and scrim backgrounds switch with it
     private func adoptAppearance() {
         Screen.dark = isDark
         layer!.backgroundColor = Palette.canvas.now.cg
         veil.backgroundColor = layer!.backgroundColor
     }
 
-    // MARK: 内容
+    // MARK: Content
 
-    /// 换成另一块内容：后台读出全部摆放，镜头对准全部卡片；旧画面留到新画面画好再换（见 Swap.swift）
-    /// still：不飞，只交叉淡化；revealed：新画面换上来的那一刻叫一声，外面的东西好跟着一起换
+    /// Switch to other content: read all placements in the background and point the camera at all cards; the old scene stays until the new one is drawn (see Swap.swift)
+    /// still: no flying, cross-fade only; revealed: called at the moment the new scene comes up, so things outside can switch along with it
     public func show(_ content: CanvasContent, still: Bool = false, revealed: (@MainActor () -> Void)? = nil) async throws {
-        // 上一次还在等画好的作废：它换上来时不能把这一次的回调领走
+        // Cancel the previous one still waiting to be drawn: when it comes up it mustn't claim this one's callback
         reveal = nil
         (self.still, self.revealed) = (still, revealed)
         finishEditing()
         stopGlide()
-        // 镜头挪开过才记；还停在全景上的不记，下次来按那时的窗口重新取景
+        // Only record if the camera was moved; if it's still at the full view, don't, and reframe next time for the window at that time
         if let shown, shown != content { cameras[shown] = camera == home ? nil : camera }
         shown = nil
         self.content = content
@@ -207,11 +207,11 @@ public final class CanvasView: NSView {
         delegate?.canvasStateChanged(self)
     }
 
-    /// 同一块内容重新读一遍（别处改了摆放、删了卡），镜头不动；变了的卡重画。
-    /// 几种卡片视图是排出来的：删了卡、换了分组，眼前的卡滑到新位置补上
+    /// Re-read the same content (placements changed or cards deleted elsewhere) without moving the camera; changed cards are redrawn.
+    /// The card views are laid out: when cards are deleted or grouping changes, the cards in front of you slide to new positions to fill in
     public func reload() async throws {
         guard let content else { return }
-        // 聚拢时不重读：眼前的结果是临时摆法，重读会把它冲散
+        // No reload while gathering: the results in front of you are a temporary arrangement that a reload would scatter
         guard gathering == nil else { needsReload = true; return }
         let (loaded, shelves) = try await load(content)
         guard self.content == content, gathering == nil else { return }
@@ -220,14 +220,14 @@ public final class CanvasView: NSView {
             index.remove(id)
             if let l = live.removeValue(forKey: id) { recycle(l) }
         }
-        // 拖去侧边栏时变淡的：拿走了的上面已经收掉，留下的复原
+        // Dimmed while dragged to the sidebar: the ones taken away were already removed above; restore the rest
         dim([])
         let glides = if case .collection = content { true } else { false }
         let seen = camera.visibleRect(in: bounds.size), wasLive = Set(live.keys)
         var from: [Int64: Placement] = [:]
         for (id, item) in fresh where items[id] != item {
             index.update(id, item.bounds)
-            // 看得见的卡（原来或现在在视野里）滑过去，其余直接换
+            // Visible cards (in view before or now) slide over; the rest switch directly
             if glides, let old = items[id], old.placement.frame != item.placement.frame,
                live[id] != nil || item.bounds.intersects(seen) {
                 from[id] = old.placement
@@ -239,7 +239,7 @@ public final class CanvasView: NSView {
         self.shelves = shelves
         selection = selection.filter { fresh[$0] != nil }
         if !from.isEmpty { stage(from: from, fadeIn: [], wasLive: wasLive) }
-        // 新收进的卡排在最前，其余的叠放次序都往后挪了一位：幕跟着重算，选中时最老的那张也照样弱化
+        // Newly collected cards go first and the stacking order of the rest shifts back by one: the scrim is recomputed with it, so the oldest card is still de-emphasized when selected
         updateVeil()
         region = .null
         apply()
@@ -258,25 +258,25 @@ public final class CanvasView: NSView {
         }
     }
 
-    /// 能不能摆：只有画板里的摆放能改，几种卡片视图和聚拢的结果是临时排出来的
+    /// Whether it can be arranged: only placements on a board can change; the card views and gathering results are temporary layouts
     public var isEditable: Bool { if case .board = content { gathering == nil } else { false } }
 
     public var board: Int64? { if case .board(let id) = content { id } else { nil } }
 
-    /// 正把卡拖出画布
+    /// Dragging cards off the canvas
     public var isDraggingOut: Bool { outgoing != nil }
 
-    /// 正拖着卡：在画板里挪，或者已经拖出画布
+    /// Dragging cards: moving them on the board, or already dragged off the canvas
     public var isMovingCards: Bool {
         if case .move(let m) = gesture, !m.current.isEmpty { return true }
         return isDraggingOut
     }
 
-    /// 读完了、一张卡也没有
+    /// Done reading, and there are no cards at all
     public var isEmpty: Bool { items.isEmpty && !needsFit }
 
-    /// 放大查看里按左右键换到的那张卡：资料库按排出来的顺序，聚拢时按结果的顺序，到头返回 nil。
-    /// 画板里的卡是随手摆的，没有上一张、下一张
+    /// The card reached with the left/right keys in detail view: in laid-out order in the library, in result order while gathering; nil at the end.
+    /// Cards on a board are placed freely, so there's no previous or next
     public func neighbor(of card: Int64, by step: Int) -> Int64? {
         let order: [Int64]
         if let gathering { order = gathering.members.compactMap { items[$0]?.cardID } }
@@ -290,27 +290,27 @@ public final class CanvasView: NSView {
 
     public func selectAll() { selection = Set(items.keys) }
 
-    /// 按摆放编号取（拖到侧边栏时用）
+    /// Get by placement ID (used when dragging to the sidebar)
     public func items(_ ids: [Int64]) -> [BoardItem] { ids.compactMap { items[$0] } }
 
-    /// 全部卡片的外框
+    /// Bounding box of all cards
     public var contentBounds: CGRect { index.bounds }
-    /// 镜头还停在全景上，没被挪开过
+    /// The camera is still at the full view and hasn't been moved
     public var isAtPanorama: Bool { glide == nil && home.map { camera == $0 } == true }
 
-    /// 和一块区域相交的摆放
+    /// Placements that intersect a region
     public func placements(in rect: CGRect) -> Set<Int64> { index.ids(in: rect) }
 
-    // MARK: 镜头
+    // MARK: Camera
 
-    /// 视图还没有尺寸时（刚放进窗口）先记着，等第一次布局再取景
+    /// When the view has no size yet (just put in a window), remember it and frame on the first layout
     private var needsFit = false
 
     private func fitIfReady() {
         guard needsFit, bounds.width > 0, bounds.height > 0 else { return }
         needsFit = false
         shown = content
-        // 这次打开期间来过、镜头挪开过：回到上次看的位置
+        // Visited and the camera moved during this session: return to where you were last
         if let content, let seen = cameras[content] {
             home = nil
             if live.isEmpty { renderScale = seen.scale }
@@ -320,31 +320,31 @@ public final class CanvasView: NSView {
         }
     }
 
-    /// 画布四边被侧边栏、工具栏、讨论栏盖住多宽，由外壳告诉画布
+    /// How wide the sidebar, toolbar, and discussion panel cover each side of the canvas, told to the canvas by the shell
     public var covered = NSEdgeInsets() {
         didSet { if !NSEdgeInsetsEqual(covered, oldValue) { needsLayout = true } }
     }
 
-    /// 可见区域（视图里的点，y 向下）：画布铺在侧边栏、工具栏、讨论栏底下，底部还浮着搜索栏，这一块是没被它们盖住的。
-    /// 卡片摆在屏幕哪里都按它算：全景取景、资料库排多宽、聚拢、拖出画布的判定
+    /// The visible area (view points, y down): the canvas extends under the sidebar, toolbar, and discussion panel, with the search bar floating at the bottom; this is the part they don't cover.
+    /// Everywhere cards are placed on screen uses it: full-view framing, library row width, gathering, and detecting drags off the canvas
     var viewport: CGRect {
         let s = covered, bar = CGFloat(Chrome.inset + Chrome.searchHeight)
         return CGRect(x: s.left, y: s.top, width: max(bounds.width - s.left - s.right, 1), height: max(bounds.height - s.top - s.bottom - bar, 1))
     }
 
-    /// 把世界里的一块区域放进可见区域正中，四周留一点边
+    /// Put a region of the world in the center of the visible area, with a little margin around it
     func framing(_ rect: CGRect) -> Camera {
         centering(rect.isNull ? .zero : rect, scale: Camera.fitting(rect, in: viewport.size).scale)
     }
 
-    /// 按给定倍率，把一块区域的中心放在可见区域正中
+    /// At a given zoom, put a region's center in the center of the visible area
     func centering(_ rect: CGRect, scale: CGFloat) -> Camera {
         let viewport = viewport
         return Camera(center: CGPoint(x: rect.midX - (viewport.midX - bounds.width / 2) / scale, y: rect.midY - (viewport.midY - bounds.height / 2) / scale), scale: scale)
     }
 
-    /// 全景：看全当前画板。几种卡片视图像一页长文：整个放不下时按行宽取景，从最上面看起，往下滚；
-    /// 第一行顶在工具栏下方 60 点，留出第一组的标题
+    /// Full view: see the whole current board. The card views read like a long page: when it doesn't all fit, frame by row width, start from the top, and scroll down;
+    /// the first row sits 60 points below the toolbar, leaving room for the first group's title
     private var panorama: Camera {
         var fit = framing(index.bounds)
         if case .collection? = content, !index.bounds.isNull {
@@ -356,7 +356,7 @@ public final class CanvasView: NSView {
         return fit
     }
 
-    /// 回到全景。你按 ⌘0 是滑过去（animated），刚打开、窗口变了是直接摆好
+    /// Back to full view. ⌘0 glides there (animated); just opened or a window change places it directly
     public func fitAll(animated: Bool = false) {
         let fit = panorama
         home = fit
@@ -366,7 +366,7 @@ public final class CanvasView: NSView {
         if camera == fit { apply() } else { camera = fit }
     }
 
-    /// 选中刚放进来的几张；有不在眼前的，镜头滑过去对准它们
+    /// Select the cards just placed; if some aren't in front of you, glide the camera to them
     public func reveal(_ ids: Set<Int64>) {
         selection = ids.intersection(items.keys)
         let placed = selectedItems.reduce(CGRect.null) { $0.union($1.bounds) }
@@ -375,15 +375,15 @@ public final class CanvasView: NSView {
         glide(to: centering(placed, scale: camera.scale))
     }
 
-    /// 镜头滑过去对准一张卡
+    /// Glide the camera to a card
     public func focus(_ id: Int64) {
         guard let item = items[id] else { return }
         selection = [id]
         glide(to: centering(item.bounds, scale: max(camera.scale, 0.6)))
     }
 
-    /// 镜头滑到另一处，用「换位置」的时长，先快后慢；倍率按比例变，缩放的速度看起来才均匀。
-    /// 途中你一动镜头就停下，听你的
+    /// The camera glides elsewhere using the `Motion.place` duration, fast then slow; the zoom changes proportionally so zooming looks steady.
+    /// It stops as soon as you move the camera on the way, deferring to you
     func glide(to target: Camera) {
         stopGlide()
         guard camera != target, window != nil else { camera = target; return }
@@ -396,7 +396,7 @@ public final class CanvasView: NSView {
         guard let g = glide else { return }
         let t = min(1, (CACurrentMediaTime() - g.start) / Motion.place.response), k = CGFloat(1 - pow(1 - t, 3))
         let scale = g.from.scale * pow(g.to.scale / g.from.scale, k)
-        // 最后一帧直接落在终点上：算出来的值可能差一个最小单位，「还停在全景上」就认不出了
+        // The last frame lands exactly on the destination: the computed value might be off by one least unit, and then "still at the full view" wouldn't recognize it
         camera = t >= 1 ? g.to : Camera(center: CGPoint(x: g.from.center.x + (g.to.center.x - g.from.center.x) * k, y: g.from.center.y + (g.to.center.y - g.from.center.y) * k), scale: scale)
         if t >= 1 { stopGlide() }
     }
@@ -410,20 +410,20 @@ public final class CanvasView: NSView {
         super.layout()
         overlay.frame = bounds
         if needsFit { fitIfReady(); return }
-        // 资料库要换行宽：开合侧边栏是几十帧连续的变化，每帧都重排会叠着起跳、来回闪。
-        // 变化途中卡片原地不动，停稳后一次排好、滑过去
+        // The library needs a new row width: opening or closing the sidebar is dozens of frames of continuous change, and re-laying out every frame would make cards jump repeatedly and flicker.
+        // During the change the cards stay put; once settled they're laid out once and slide over
         if needsReflow { scheduleReflow(); apply(); return }
-        // 镜头还停在全景上：窗口、侧边栏、讨论栏变了就跟着重新取景
+        // The camera is still at the full view: reframe whenever the window, sidebar, or discussion panel changes
         if glide == nil, let home, camera == home { fitAll() } else { apply() }
     }
 
-    /// 资料库一行排多宽（世界坐标）：让一行卡在屏幕上约 120 点高，窗口宽就多排几张，窄就少排几张，不是整页缩小
+    /// How wide a library row is (world coordinates): keeps a row of cards about 120 points tall on screen, so a wide window fits more cards per row and a narrow one fewer, instead of shrinking the whole page
     static func shelfWidth(for width: CGFloat) -> CGFloat {
         let scale = 120 / CGFloat(Space.rowHeight)
         return min(max(Grid.snap((width - 80) / scale), Grid.unit * 40), Layout.shelfWidth)
     }
 
-    /// 可见区域的宽度变了（拉窗口、开合侧边栏和讨论栏），资料库该换行宽了
+    /// The visible area's width changed (resizing the window, opening or closing the sidebar or discussion panel): the library needs a new row width
     private var needsReflow: Bool {
         guard case .collection? = content, gathering == nil, shelfWidth > 0 else { return false }
         return Self.shelfWidth(for: viewport.width) != shelfWidth
@@ -436,18 +436,18 @@ public final class CanvasView: NSView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: work)
     }
 
-    /// 资料库按新宽度重排：卡片滑到新位置，镜头同时滑回这一页的宽度
+    /// Re-lay out the library at the new width: cards slide to new positions while the camera glides back to the page's width
     private func reflowNow() {
         reflow = nil
         guard needsReflow else { return }
         shelfWidth = Self.shelfWidth(for: viewport.width)
-        // 读到这一页的几分之几，重排后还停在那里
+        // However far down the page you were reading, stay there after the re-layout
         let before = index.bounds, top = camera.world(at: CGPoint(x: 0, y: viewport.minY), in: bounds.size).y
         let read = before.isNull || before.height == 0 ? 0 : max(0, (top - before.minY) / before.height)
         let content = content
         Task {
             try? await reload()
-            // 等的时候换了内容、进了聚拢：这次重排作废
+            // Content switched or gathering started while waiting: this re-layout is cancelled
             guard self.content == content, gathering == nil else { return }
             let fit = panorama
             home = fit
@@ -486,13 +486,13 @@ public final class CanvasView: NSView {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
     }
 
-    /// 摆放变了：下一次 apply 重新挑视野附近的卡
+    /// Placements changed: the next apply re-picks the cards near the view
     func invalidateRegion() {
         region = .null
         apply()
     }
 
-    /// 视野外的回收进池子（取消它还没完成的加载），新进来的从池子取
+    /// Those outside the view are recycled into the pool (cancelling their unfinished loads); newcomers are taken from the pool
     private func reconcile(_ ids: Set<Int64>) {
         let keep = gesture.moving.union(flying)
         for (id, l) in live where !ids.contains(id) && !keep.contains(id) {
@@ -502,14 +502,14 @@ public final class CanvasView: NSView {
         for id in ids where live[id] == nil { adopt(id) }
     }
 
-    /// 给一张卡放上图层（从池子取），按当前倍率画
+    /// Give a card a layer (from the pool) and draw it at the current scale
     @discardableResult
     func adopt(_ id: Int64) -> CardLayer? {
         guard let item = items[id] else { return nil }
         let l = pool.popLast() ?? CardLayer()
         l.bind(item)
         l.setShadow(shadows)
-        // 正在写的那张由文本框代替
+        // The one being written is replaced by the text box
         l.isHidden = noteEditor?.placement == id
         raise(l, id)
         world.addSublayer(l)
@@ -524,8 +524,8 @@ public final class CanvasView: NSView {
         pool.append(l)
     }
 
-    /// 摆放变了：位置角度变了只挪图层，尺寸、裁剪、内容、新放进标记变了才重画。
-    /// 尺寸、裁剪变了旧图对不上，清掉重画；只是内容或标记变了，留着旧图，新图画好再化过去
+    /// Placements changed: if only position or angle changed, just move the layer; redraw only if size, crop, content, or the newly-placed mark changed.
+    /// If size or crop changed the old image no longer fits, so clear and redraw; if only content or the mark changed, keep the old image and transition once the new one is drawn
     func refresh(_ l: CardLayer, with item: BoardItem) {
         let old = l.item
         l.place(item.placement)
@@ -536,7 +536,7 @@ public final class CanvasView: NSView {
         l.render(at: renderScale, files: store.files)
     }
 
-    /// 停手后：倍率变化大到需要换档的卡，按新倍率重画；新图到之前继续显示旧图
+    /// After things settle: cards whose scale changed enough to need a different tier are redrawn at the new scale; the old image shows until the new one arrives
     private func sharpen() {
         renderScale = camera.scale
         for l in live.values {
@@ -552,7 +552,7 @@ public final class CanvasView: NSView {
         delegate?.canvasStateChanged(self)
     }
 
-    /// 悬停的卡拿起来（不改叠放次序）；动图开始动，本机视频开始静音预览
+    /// The hovered card is lifted (stacking order unchanged); animated images start moving, local videos start a muted preview
     func setHovered(_ id: Int64?) {
         guard id != hovered else { return }
         let old = hovered
@@ -561,14 +561,14 @@ public final class CanvasView: NSView {
             l.hover(false, files: store.files)
             l.setLifted(false)
         }
-        // 正在拖、缩放、旋转时不拿起来，免得手底下的卡突然变大
+        // Don't lift while dragging, resizing, or rotating, so the card under the pointer doesn't suddenly grow
         if let id, let l = live[id] {
             l.hover(true, files: store.files)
             if case .none = gesture { l.setLifted(true) }
         }
     }
 
-    /// 拖动、缩放、旋转途中：图层换成新摆法，叠放次序（排在幕上面）跟着重算
+    /// Mid drag, resize, or rotate: layers switch to the new placement and the stacking order (above the scrim) is recomputed
     func display(_ placements: [Int64: Placement]) {
         for (id, p) in placements {
             guard let l = live[id] else { continue }
@@ -579,7 +579,7 @@ public final class CanvasView: NSView {
 }
 
 extension Placement {
-    /// 转过之后占的外框
+    /// The bounding box after rotation
     var bounds: CGRect {
         guard rotation != 0 else { return frame }
         let t = CGAffineTransform(translationX: frame.midX, y: frame.midY).rotated(by: rotation).translatedBy(x: -frame.midX, y: -frame.midY)
@@ -588,13 +588,13 @@ extension Placement {
 }
 
 extension BoardItem {
-    /// 长图：封面只露开头一截
+    /// Long image: the cover only shows the top part
     var isLong: Bool { if case .card(let card) = face { card.form == .long } else { false } }
 
-    /// 转过之后占的外框，用来找视野里的卡
+    /// The bounding box after rotation, used to find cards in view
     var bounds: CGRect { placement.bounds }
 
-    /// 世界坐标里的点落不落在这张卡上（考虑旋转）
+    /// Whether a world point falls on this card (accounting for rotation)
     func contains(_ p: CGPoint) -> Bool {
         let f = placement.frame
         let local = CGPoint(x: p.x - f.midX, y: p.y - f.midY).applying(CGAffineTransform(rotationAngle: -placement.rotation))

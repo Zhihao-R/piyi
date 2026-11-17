@@ -3,9 +3,9 @@ import Foundation
 import Synchronization
 @testable import Library
 
-/// 补全正文：哪些卡转录、转过的不再转
+/// Body completion: which cards get transcribed, and transcribed ones aren't transcribed again
 @Suite struct CompleteBody {
-    /// 假转录：记下转了哪些文件
+    /// Fake transcription: records which files were transcribed
     final class FakeModels: ExtractionModels {
         let transcribed = Mutex<[String]>([])
         func verdict(on page: PageGlance) async -> PageVerdict? { nil }
@@ -34,11 +34,11 @@ import Synchronization
 
         try await extractor.completeBody(of: id, in: store)
         #expect(try await store.card(id)?.transcript == "00:00 转出来的文字")
-        // 再补一次（重新抓取直链视频）不再转
+        // Completing again (refetching a direct video link) doesn't transcribe again
         try await extractor.completeBody(of: id, in: store)
         #expect(models.transcribed.withLock { $0 } == ["mp4"])
 
-        // 平台上的视频没有文件：只有简介，不转
+        // Platform videos have no file: only the description, no transcription
         var platform = Material(kind: .video)
         platform.body = "简介"
         platform.url = "https://www.bilibili.com/video/BV1xx411c7XX/"

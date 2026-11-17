@@ -1,15 +1,15 @@
 import Foundation
 import GRDB
 
-/// 生成能力写出的理解结果，整组写回
+/// Understanding results written by the generation capability, written back as a whole set
 public struct Generated: Sendable {
     public var title: String
     public var caption: String
     public var detail: String?
     public var tags: [String]
-    /// 短内容没有总结
+    /// Short content has no summary
     public var summary: String?
-    /// 每条要点依据原文的哪一段，和 summary 里「· 」开头的行一一对应；说不出依据的那条为 nil
+    /// Which passage of the original each key point is based on, matching the lines starting with "· " in summary one to one; nil for a point with no basis it can name
     public var anchors: [SummaryAnchor?]?
 
     public init(title: String, caption: String, detail: String?, tags: [String], summary: String?, anchors: [SummaryAnchor?]? = nil) {
@@ -17,7 +17,7 @@ public struct Generated: Sendable {
     }
 }
 
-/// 一条要点依据的那一段。和讨论里的引用一样存原话不存编号：重新抓取后编号会变，原话还能找回那一段（Passages.find）
+/// The passage a key point is based on. Like citations in discussions, it stores the words, not the number: numbers change after a refetch, the words can still find the passage (Passages.find)
 public struct SummaryAnchor: Codable, Sendable, Equatable {
     public var part: Passage.Part
     public var quote: String
@@ -31,11 +31,11 @@ extension Card {
     }
 }
 
-/// 资料库里各处的卡片张数，状态栏显示
+/// Card counts across the library, shown in the status bar
 public struct Counts: Sendable, Equatable {
     public var board: Int?
     public var library = 0
-    /// 正在抽取和排队理解的
+    /// Being extracted or queued for understanding
     public var processing = 0
     public var waitingKey = 0
     public var failed = 0
@@ -44,21 +44,21 @@ public struct Counts: Sendable, Equatable {
 }
 
 extension Store {
-    // MARK: 理解队列读写。排队规则在智能块，这里只管读和写
+    // MARK: Understanding queue reads and writes. Queuing rules live in the intelligence module; this only reads and writes
 
-    /// 内容已经抽完的未删除卡片，理解从这里挑要做的
+    /// Non-deleted cards whose content has been extracted; understanding picks its work from here
     public func extractedCards() async throws -> [Card] {
         try await db.read { db in try Card.fetchAll(db, sql: "SELECT * FROM liveCard WHERE extraction = ?", arguments: [Extraction.complete]) }
     }
 
-    /// 每张卡的向量是哪个模型、依据哪段文字算的
+    /// Which model and which text each card's vector was computed from
     public func vectorBases() async throws -> [Int64: (model: String, basis: String)] {
         try await db.read { db in
             Dictionary(uniqueKeysWithValues: try Row.fetchAll(db, sql: "SELECT cardID, model, basis FROM vector").map { ($0[0] as Int64, ($0[1] as String, $0[2] as String)) })
         }
     }
 
-    /// 一批卡换理解状态；只写变了的
+    /// Change the understanding state of a batch of cards; only writes the ones that changed
     public func setUnderstanding(_ state: Understanding?, for cards: [Int64]) async throws {
         guard !cards.isEmpty else { return }
         try await db.write { db in
@@ -67,8 +67,8 @@ extension Store {
         }
     }
 
-    /// 写回理解结果：生成出来的整组写入并记上依据，清掉上次失败的原因；颜色单独写。
-    /// basis 是开始理解时卡片内容的依据：期间卡被重新抓取、内容变了，这次结果作废，返回 false
+    /// Write back understanding results: the generated set is written with its basis recorded, clearing the last failure reason; colors are written separately.
+    /// basis is the card content's basis when understanding started: if the card was refetched and its content changed meanwhile, this result is void and it returns false
     @discardableResult
     public func saveUnderstanding(_ id: Int64, basis: String, generated: Generated?, colors: String?) async throws -> Bool {
         try await db.write { db in
@@ -77,7 +77,7 @@ extension Store {
                 card.apply(generated)
                 card.understoodBasis = basis
                 card.understandError = nil
-                // 剩下只是补向量：和新标题同一次写，画布上角标和标题一起换，不分两次变
+                // Only vectors remain: written together with the new title, so the badge and title on the canvas change together, not in two steps
                 card.understanding = .indexing
             }
             if let colors { card.colors = colors }
@@ -93,19 +93,19 @@ extension Store {
         }
     }
 
-    /// 理解失败：记下原因，不自动重试，等你点重试或内容变了
+    /// Understanding failed: record the reason, no automatic retry, wait for you to click Retry or for the content to change
     public func failUnderstanding(_ id: Int64, _ reason: String) async throws {
         try await db.write { db in
             try db.execute(sql: "UPDATE card SET understandError = ?, understanding = NULL WHERE id = ?", arguments: [reason, id])
         }
     }
 
-    /// 重试失败的理解
+    /// Retry failed understanding
     public func retryFailedUnderstanding() async throws {
         try await db.write { db in try db.execute(sql: "UPDATE card SET understandError = NULL WHERE understandError IS NOT NULL") }
     }
 
-    /// 右键「重新理解」：清掉依据、失败原因和向量，下一轮全部重算
+    /// Right-click "Read Again": clear the basis, failure reason and vectors, recompute everything next round
     public func forgetUnderstanding(_ cards: [Int64]) async throws {
         try await db.write { db in
             try Card.filter(keys: cards).updateAll(db, Column("understoodBasis").set(to: nil), Column("understandError").set(to: nil), Column("colors").set(to: nil))
@@ -113,7 +113,7 @@ extension Store {
         }
     }
 
-    // MARK: 计数
+    // MARK: Counts
 
     public func counts(board: Int64?) async throws -> Counts {
         try await db.read { db in
@@ -136,7 +136,7 @@ extension Store {
         }
     }
 
-    // MARK: 设置
+    // MARK: Settings
 
     public func setting<T: Codable & Sendable>(_ key: String, as type: T.Type) async throws -> T? {
         try await db.read { db in

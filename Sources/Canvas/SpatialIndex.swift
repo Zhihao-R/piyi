@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/// 按 1024 见方的格子分桶，快速找出和一块区域相交的摆放
+/// Buckets placements into 1024-square cells to quickly find the ones that intersect a region
 struct SpatialIndex {
     private static let cell: CGFloat = 1024
     private var buckets: [Cell: [Int64]] = [:]
@@ -29,7 +29,7 @@ struct SpatialIndex {
 
     func ids(in rect: CGRect) -> Set<Int64> {
         guard let (xs, ys) = Self.span(rect) else { return [] }
-        // 缩到很小时视野覆盖的格子比有卡的格子还多，改为逐个看有卡的格子
+        // When zoomed far out the view covers more cells than there are cells with cards, so check the cells with cards one by one instead
         let cells = xs.count * ys.count <= buckets.count
             ? xs.flatMap { x in ys.map { Cell(x: x, y: $0) } }
             : buckets.keys.filter { xs.contains($0.x) && ys.contains($0.y) }
@@ -40,7 +40,7 @@ struct SpatialIndex {
         return out
     }
 
-    /// 全部摆放的外框
+    /// Bounding box of all placements
     var bounds: CGRect { frames.values.reduce(CGRect.null) { $0.union($1) } }
 
     private static func span(_ r: CGRect) -> (ClosedRange<Int>, ClosedRange<Int>)? {

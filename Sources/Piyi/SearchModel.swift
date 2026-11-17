@@ -5,66 +5,66 @@ import Intelligence
 import Canvas
 import Tokens
 
-/// 搜索栏和文字面板的状态。一句话先用关键词规则即时给反馈（字面命中的卡原地亮起），
-/// 按回车后本机找到的马上聚拢到眼前，云端理解和排序回来、命中的不是同一批卡时才换；灵感、抽一张、提问的文字显示在文字面板
+/// State of the search bar and the text panel. A sentence first gets instant feedback from keyword rules (literally matching cards light up in place);
+/// on Return, local results gather in view at once, replaced only if the cloud understanding and ranking come back with a different set; text for inspiration, card draws and questions shows in the text panel
 @MainActor @Observable
 final class SearchModel {
     var text = "" { didSet { if text != oldValue { typed() } } }
-    /// 筛选按钮选的条件；句子里解析出的条件另算，两者合并成同一个查询
+    /// Conditions chosen with filter buttons; conditions parsed from the sentence are separate, the two merge into one query
     var filters = Filters() { didSet { if filters != oldValue { typed() } } }
-    /// 现在生效的条件：打字时是规则解析的，回车后换成模型理解的。筛选按钮上显示它
+    /// Conditions in effect: parsed by rules while typing, replaced by the model's understanding after Return. Shown on the filter buttons
     private(set) var parsed = Query(text: "")
-    /// 正在等模型（理解这句话、精排、写灵感）。本机结果已经聚拢、云端还没回来时也算：结果还没完全定
+    /// Waiting for the model (understanding the sentence, re-ranking, writing inspiration). Also counts when local results are gathered but the cloud hasn't returned: the result isn't fully settled
     private(set) var working = false
-    /// 文字面板：灵感的说法、抽一张的解读、提问的回答
+    /// Text panel: inspiration's wording, a card draw's interpretation, a question's answer
     private(set) var panel: Panel?
-    /// 聚拢在眼前的是哪种结果；nil 表示没在聚拢
+    /// What kind of result is gathered in view; nil means not gathering
     private(set) var showing: Intent?
-    /// 聚拢的结果里有几张来自别的画板、还没留下
+    /// How many gathered cards come from other boards and haven't been kept yet
     private(set) var visitors = 0
 
     struct Panel: Equatable {
         enum Kind { case inspire, draw, ask }
         var kind: Kind
-        /// nil 表示还在写
+        /// nil means still writing
         var text: String?
-        /// 提问的回答依据的卡：「接着聊」把它们放上桌
+        /// Cards a question's answer is based on: "Continue in Discussion" puts them on the table
         var cards: [Int64] = []
-        /// 提问的那句话
+        /// The question asked
         var question = ""
     }
 
     private unowned let model: AppModel
     private var searcher: Searcher? { model.searcher }
-    /// 一次请求的编号：用户又打字、又按了一次时，旧请求回来的结果作废，画面不来回闪
+    /// A request ID: when the user types again or presses again, results from old requests are discarded so the view doesn't flicker back and forth
     private var request = 0
     private var literalWork: Task<Void, Never>?
-    /// 停手后先把这句话交给模型理解，按回车时多半已经回来了
+    /// Once typing stops, hand the sentence to the model to understand first; by Return it's usually back
     private var early: (text: String, filters: Filters, task: Task<Query, Never>)?
-    /// 理解已经回来的那一次：回车时直接用它，不必先按规则找一遍
+    /// The request whose understanding has come back: Return uses it directly without searching by rules first
     private var understood: (task: Task<Query, Never>, query: Query)?
-    /// 本机结果已经聚拢、还在等云端的那次请求
+    /// The request whose local results are gathered and that's still waiting for the cloud
     private var unsettled: Int?
 
     init(model: AppModel) { self.model = model }
 
-    /// 当前画板；在几种卡片视图里为 nil
+    /// The current board; nil in the card-list views
     var currentBoard: Int64? { if case .board(let id) = model.location { id } else { nil } }
 
-    /// 模型能不能用：在线、云端设置齐了
+    /// Whether the model is usable: online, cloud settings complete
     var modelReady: Bool { model.online && model.cloudReady }
 
-    /// 灵感按钮为什么用不了；nil 表示能用
+    /// Why the inspiration button can't be used; nil means it can
     var inspirationBlocked: String? {
         if !model.online { return String(localized: "离线时用不了灵感：要模型来说出卡片之间的联系") }
         if !model.cloudReady { return model.keyRejected ? String(localized: "密钥无效，更换后才能用灵感") : String(localized: "完成云端模型设置后才能用灵感") }
         return nil
     }
 
-    // MARK: 打字
+    // MARK: Typing
 
     private func typed() {
-        // 还在等模型时又开始打字：正在生成的旧结果作废，回来了也不换画面
+        // Typing again while still waiting for the model: old results being generated are discarded and won't change the view when they arrive
         if working { cancel() }
         let rules = QueryRules.parse(text, filters: filters)
         parsed = rules
@@ -74,13 +74,13 @@ final class SearchModel {
             guard !Task.isCancelled, let searcher else { return }
             let hits = rules.tokens.isEmpty ? [] : await searcher.literal(rules)
             guard !Task.isCancelled else { return }
-            // 命中从有变无时等一会儿再熄：打字途中一两个字对不上，画面不跟着一暗一亮
+            // When matches go from some to none, wait a bit before dimming: a character or two not matching mid-typing doesn't make the view flicker
             if hits.isEmpty, model.canvas?.isSpotlit == true {
                 try? await Task.sleep(for: .milliseconds(350))
                 guard !Task.isCancelled else { return }
             }
             model.canvas?.spotlight(Set(hits))
-            // 停手 0.6 秒：提前交给模型理解
+            // Typing stopped for 0.6 seconds: hand it to the model to understand early
             try? await Task.sleep(for: .milliseconds(520))
             guard !Task.isCancelled else { return }
             prefetch()
@@ -100,9 +100,9 @@ final class SearchModel {
         }
     }
 
-    // MARK: 回车
+    // MARK: Return
 
-    /// 开始一次请求：之前没回来的都作废。返回这次的编号
+    /// Start a request: everything not yet returned is discarded. Returns this request's ID
     private func begin() -> Int {
         request += 1
         working = true
@@ -115,7 +115,7 @@ final class SearchModel {
         if panel?.text == nil { panel = nil }
     }
 
-    /// 在后台做一次请求；做完（或作废）时收起等待的样子
+    /// Do a request in the background; dismiss the waiting look when done (or discarded)
     private func run(_ mine: Int, _ work: @escaping @MainActor () async -> Void) {
         Task {
             await work()
@@ -127,7 +127,7 @@ final class SearchModel {
         guard let searcher else { return }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || filters != Filters() else { dismiss(); return }
-        // 字面命中的卡继续亮着，等结果飞过来时由聚拢接手
+        // Literally matching cards stay lit, and gathering takes over when the results fly over
         literalWork?.cancel()
         prefetch()
         let interpretation = early?.task
@@ -135,7 +135,7 @@ final class SearchModel {
         let (rules, online) = (QueryRules.parse(trimmed, filters: filters), model.online)
         let mine = begin()
         run(mine) { [self] in
-            // 理解还没回来、按规则看是找卡片：本机先找，一到就聚拢，不让人等云端
+            // Understanding not back yet and the rules say it's a card search: search locally first, gather as soon as it's in, don't make people wait for the cloud
             var gathered: [Int64] = []
             if ready == nil, rules.intent == .find {
                 let local = await searcher.coarse(rules).shown
@@ -169,7 +169,7 @@ final class SearchModel {
         }
     }
 
-    /// 找到的一批卡到了：聚拢，或者换掉眼前那批（留下的卡滑到新位置）。云端判下来一张都不相关时散开
+    /// A set of found cards arrived: gather them, or replace the set in view (kept cards slide to new positions). Disperse if the cloud judges none relevant
     private func gather(_ cards: [Int64], replacing gathered: inout [Int64], request mine: Int) async {
         if cards.isEmpty {
             guard !gathered.isEmpty else { return }
@@ -184,15 +184,15 @@ final class SearchModel {
         gathered = cards
     }
 
-    /// 眼前的结果定下来：之后到的云端结果不再换批
+    /// The results in view are settled: later cloud results no longer swap the set
     func settle() {
         guard unsettled == request else { return }
         cancel()
     }
 
-    // MARK: 灵感
+    // MARK: Inspiration
 
-    /// 灵感按钮：在当前画板里挑
+    /// Inspiration button: pick from the current board
     func inspireHere() {
         guard inspirationBlocked == nil else { return }
         let scope: Scope = currentBoard.map { .board($0) } ?? .all
@@ -201,7 +201,7 @@ final class SearchModel {
         run(mine) { [self] in await inspire(scope: scope, topic: "", request: mine) }
     }
 
-    /// 换一组：和上一次同样的范围。旧的话先留着，一时拿不到新的才换成等待的样子，备好的那组到了直接换，不闪
+    /// Shuffle: same scope as last time. Keep the old wording at first, switch to the waiting look only if a new one isn't available right away; a prepared set replaces it directly, without flicker
     @ObservationIgnored private var lastScope: Scope = .all
     @ObservationIgnored private var lastTopic = ""
 
@@ -215,7 +215,7 @@ final class SearchModel {
         run(mine) { [self] in await inspire(scope: lastScope, topic: lastTopic, request: mine, keeping: previous) }
     }
 
-    /// keeping：换一组没换成时留着的上一组。眼前的卡还聚拢着，面板不能凭空消失
+    /// keeping: the previous set kept when a shuffle didn't succeed. The cards in view are still gathered, so the panel can't just vanish
     private func inspire(scope: Scope, topic: String, request mine: Int, keeping previous: Panel? = nil) async {
         guard let inspirer = model.inspirer else { return }
         (lastScope, lastTopic) = (scope, topic)
@@ -230,19 +230,19 @@ final class SearchModel {
         }
     }
 
-    /// 后台先为这个范围备好几组灵感，按下按钮时立刻出现
+    /// Prepare several sets of inspiration for this scope in the background, so they appear instantly when the button is pressed
     func prepare() {
         guard inspirationBlocked == nil, let inspirer = model.inspirer else { return }
         let scope: Scope = currentBoard.map { .board($0) } ?? .all
         Task { await inspirer.prepare(scope: scope) }
     }
 
-    // MARK: 聚拢
+    // MARK: Gathering
 
-    /// fresh：这次请求里头一回出现的卡，回看记录只记它们；nil 是全部
+    /// fresh: cards appearing for the first time in this request; revisits are recorded only for them; nil means all
     private func show(_ cards: [Int64], as intent: Intent, text: String?, fresh: [Int64]? = nil) async {
         guard let canvas = model.canvas else { return }
-        // 调用的地方刚核对过编号：这时的编号就是这次请求的
+        // The caller just checked the ID: the current ID is this request's
         let mine = request
         guard !cards.isEmpty else { return notFound(mine) }
         let kind: Panel.Kind? = switch intent {
@@ -252,7 +252,7 @@ final class SearchModel {
         case .ask: .ask
         }
         await canvas.gather(cards, insets: NSEdgeInsets(top: 0, left: 0, bottom: Chrome.searchReserve, right: kind == nil ? 0 : Chrome.panelReserve))
-        // 聚拢的这会儿又发起了新的请求：这一次作废，不设文字面板、不记回看
+        // A new request was started during this gathering: discard this one, don't set the text panel or record revisits
         guard request == mine else { return }
         showing = intent
         let revisit: Revisit = switch intent { case .find: .found; case .inspire: .inspired; case .draw: .drawn; case .ask: .asked }
@@ -268,13 +268,13 @@ final class SearchModel {
         model.notify(String(localized: "没找到相关的卡"))
     }
 
-    /// 提问的回答下面「接着聊」：问答原样带进一段新讨论，依据的卡放上桌
+    /// "Continue in Discussion" under a question's answer: the Q&A goes as is into a new discussion, with the supporting cards on the table
     func continueChat() {
         guard let panel, panel.kind == .ask, let text = panel.text else { return }
         model.discussions.continueFromSearch(question: panel.question, answer: text, cards: panel.cards)
     }
 
-    /// 放进当前画板：结果里来自别处的卡留下来（cards 为 nil 时全部留下）
+    /// Put into the current board: keep result cards from elsewhere (all of them when cards is nil)
     func keepVisitors(_ cards: [Int64]? = nil) {
         guard let canvas = model.canvas else { return }
         let board = canvas.board
@@ -290,12 +290,12 @@ final class SearchModel {
         }
     }
 
-    /// 留下了几张（按钮或右键）：按钮上的张数跟着更新
+    /// Some were kept (button or context menu): the count on the button updates
     func visitorsChanged() {
         visitors = currentBoard == nil ? 0 : model.canvas?.visitingCards.count ?? 0
     }
 
-    /// 收起文字面板和聚拢的结果，搜索框里的字留着，字面命中的卡重新原地亮起
+    /// Dismiss the text panel and gathered results, keep the text in the search field, literally matching cards light up in place again
     func dismiss() {
         cancel()
         panel = nil
@@ -305,7 +305,7 @@ final class SearchModel {
         typed()
     }
 
-    /// Esc：先收起聚拢的结果（灵感和搜索各算一层），再清空搜索框。返回有没有处理
+    /// Esc: first dismiss gathered results (inspiration and search each count as a layer), then clear the search field. Returns whether it was handled
     func escape() -> Bool {
         if panel != nil || showing != nil || working { dismiss(); return true }
         if !text.isEmpty || filters != Filters() {
@@ -316,7 +316,7 @@ final class SearchModel {
         return false
     }
 
-    /// 换了画板、换了视图：收起结果，范围里的「当前画板」跟着换
+    /// Board or view changed: dismiss results, and "This Board" in the scope follows
     func locationChanged() {
         cancel()
         panel = nil

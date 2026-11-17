@@ -1,10 +1,10 @@
 import AppKit
 import Library
 
-/// 裁剪中：卡片换成整张原图，裁剪框以外压暗；拖四边、四角改裁剪框，拖框内挪动它。只改这个画板里的摆法，不动原图
+/// Cropping: the card switches to the full original image and everything outside the crop frame is dimmed; drag the edges or corners to resize the frame, drag inside to move it. Only changes the placement on this board, never the original image
 final class Cropper {
     let id: Int64
-    /// 整张图、裁剪框（世界坐标）
+    /// Full image, crop frame (world coordinates)
     let full: CGRect
     var crop: CGRect
     let image = QuietLayer()
@@ -18,14 +18,14 @@ final class Cropper {
         image.zPosition = .greatestFiniteMagnitude
     }
 
-    /// 裁剪框按整张图归一（左上为原点）；几乎没裁时为 nil
+    /// Crop frame normalized to the full image (origin at top left); nil when barely cropped
     var normalized: CGRect? {
         let r = CGRect(x: (crop.minX - full.minX) / full.width, y: (crop.minY - full.minY) / full.height,
                        width: crop.width / full.width, height: crop.height / full.height)
         return r.insetBy(dx: 0.002, dy: 0.002).contains(CGRect(x: 0, y: 0, width: 1, height: 1).insetBy(dx: 0.004, dy: 0.004)) ? nil : r
     }
 
-    /// 一条摆放对应的整张图在世界里的位置
+    /// Where the full image of a placement sits in the world
     static func fullFrame(_ p: Placement) -> CGRect {
         let c = p.crop ?? CGRect(x: 0, y: 0, width: 1, height: 1)
         let w = p.width / c.width, h = p.height / c.height
@@ -36,7 +36,7 @@ final class Cropper {
 extension CanvasView {
     public var isCropping: Bool { cropper != nil }
 
-    /// 能不能裁：单选、画板里、有封面图的卡
+    /// Can it be cropped: a single selection, on a board, a card with a cover image
     public var canCrop: Bool {
         guard isEditable, selection.count == 1, let item = items[selection.first!], case .card(let card) = item.face else { return false }
         return card.cover != nil
@@ -62,7 +62,7 @@ extension CanvasView {
         return CGImageSourceCreateImageAtIndex(src, 0, nil)
     }
 
-    /// 结束裁剪；commit 为真时写进摆放：卡片变成裁剪框露出的那一块
+    /// End cropping; when commit is true, write it into the placement: the card becomes the part the crop frame shows
     public func endCrop(commit: Bool) {
         guard let c = cropper else { return }
         cropper = nil
@@ -77,7 +77,7 @@ extension CanvasView {
         delegate?.canvasStateChanged(self)
     }
 
-    /// 恢复原图：去掉裁剪，卡片回到整张图的大小
+    /// Restore the original: remove the crop and return the card to the full image's size
     public func resetCrop() {
         guard isEditable else { return }
         commit(selectedItems.filter { $0.placement.crop != nil }.map { item in
@@ -88,7 +88,7 @@ extension CanvasView {
         }, as: String(localized: "恢复原图"))
     }
 
-    // MARK: 拖裁剪框
+    // MARK: Dragging the crop frame
 
     func cropDown(at p: CGPoint) {
         guard let c = cropper else { return }
@@ -99,7 +99,7 @@ extension CanvasView {
         if abs(w.y - c.crop.minY) < slop { edges.insert(.top) }
         if abs(w.y - c.crop.maxY) < slop { edges.insert(.bottom) }
         if edges.isEmpty, !c.crop.insetBy(dx: -slop, dy: -slop).contains(w) {
-            // 点在框外：完成裁剪
+            // Clicked outside the frame: finish cropping
             endCrop(commit: true)
             return
         }

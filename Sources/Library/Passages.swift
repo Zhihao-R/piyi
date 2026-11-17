@@ -1,28 +1,28 @@
 import Foundation
 
-/// 卡片原文里能被引用的最小单位：正文的一段（p）、转录的一个时间段（t）。
-/// 发给模型时怎么编号、放大查看里点了引用滚到哪，都按这一份切法
+/// The smallest citable unit of a card's original text: a paragraph of the body (p), a time segment of the transcript (t).
+/// How passages are numbered for the model, and where clicking a citation scrolls to in the detail view, all follow this one split
 public struct Passage: Sendable, Equatable {
     public enum Part: String, Sendable, Codable {
         case body = "p", transcript = "t"
     }
 
     public var part: Part
-    /// 从 1 数
+    /// Counted from 1
     public var number: Int
     public var text: String
-    /// 转录段开始的秒数
+    /// Start second of the transcript segment
     public var seconds: Int?
 
-    /// 引用里的写法：p3、t4
+    /// How it's written in a citation: p3, t4
     public var label: String { part.rawValue + String(number) }
 }
 
 public enum Passages {
-    /// 一张卡的全部段落：正文在前、转录在后。图片和截图没有段落，只能整张引用
+    /// All passages of a card: body first, transcript after. Images and screenshots have no passages and can only be cited whole
     public static func of(_ card: Card) -> [Passage] {
         guard card.kind != .image else { return [] }
-        // 先拿掉署名再去配图标记，和阅读页同一个顺序：署名只认开头十行，配图标记也算行
+        // Take out the byline first, then the image markers, in the same order as the reading page: bylines are only recognized in the first ten lines, and image markers count as lines
         let source = card.kind == .text ? card.text ?? card.body : card.body.map { Article.plain(credits(in: $0, for: card).body) }
         let body = lines(source ?? "").enumerated().map { Passage(part: .body, number: $0.offset + 1, text: $0.element) }
         let transcript = lines(card.transcript ?? "").enumerated().map { i, line in
@@ -31,12 +31,12 @@ public enum Passages {
         return body + transcript
     }
 
-    /// 一行一段，空行跳过
+    /// One line per passage, skipping blank lines
     static func lines(_ text: String) -> [String] {
         text.components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
     }
 
-    /// 公众号开头几行里的署名拿出来（阅读页并成一行小字），其余文章不动
+    /// Pull the byline out of the first few lines of a WeChat Official Accounts article (the reading page merges it into one line of small text); other articles are left alone
     public static func credits(in body: String, for card: Card) -> (credits: [String], body: String) {
         guard card.format == "公众号" else { return ([], body) }
         var credits: [String] = []
@@ -48,13 +48,13 @@ public enum Passages {
         return (credits, lines.map(\.element).joined(separator: "\n"))
     }
 
-    /// 按存下的原话在现在的正文里找回那一段：原文改过（重新抓取、补完转录）后编号会变，原话不变。
-    /// 先找同样的一段，再找包含它（或被它包含）的一段；都没有返回 nil
+    /// Find a passage in the current body by its saved words: numbering changes after the text changes (refetched, transcript completed), the words don't.
+    /// First look for an identical passage, then one that contains it (or is contained by it); nil if neither
     public static func find(_ quote: String, part: Passage.Part, in card: Card) -> Passage? {
         find(quote, part: part, among: of(card))
     }
 
-    /// 同上，段落已经切好：一次要找好几处时只切一遍
+    /// Same as above with passages already split: split only once when looking up several
     public static func find(_ quote: String, part: Passage.Part, among passages: [Passage]) -> Passage? {
         let quote = quote.trimmingCharacters(in: .whitespaces)
         guard !quote.isEmpty else { return nil }

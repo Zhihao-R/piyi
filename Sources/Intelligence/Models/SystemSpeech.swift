@@ -2,19 +2,19 @@ import AVFoundation
 import Speech
 import Library
 
-/// 转录：系统自带的 SpeechAnalyzer（macOS 26 起），在本机跑。
-/// 识别模型由系统下载和更新，不往 App 里加文件；模型在系统进程里跑，不占 App 的内存。约 20 倍速，十分钟的视频半分钟转完。
-/// 转成什么语言跟音频本身走：中文、英文两个模型同时听，留把握大的那份
+/// Transcription: the system's built-in SpeechAnalyzer (macOS 26 and later), running locally.
+/// The recognition models are downloaded and updated by the system, adding no files to the app; they run in a system process, using none of the app's memory. About 20x speed: a ten-minute video is transcribed in half a minute.
+/// The output language follows the audio itself: Chinese and English models listen at the same time, and the more confident result is kept
 public struct SystemSpeech: Transcription {
     public let name = String(localized: "系统语音识别")
-    /// 模型没装时，第一次转录由系统下载
+    /// If the model isn't installed, the system downloads it on the first transcription
     public let isReady = true
     static let locales = [Locale(identifier: "zh_CN"), Locale(identifier: "en_US")]
 
     public init() {}
 
     public func transcribe(_ file: URL) async throws -> [Cue] {
-        // 视频文件（mp4、mov）也能直接按音频读，只取声音。先打开：打不开（没有音轨）时还没起分析，不会留下等不到结尾的结果流
+        // Video files (mp4, mov) can also be read directly as audio, taking only the sound. Open first: if it fails (no audio track), analysis hasn't started yet, so no result stream is left waiting for an end that never comes
         let audio = try AVAudioFile(forReading: file)
         let preset = SpeechTranscriber.Preset.transcription
         let transcribers = Self.locales.map {
@@ -36,14 +36,14 @@ public struct SystemSpeech: Transcription {
                 await analyzer.cancelAndFinishNow()
             }
         } catch {
-            // 分析中途出错也要收尾，结果流才会结束
+            // Finish up even if analysis fails midway, so the result stream ends
             await analyzer.cancelAndFinishNow()
             throw error
         }
         return try await heard.max { $0.confidence < $1.confidence }?.cues ?? []
     }
 
-    /// 一个模型听出来的：逐句的字幕，和按字数加权的平均把握
+    /// What one model heard: sentence-by-sentence subtitles, and the average confidence weighted by character count
     private struct Heard: Sendable {
         var cues: [Cue] = []
         var confidence = 0.0
@@ -63,7 +63,7 @@ public struct SystemSpeech: Transcription {
         return heard
     }
 
-    /// 系统在中文标点前留一个空格（「过去的一年里 ，我」），去掉
+    /// The system leaves a space before Chinese punctuation (「过去的一年里 ，我」); remove it
     static func tidy(_ text: String) -> String {
         text.replacing(/\s+([，。！？、；：])/) { $0.output.1 }.trimmingCharacters(in: .whitespacesAndNewlines)
     }

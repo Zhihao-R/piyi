@@ -3,9 +3,9 @@ import Testing
 
 @Suite struct ColorTests {
     @Test func mainColorPrefersHueOverBackground() {
-        // 白底上一块占 20% 的红：算红
+        // A red patch covering 20% on a white background: counts as red
         #expect(ColorProfile(share: [.white: 0.7, .red: 0.2, .gray: 0.1], swatches: []).main == .red)
-        // 彩色太少：算占得最多的白
+        // Too little color: counts as the white that covers the most
         #expect(ColorProfile(share: [.white: 0.8, .blue: 0.1, .gray: 0.1], swatches: []).main == .white)
         #expect(ColorProfile(share: [:], swatches: []).main == nil)
     }

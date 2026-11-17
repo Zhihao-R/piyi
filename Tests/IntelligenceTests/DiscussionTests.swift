@@ -4,7 +4,7 @@ import Synchronization
 @testable import Intelligence
 @testable import Library
 
-/// 按顺序交出写好的几轮回答的假对话服务方，记下每轮收到的内容
+/// A fake chat provider that hands out pre-written answers in order, recording what it receives each turn
 final class FakeConversation: Conversation, Sendable {
     let name = "假对话", isReady = true
     let replies: Mutex<[[ChatChunk]]>
@@ -24,14 +24,14 @@ final class FakeConversation: Conversation, Sendable {
     }
 }
 
-/// 一个总返回同一句话的工具
+/// A tool that always returns the same sentence
 struct EchoTool: Tool {
     var spec: ToolSpec { ToolSpec(name: "echo", description: "", parameters: "{}") }
     let title = "回声", nature = ToolNature.reading
     func run(_ arguments: String, desk: Set<Int64>) async throws -> ToolOutput { ToolOutput(text: "读回来了", detail: arguments, items: ["第一项", "第二项"]) }
 }
 
-/// 执行要等一会儿的工具：停止就在它执行的时候按
+/// A tool that takes a while to run: stop is pressed while it's running
 struct SlowTool: Tool {
     var spec: ToolSpec { ToolSpec(name: "slow", description: "", parameters: "{}") }
     let title = "慢", nature = ToolNature.reading
@@ -55,17 +55,17 @@ struct SlowTool: Tool {
         #expect(answer.citations[1].seconds == 5)
     }
 
-    /// 一个方括号里写了几处：拆开；其中有一处不对，整个去掉
+    /// Several references in one pair of brackets: split them; if any one is invalid, drop the whole thing
     @Test func splitsListsInOneBracket() {
         #expect(Citations.check("甲[c12·p1, c12·t1]", against: sources).text == "甲[c12·p1][c12·t1]")
         #expect(Citations.check("甲[c12·p1, c99]", against: sources).text == "甲")
         #expect(Citations.check("候选 c99（[c99]）。", against: sources).text == "候选 c99。")
         #expect(Citations.check("压抑 [c99]。留着 [c13]。", against: sources).text == "压抑。留着 [c13]。")
-        // 图片没有段落：标了段落号也按整张算
+        // Images have no paragraphs: even with a paragraph number, it counts as the whole image
         #expect(Citations.check("图里写着[c13·p2]", against: sources).text == "图里写着[c13]")
     }
 
-    /// 生成到一半：写完的引用显示成小数字，末尾没写完的先藏起来
+    /// Halfway through generating: finished citations show as small numbers, an unfinished one at the end stays hidden for now
     @Test func streamingHidesUnfinishedCitation() {
         #expect(Citations.pieces("甲[c12·p1]乙[c12·", streaming: true) == [.text("甲"), .cite("c12·p1"), .text("乙")])
         #expect(Citations.pieces("数组 a[0", streaming: false) == [.text("数组 a[0")])
@@ -84,7 +84,7 @@ struct SlowTool: Tool {
         list.enumerated().map { DiscussionEvent(discussion: 1, seq: $0.offset + 1, at: .distantPast, what: $0.element) }
     }
 
-    /// 同一份记录和桌拼出同样的消息；对话开始后放上桌的卡跟在记录里，开头的桌不变，缓存照样命中
+    /// The same record and table build the same messages; cards put on the table after the conversation starts go into the record, the opening table stays the same, and the cache still hits
     @Test func placingAppendsWithoutTouchingTheOpening() {
         let recipe = WholeText()
         let before = recipe.chat(desk: [desk(1, "甲")], events: events([.question("问"), .answer(Answer(text: "答", citations: []))]), tools: [])
@@ -97,7 +97,7 @@ struct SlowTool: Tool {
         #expect(after.stableThrough == Chat.Position(message: 1, part: 0))
     }
 
-    /// 拿下桌：整份重拼，拿走的卡不在开头的桌里；进了废纸篓的卡也不放进去
+    /// Taking a card off the table: rebuild everything, the removed card isn't in the opening table; cards in the trash aren't put in either
     @Test func removingRebuildsAndTrashedIsLeftOut() {
         let chat = WholeText().chat(desk: [desk(1, "甲"), desk(2, "乙"), desk(3, "丙", trashed: true)], events: events([
             .question("问"), .placed(CardMention(card: 2, title: "乙")), .removed(CardMention(card: 4, title: "丁")), .question("再问"),
@@ -108,7 +108,7 @@ struct SlowTool: Tool {
         #expect(chat.messages[1].text.contains("（取消引用 · 丁）"))
     }
 
-    /// 等工具结果的时候放上桌的灰字挪到结果后面；没等到结果的调用不交给模型
+    /// Gray text for cards put on the table while waiting for a tool result moves after the result; calls that never got a result aren't passed to the model
     @Test func toolResultsFollowTheirCalls() {
         let call = ToolCall(id: "a", name: "echo", arguments: "{}"), lost = ToolCall(id: "b", name: "echo", arguments: "{}")
         let chat = WholeText().chat(desk: [], events: events([
@@ -125,7 +125,7 @@ struct SlowTool: Tool {
         list.enumerated().map { DiscussionEvent(discussion: 1, seq: $0.offset + 1, at: .distantPast, what: $0.element) }
     }
 
-    /// 任意一步中断后，从记录认出同样的下一步
+    /// After an interruption at any step, the same next step is recognized from the record
     @Test func nextStepComesFromTheRecord() {
         let call = ToolCall(id: "a", name: "echo", arguments: "{}")
         #expect(DiscussionKernel.next(events([])) == .idle)
@@ -133,11 +133,11 @@ struct SlowTool: Tool {
         #expect(DiscussionKernel.next(events([.question("问"), .calls(said: "", [call])])) == .runTools([call], round: 1))
         #expect(DiscussionKernel.next(events([.question("问"), .calls(said: "", [call]), .result(ToolResult(call: "a", label: "", text: ""))])) == .ask(round: 1))
         #expect(DiscussionKernel.next(events([.question("问"), .answer(Answer(text: "", citations: []))])) == .idle)
-        // 没答完又问了一句：答新的那句
+        // Asked again before the answer finished: answer the new one
         #expect(DiscussionKernel.next(events([.question("问"), .question("再问")])) == .ask(round: 0))
     }
 
-    /// 一轮：调工具 → 结果写进记录 → 回答，引用检查过才存
+    /// One turn: call a tool → result written to the record → answer, saved only after citations are checked
     @Test func runsToolThenAnswers() async throws {
         let store = try temporaryStore()
         let board = try await store.createBoard("A").id!
@@ -156,11 +156,11 @@ struct SlowTool: Tool {
         #expect(answer.text == "依据桌上[c\(card)·p1]和工具[r1·2]，瞎编")
         #expect(answer.citations.map(\.quote) == ["桌上的话", "第二项"])
         #expect(report.usage.cost == 0.03 && report.usage.cached == 15)
-        // 第二轮发给模型的内容带着工具调用和结果
+        // What's sent to the model in the second turn includes the tool call and result
         #expect(fake.chats.withLock { $0[1].messages.map(\.role) } == [.system, .user, .assistant, .tool])
     }
 
-    /// 工具轮数到了上限：只让模型用已有的信息作答
+    /// The tool-turn limit is reached: the model may only answer with what it already has
     @Test func toolRoundsAreCapped() async throws {
         let store = try temporaryStore()
         let id = try await store.startDiscussion(desk: [], opening: [.question("问")])
@@ -170,12 +170,12 @@ struct SlowTool: Tool {
         try await kernel.run(id)
         #expect(fake.chats.withLock { $0.last!.toolsAllowed } == false)
         let events = try await store.events(of: id)
-        // 不认识的工具交回「没成功」
+        // An unknown tool returns "failed"
         if case .result(let r) = events[2].what { #expect(r.failed && r.label == "nope没成功") }
         #expect(events.last?.what == .answer(Answer(text: "只好直说", citations: [])))
     }
 
-    /// 工具执行到一半停下：不写半截的结果，下次重试还会再执行
+    /// A tool stopped midway: no partial result is written, and the next retry runs it again
     @Test func stoppingDuringToolLeavesNoResult() async throws {
         let store = try temporaryStore()
         let id = try await store.startDiscussion(desk: [], opening: [.question("问")])

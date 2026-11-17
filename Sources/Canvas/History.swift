@@ -1,17 +1,17 @@
 import AppKit
 import Library
 
-/// 一步可撤销的改动。反过来就是撤销它，撤销时再登记反过来的那一步，重做就有了
+/// One undoable change. Its reverse undoes it; undoing registers the reverse step in turn, and that gives redo
 public enum Edit: Sendable {
-    /// 摆放从 old 改成 new：位置、大小、角度、叠放顺序、裁剪
+    /// A placement changed from old to new: position, size, angle, stacking order, crop
     case moved(old: [Placement], new: [Placement])
-    /// 摆放出现、消失：记着整行，撤销时按原编号放回
+    /// A placement appears or disappears: keeps the whole row so undo puts it back under its original ID
     case placed(added: [Placement], removed: [Placement])
-    /// 卡进了废纸篓
+    /// A card went into the trash
     case trashed([Int64])
-    /// 卡从废纸篓恢复
+    /// A card was restored from the trash
     case restored([Int64])
-    /// 你写的文字卡改了文字、底色
+    /// A text card you wrote changed its text or background color
     case written(old: [Note], new: [Note])
 
     var reversed: Edit {
@@ -33,7 +33,7 @@ public enum Edit: Sendable {
         }
     }
 
-    /// 摆放变了的画板：它们的缩略拼贴要重画
+    /// Boards whose placements changed: their thumbnail collages need redrawing
     public var boards: Set<Int64> {
         switch self {
         case .moved(let old, _): Set(old.map(\.boardID))
@@ -43,7 +43,7 @@ public enum Edit: Sendable {
     }
 }
 
-// MARK: 撤销：每个画板、每种卡片视图各一条，⌘Z 只撤眼前这一处
+// MARK: Undo: one history per board and per card view; ⌘Z only undoes the one in front of you
 
 extension CanvasView: NSMenuItemValidation {
     var undoHistory: UndoManager? { content.map(undoHistory) }
@@ -55,13 +55,13 @@ extension CanvasView: NSMenuItemValidation {
         return h
     }
 
-    /// 这一处的撤销记录作废（画板删了）；nil 表示每一处都作废（卡彻底删了）
+    /// Discard the undo history of this place (board deleted); nil discards every place (card deleted for good)
     public func forgetUndoHistory(of place: CanvasContent? = nil) {
         if let place { undoHistories[place] = nil } else { undoHistories = [:] }
     }
 
-    /// 记下刚做完的一步，记在做这一步的地方（默认是眼前这一处；写库期间可能已经换了画板）。
-    /// 一步里可以有几样改动，⌘Z 一起撤回；什么都没变的不记
+    /// Records a step just done, in the place where it was done (by default the one in front of you; the board may have changed while writing to the library).
+    /// One step can contain several changes that ⌘Z undoes together; steps where nothing changed are not recorded
     public func record(_ edits: Edit..., as name: String, on place: CanvasContent? = nil) {
         let edits = edits.filter { !$0.isEmpty }
         guard !edits.isEmpty, let history = (place ?? content).map(undoHistory) else { return }
@@ -71,14 +71,14 @@ extension CanvasView: NSMenuItemValidation {
         history.endUndoGrouping()
     }
 
-    /// 做一步改动（撤销、重做，或者写完一张文字卡）：先登记反过来的一步（撤销过程中必须同步登记，才进重做栈），
-    /// 再写资料库，外壳刷新后选中改到的。返回写资料库的那件事；改摆放是同步记下的，返回 nil
+    /// Performs a change (undo, redo, or finishing a text card): first registers the reverse step (it must be registered synchronously during undo to reach the redo stack),
+    /// then writes to the library and selects what changed once the shell refreshes. Returns the library write task; placement changes are recorded synchronously and return nil
     @discardableResult
     func apply(_ edit: Edit, as name: String) -> Task<Void, Never>? {
         let selects: (Placement) -> Bool
         switch edit {
         case .moved(_, let new):
-            // 改摆放自己会登记反过来的一步
+            // Changing placements registers its own reverse step
             commit(new, as: name)
             selection = Set(new.compactMap(\.id)).intersection(items.keys)
             return nil
@@ -107,17 +107,17 @@ extension CanvasView: NSMenuItemValidation {
         }
     }
 
-    /// 写着字时撤的是字
+    /// While typing, undo undoes the text
     private var activeHistory: UndoManager? { noteEditor?.history ?? undoHistory }
 
     @objc func undo(_ sender: Any?) {
-        // 裁剪到一半：先撤这次裁剪
+        // Mid-crop: undo this crop first
         if cropper != nil { endCrop(commit: false) } else { activeHistory?.undo() }
     }
 
     @objc func redo(_ sender: Any?) { activeHistory?.redo() }
 
-    /// 聚拢的结果是临时摆法，撤销等退出聚拢再说
+    /// The result of gathering is a temporary arrangement; undo waits until gathering is exited
     public func validateMenuItem(_ item: NSMenuItem) -> Bool {
         switch item.action {
         case #selector(undo(_:)):

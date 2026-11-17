@@ -6,72 +6,72 @@ import Library
 import Canvas
 import Tokens
 
-/// 放大查看：只剩眼前这张卡。有画面的卡（图、视频、带配图的网页和文档），左边是画面，右边一栏文字；
-/// 没有画面的卡整块是文字。文字只有阅读页一种版式（Reader），从上到下越来越细
+/// Detail view: only this one card remains. Cards with visuals (images, video, web pages and documents with images) have the visual on the left and a text column on the right;
+/// cards without visuals are all text. Text has only one layout, the reading page (Reader), getting finer from top to bottom
 struct DetailView: View {
     let store: Store
     let card: Int64
-    /// 讨论里点了引用：滚到那一段闪一下，视频从那一秒播
+    /// A citation clicked in the discussion: scroll to that passage and flash it, video plays from that second
     let focus: AppModel.Focus?
-    /// 全应用那一个播放器：音频卡的声音交给它，这里带声音的视频开播时让它停
+    /// The one player for the whole app: audio card sound goes to it, and it's stopped here when a video with sound starts playing
     let audio: AudioPlayer
-    /// 出处那一行右端的按钮：讨论、放上桌
+    /// Buttons at the right end of the source row: discuss, put on the table
     let discuss: Action
-    /// 对着画布上哪张卡：打开时从它长出来，关的时候缩回它。按方向键换来的、从讨论栏打开的没有
+    /// Which card on the canvas it corresponds to: grows out of it on open, shrinks back into it on close. None when switched to with arrow keys or opened from the discussion bar
     let spot: Spot?
-    /// 切回画板时原样开着的：不从卡片飞出来，跟着画布一起淡入
+    /// Left open when switching back to the board: doesn't fly out of the card, fades in with the canvas
     let stayed: Bool
-    /// 外面说要关了：缩回去或淡出，做完叫 closed
+    /// The outside said to close: shrink back or fade out, call closed when done
     let closing: Bool
-    /// 被换下去了（换卡、切画板、直接关）：当作旧画面的一张，跟画布的旧画面同一节奏淡完，再叫 closed
+    /// Swapped out (card changed, board switched, closed outright): treated as part of the old view, fades out in step with the canvas's old view, then calls closed
     let away: Bool
     let close: () -> Void
-    /// 打开原链接、原文件
+    /// Open the original link or original file
     let follow: (URL) -> Void
-    /// 残缺的卡重新抓取
+    /// Refetch an incomplete card
     let refetch: () -> Void
-    /// 你写的文字卡改了字
+    /// The text of a note you wrote changed
     let rewrite: (String) -> Void
-    /// 把画布上那张卡拿起来（飞着的时候它不该还在原处）、放回去
+    /// Pick up the card on the canvas (it shouldn't still be in place while flying) and put it back
     let lift: (Bool) -> Void
     let closed: () -> Void
-    /// 面板的透明度和大小：进来时淡入、从卡片那边长出来，关的时候反过来
+    /// The panel's opacity and size: fades in and grows out of the card on entry, the reverse on close
     @State private var shown = false
     @State private var grown = false
-    /// 飞进来、飞回去的那张图。平时透明地叠在画面上跟着它走，关的时候显出来飞回去
+    /// The image that flies in and back. Normally it sits transparent over the visual, following it; on close it shows and flies back
     @State private var ghost: Ghost?
     @State private var flying = false
-    /// 垫在面板下面的那张上，卡片的样子还剩几分：一展开就很快淡掉，只留一块页面底色接着长大，面板里的字在它上面淡入。
-    /// 不淡掉的话，拉大的卡片字和面板里的字有一阵是一大一小叠着的
+    /// How much of the card's look remains on the layer under the panel: it fades quickly once expanding, leaving only a page-colored block to keep growing, and the panel's text fades in over it.
+    /// Without fading, the enlarged card's text and the panel's text overlap for a moment, one large and one small
     @State private var faceOpacity = 1.0
-    /// 已经在关了。动画做完的回调里要看这个：传进来的 closing 是建视图那一刻的值，回调跑的时候早过期了
+    /// Already closing. Animation completion callbacks must check this: the closing passed in is the value at view creation, long stale when the callback runs
     @State private var leaving = false
-    /// 画面那一块在窗口里的位置，飞进来落在它里面
+    /// Where the visual area sits in the window; the fly-in lands inside it
     @State private var stageFrame: CGRect?
-    /// 面板展开到一半时占的位置（不能整张飞的卡从卡片原位展开成面板）；nil 是停在原位
+    /// Where the panel is when half expanded (cards that can't fly whole expand from the card's position into the panel); nil means staying in place
     @State private var morph: CGRect?
-    /// 面板的大小和这块地方在窗口里的位置：面板停在正中，算得出它在哪
+    /// The panel's size and this area's position in the window: the panel sits centered, so its position can be computed
     @State private var panelSize: CGSize?
     @State private var area: CGRect = .zero
-    /// 画面那张图解完了（解不出来也算）：飞来的那张这才淡掉
+    /// The visual's image finished decoding (failing counts too): only then does the flown-in image fade
     @State private var decoded = false
     @State private var loaded: Card?
-    /// 其余图片（不含封面）
+    /// Other images (excluding the cover)
     @State private var images: [String] = []
     @State private var page = 0
-    /// 当前这一张图，在后台解码好
+    /// The current image, decoded in the background
     @State private var picture: CGImage?
-    /// 画面的高 / 宽：面板的大小跟着它走。读封面的文件头就知道，不用等解码
+    /// Visual height / width: the panel's size follows it. Known from the cover's file header, no need to wait for decoding
     @State private var aspect: CGFloat = 1
-    /// 网上的视频点了播放、点了时间点，本机的视频点了时间点；nil 是还停在封面（本机视频静音循环）
+    /// Online video with play or a timestamp clicked, local video with a timestamp clicked; nil means still on the cover (local video loops muted)
     @State private var playing: Seek?
-    /// 动图的原文件：读进来了就换下静止的第一帧，接着动
+    /// Original file of an animated image: once loaded it replaces the static first frame and keeps animating
     @State private var moving: NSImage?
-    /// 全文和转录：打开时排一次，点播放、点时间点不重排
+    /// Full text and transcript: laid out once on open, not again on play or timestamp clicks
     @State private var bodyText: NSAttributedString?
     @State private var transcriptText: NSAttributedString?
 
-    /// 要闪一下的那一段
+    /// The passage to flash
     @State private var highlight: LongText.Highlight?
 
     struct Action {
@@ -80,14 +80,14 @@ struct DetailView: View {
         var run: () -> Void
     }
 
-    /// 封面加其余图片，左右切换看
+    /// Cover plus other images, switch left and right
     private var gallery: [String] { [loaded?.cover].compactMap { $0 } + images }
 
     var body: some View {
         GeometryReader { geo in
             let space = geo.frame(in: .global)
             ZStack {
-                // 起飞、展开放在它出现之后：同一次更新里放上又改终点，它会直接停在终点
+                // Start flying and expanding after it appears: placing it and changing its destination in the same update makes it just sit at the destination
                 if let ghost, ghost.below { ghostView(ghost, in: space).onAppear { unfold() } }
                 if let loaded {
                     panel(loaded, in: CGSize(width: min(geo.size.width - Self.margin * 2, 1180), height: min(geo.size.height - Self.margin * 2, 800)))
@@ -98,7 +98,7 @@ struct DetailView: View {
                         .offset(x: morph.map { $0.midX - space.midX } ?? 0, y: morph.map { $0.midY - space.midY } ?? 0)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .opacity(shown ? 1 : 0)
-                        // 只有飞不了整张的卡从卡片那边长出来；整张飞的不缩放，画面的位置量出来就是落点
+                        // Only cards that can't fly whole grow out of the card; whole-flying ones don't scale, the measured visual position is where they land
                         .scaleEffect(grows && !grown ? Motion.emerge : 1, anchor: Self.anchor(of: spot, in: space))
                 }
                 if let ghost, !ghost.below { ghostView(ghost, in: space).onAppear { flyIn() } }
@@ -109,7 +109,7 @@ struct DetailView: View {
         .onChange(of: panelSize) { unfold() }
         .task { await arrive() }
         .onChange(of: stageFrame) {
-            // 面板出来以后、没在飞时，透明叠着的那张跟着画面走（窗口变了）
+            // After the panel is out and not flying, the transparent overlay follows the visual (the window changed)
             if shown, !flying, ghost?.below != true, let stageFrame { ghost?.frame = fitted(in: stageFrame) }
             flyIn()
         }
@@ -117,7 +117,7 @@ struct DetailView: View {
         .onChange(of: closing) { if closing { leave() } }
         .onChange(of: away) { if away { fadeAway() } }
         .task(id: card) {
-            // 卡片和配图一起到，免得长正文排两遍
+            // Card and images arrive together, so long body text isn't laid out twice
             let card = try? await store.card(self.card)
             let images = (try? await store.images(of: self.card)) ?? []
             guard !Task.isCancelled else { return }
@@ -127,12 +127,12 @@ struct DetailView: View {
             (loaded, self.images, page, playing) = (card, images, 0, nil)
             (bodyText, transcriptText) = (card.flatMap { Self.bodyText($0, type: type) }, card.flatMap { Self.transcriptText($0, type: type) })
             aim()
-            // 切回画板时原样开着、又没有画面可等的（文字、音频）：内容到了就淡入
+            // Left open when switching back to the board, with no visual to wait for (text, audio): fade in once content arrives
             if stayed, let card, !Self.hasStage(card, pictures: gallery.count) { reappear() }
         }
         .onChange(of: focus?.id) { aim() }
-        // 同一时间只有一个声音：视频带声音播了，音频停。音频播了，系统播放器播的视频自己暂停（见 StreamVideo）；
-        // 平台的嵌入播放器是别人的网页，停不了它，只能回到封面
+        // Only one sound at a time: when a video plays with sound, audio stops. When audio plays, videos in the system player pause themselves (see StreamVideo);
+        // a platform's embedded player is someone else's web page that can't be stopped, so the only option is going back to the cover
         .onChange(of: playing) { if playing != nil { audio.pause() } }
         .onChange(of: audio.isPlaying) { if audio.isPlaying, let loaded, loaded.original == nil, loaded.player.map(Player.isStream) != true { playing = nil } }
         .task(id: loaded?.id) {
@@ -144,10 +144,10 @@ struct DetailView: View {
         .task(id: gallery.indices.contains(page) ? gallery[page] : nil) {
             picture = nil
             guard let loaded else { return }
-            // 阅读页自己按栏宽解码，这里不用
+            // The reading page decodes at column width itself, not needed here
             if gallery.indices.contains(page), Self.hasStage(loaded, pictures: gallery.count) {
                 let name = gallery[page]
-                // 先用现成的缩略图顶上，大图解好再换：同一张图变清楚，看不出换。长图的缩略图只有开头一截，不顶
+                // Use the existing thumbnail first and swap when the full image is decoded: the same image gets sharper, the swap isn't visible. Long images' thumbnails are only the top part, so skip them
                 if loaded.form != .long, let thumb = await Self.thumbnail(name, files: store.files), !Task.isCancelled { picture = thumb }
                 if let full = await Self.decode(store.files.url(of: name), maxPixel: 4000), !Task.isCancelled { picture = full }
             }
@@ -155,24 +155,24 @@ struct DetailView: View {
             decoded = true
             if stayed { reappear() }
         }
-        // 切回画板时原样开着的：画面一到（缩略图就够）面板就淡入
+        // Left open when switching back to the board: the panel fades in as soon as the visual arrives (the thumbnail is enough)
         .onChange(of: picture) { if stayed, picture != nil { reappear() } }
     }
 
-    // MARK: 从卡片长出来、缩回去
+    // MARK: Growing out of the card, shrinking back
 
     struct Ghost {
         var face: CGImage
         var frame: CGRect
         var rotation: Double
         var opacity: Double = 1
-        /// 垫在面板下面：展开时面板在它上面淡入；整张飞的图在面板上面，落地后再隐去
+        /// Layer under the panel: when expanding the panel fades in over it; the whole-flying image is above the panel and hides after landing
         var below = false
-        /// 圆角：垫着的那张从卡片的直角长成面板的圆角
+        /// Corner radius: the layer underneath grows from the card's square corners to the panel's rounded corners
         var corner: CGFloat = 0
     }
 
-    /// 面板的圆角
+    /// The panel's corner radius
     private static let corner: CGFloat = 14
 
     private func ghostView(_ ghost: Ghost, in space: CGRect) -> some View {
@@ -187,18 +187,18 @@ struct DetailView: View {
             .allowsHitTesting(false)
     }
 
-    /// 面板停在正中时的位置
+    /// The panel's position when centered
     private var rest: CGRect? {
         panelSize.map { CGRect(x: area.midX - $0.width / 2, y: area.midY - $0.height / 2, width: $0.width, height: $0.height) }
     }
 
-    /// 展开到一半时面板相对原大的缩放
+    /// The panel's scale relative to full size when half expanded
     private var morphScale: CGSize {
         guard let morph, let panelSize, panelSize.width > 0, panelSize.height > 0 else { return CGSize(width: 1, height: 1) }
         return CGSize(width: morph.width / panelSize.width, height: morph.height / panelSize.height)
     }
 
-    /// 不能整张飞的卡：面板从卡片原位展开到正中，卡片的样子垫在下面，面板在它上面一路淡入
+    /// Cards that can't fly whole: the panel expands from the card's position to the center, the card's look underneath, the panel fading in over it all the way
     private func unfold() {
         guard ghost?.below == true, !flying, !shown, loaded != nil, let rest else { return }
         (grown, flying) = (true, true)
@@ -211,13 +211,13 @@ struct DetailView: View {
         } completion: {
             guard !leaving else { return }
             flying = false
-            // 面板是实的了；垫着的那张收起来，不然圆角处会露出来
+            // The panel is solid now; put away the layer underneath, otherwise it shows at the rounded corners
             ghost?.opacity = 0
         }
         withAnimation(.swap) { faceOpacity = 0 }
     }
 
-    /// 进来：整张画面的卡拿缩略图从卡片原位飞过来；其余的从卡片那边长出来（不是从画布打开的就原地淡入）
+    /// Entering: cards with a whole visual fly the thumbnail from the card's position; others grow out of the card (fade in place if not opened from the canvas)
     private func arrive() async {
         if !stayed, let spot, let cover = spot.cover, let face = await Self.thumbnail(cover, files: store.files) {
             guard !leaving else { return }
@@ -236,17 +236,17 @@ struct DetailView: View {
         }
     }
 
-    /// 切回画板时原样开着的：面板连同画面一起淡入，跟画布换内容同步
+    /// Left open when switching back to the board: the panel fades in together with the visual, in sync with the canvas change
     private func reappear() {
         guard !shown, !leaving else { return }
         grown = true
         withAnimation(.swap) { shown = true }
     }
 
-    /// 飞不了整张画面的卡（文字、网页），面板从卡片那边长出来
+    /// Cards that can't fly a whole visual (text, web pages): the panel grows out of the card
     private var grows: Bool { spot != nil && spot?.cover == nil }
 
-    /// 面板排好了（知道画面落在哪）就飞过去；图到位了，面板再在它周围淡入
+    /// Fly over once the panel is laid out (the visual's landing spot is known); once the image is in place, the panel fades in around it
     private func flyIn() {
         guard let stageFrame, ghost?.below == false, !flying, !shown, loaded != nil else { return }
         flying = true
@@ -255,7 +255,7 @@ struct DetailView: View {
             ghost?.rotation = 0
         } completion: {
             guard !leaving else { return }
-            // 面板完全出来、底下的画面是实的了，飞来的那张才隐去：两边都半透明的那一下会暗一闪
+            // Hide the flown-in image only when the panel is fully out and the visual underneath is solid: the moment both are semi-transparent flashes dark
             withAnimation(.fade) { shown = true } completion: {
                 guard !leaving else { return }
                 flying = false
@@ -264,20 +264,20 @@ struct DetailView: View {
         }
     }
 
-    /// 落地了、底下真的画面也到了：飞来的那张隐去。视频的画面由播放器自己出，落地就隐
+    /// Landed and the real visual underneath has arrived: the flown-in image hides. A video's picture comes from the player, so hide on landing
     private func settle() {
         guard !flying, !leaving, decoded || loaded?.kind == .video else { return }
         if ghost == nil, let picture, let stageFrame {
-            // 按方向键换来的：没飞过，也备一张透明的，关的时候好飞回去
+            // Switched to with arrow keys: never flew, but prepare a transparent one too so it can fly back on close
             ghost = Ghost(face: picture, frame: fitted(in: stageFrame), rotation: 0, opacity: 0)
         }
         withAnimation(.swap) { ghost?.opacity = 0 }
     }
 
-    /// 关：还在看第一张就从画面飞回卡片（半路上就从半路回）；翻到别的图、飞不了的卡缩回卡片那边淡出
+    /// Close: if still on the first image, fly from the visual back to the card (from midway if midway); if flipped to another image, or a card that can't fly, shrink back toward the card and fade out
     private func leave() {
         leaving = true
-        // 展开出来的：原路收回卡片，卡片的样子在面板淡出的地方显出来
+        // Expanded: retract to the card the way it came; the card's look shows where the panel fades out
         if let spot, let face = spot.face, ghost?.below == true {
             lift(true)
             ghost?.face = face
@@ -295,7 +295,7 @@ struct DetailView: View {
         }
         guard let spot, spot.cover != nil, page == 0, ghost?.below == false else {
             lift(false)
-            // 面板还没出来（缩略图还在解）：没有可收的，直接关
+            // The panel isn't out yet (thumbnail still decoding): nothing to retract, close directly
             guard shown else { closed(); return }
             withAnimation(.spring(Motion.place)) { grown = false }
             withAnimation(.fade) { shown = false } completion: { closed() }
@@ -321,19 +321,19 @@ struct DetailView: View {
         } completion: { closed() }
     }
 
-    /// 面板放大的支点：卡片中心在这块地方里的相对位置
+    /// Anchor for scaling the panel: the card center's relative position within this area
     private static func anchor(of spot: Spot?, in space: CGRect) -> UnitPoint {
         guard let spot, space.width > 0, space.height > 0 else { return .center }
         return UnitPoint(x: (spot.frame.midX - space.minX) / space.width, y: (spot.frame.midY - space.minY) / space.height)
     }
 
-    /// 图在画面那一块里实际占的位置：按比例放进去，居中
+    /// Where the image actually sits in the visual area: fitted proportionally, centered
     private func fitted(in stage: CGRect) -> CGRect {
         let width = min(stage.width, stage.height / aspect), height = width * aspect
         return CGRect(x: stage.midX - width / 2, y: stage.midY - height / 2, width: width, height: height)
     }
 
-    /// 飞的那张用硬盘上现成的缩略图（最大的一档），解得快，没有画布卡片上的角标
+    /// The flying image uses the ready thumbnail on disk (the largest size): fast to decode, without the badges of the canvas card
     private static func thumbnail(_ cover: String, files: FileStore) async -> CGImage? {
         for tier in FileStore.tiers.reversed() {
             if let image = await decode(files.thumbnailURL(of: cover, tier: tier), maxPixel: tier) { return image }
@@ -341,16 +341,16 @@ struct DetailView: View {
         return nil
     }
 
-    /// 面板离窗口边的距离
+    /// The panel's distance from the window edge
     private static let margin: CGFloat = 40
-    /// 画面那一块至少这么宽才和文字并排
+    /// The visual area must be at least this wide to sit beside the text
     static let narrowestStage: CGFloat = 280
 
-    /// 面板：room 是它最多能占的地方
+    /// Panel: room is the most space it can take
     @ViewBuilder
     private func panel(_ card: Card, in room: CGSize) -> some View {
         if Self.hasStage(card, pictures: gallery.count), room.width < Reading.narrowWidth + Self.narrowestStage {
-            // 窗口窄到画面和文字并排不下：画面在上，文字在下
+            // Window too narrow for visual and text side by side: visual on top, text below
             VStack(spacing: 0) {
                 stage(card)
                     .frame(height: min(room.width * aspect, room.height / 2))
@@ -361,7 +361,7 @@ struct DetailView: View {
             }
             .frame(maxWidth: room.width, maxHeight: room.height)
         } else if Self.hasStage(card, pictures: gallery.count) {
-            // PDF 和长图一样是上下滚着读的，没有「整张的比例」可贴：给固定的阅读宽度，占满高度
+            // PDFs, like long images, are read by scrolling vertically, with no "whole-page proportion" to fit: give a fixed reading width and fill the height
             let size = Self.stageSize(aspect: aspect, long: card.form == .long || Self.isPDF(card), in: room)
             HStack(spacing: 0) {
                 stage(card)
@@ -377,8 +377,8 @@ struct DetailView: View {
                 reader(card, compact: false)
             }
             .frame(maxWidth: Reading.pageWidth)
-            // 最高到 room 那么高，内容矮就跟着矮。不能写成 frame(maxHeight:)：它不管内容多高都把面板撑到满高，
-            // 看得见的页面只是中间一小块，从卡片展开时垫着的那张图却按满高放大，展开完一撤，页面像是突然缩了一截
+            // At most as tall as room, shorter when the content is short. Can't be written as frame(maxHeight:): that stretches the panel to full height regardless of content,
+            // the visible page is only a small block in the middle, while the image underneath during expansion scales to full height; once removed after expanding, the page seems to suddenly shrink
             .layout(AtMost(height: room.height))
         }
     }
@@ -389,10 +389,10 @@ struct DetailView: View {
                refetch: refetch, rewrite: rewrite)
     }
 
-    /// 原文件还在的 PDF：放大查看里整份能翻
+    /// PDF whose original file still exists: the whole document can be paged through in detail view
     static func isPDF(_ card: Card) -> Bool { card.kind == .document && card.format == "PDF" && card.original != nil }
 
-    /// 有没有画面可看：图片、视频总有；网页和文档要有配图、且不是按文章读的
+    /// Whether there's a visual to show: images and videos always; web pages and documents need images and not be read as articles
     static func hasStage(_ card: Card, pictures: Int) -> Bool {
         switch card.kind {
         case .image, .video: true
@@ -401,8 +401,8 @@ struct DetailView: View {
         }
     }
 
-    /// 画面那一块多大：尽量大，又刚好贴着画面的比例，四周不留大块空白。横图和视频的面板矮而宽，竖图的面板高。
-    /// 再矮也留出旁边那一栏放标题、描述、要点的高度；长图、PDF（long）给固定的宽度，上下滚着看
+    /// How big the visual area is: as large as possible while matching the visual's proportions, with no large blank margins. Landscape images and videos get short, wide panels, portrait ones tall panels.
+    /// However short, leave room for the side column with title, description and key points; long images and PDFs (long) get a fixed width and scroll vertically
     static func stageSize(aspect: CGFloat, long: Bool, in room: CGSize) -> CGSize {
         let widest = room.width - Reading.narrowWidth
         if long { return CGSize(width: min(widest, 560), height: room.height) }
@@ -410,13 +410,13 @@ struct DetailView: View {
         return CGSize(width: width, height: min(max(width * aspect, min(room.height, 460)), room.height))
     }
 
-    /// 对准讨论里点的那一段：滚过去闪一下；能跳时间的视频、音频从那一秒播
+    /// Focus the passage clicked in the discussion: scroll there and flash it; seekable video and audio play from that second
     private func aim() {
         guard let focus, focus.card == card else { return }
         aim(at: focus.text, seconds: focus.seconds)
     }
 
-    /// 要点点了也走这里：滚到原文那一段闪一下，能跳时间的从那一秒播
+    /// Clicking a key point also goes here: scroll to that passage in the original and flash it, seekable media play from that second
     private func aim(at text: String?, seconds: Int?) {
         guard let loaded else { return }
         highlight = text.map { LongText.Highlight(text: $0) }
@@ -424,12 +424,12 @@ struct DetailView: View {
         if let seconds, seekable, loaded.kind == .video || loaded.kind == .audio { play(at: seconds) }
     }
 
-    /// 从那一秒播：音频交给全应用那一个播放器（关了放大查看、切了画板接着响），视频在画面里播
+    /// Play from that second: audio goes to the app-wide player (keeps playing after closing detail view or switching boards), video plays in the visual
     private func play(at seconds: Int) {
         if let loaded, let track = AudioPlayer.Track(loaded, files: store.files) { audio.play(track, at: Double(seconds)) } else { playing = Seek(seconds: seconds) }
     }
 
-    /// 你写的文字卡、Markdown 文件排好了看，颜色跟着系统深浅色
+    /// Text cards you wrote and Markdown files are shown formatted, colors following the system light/dark mode
     static func markdown(_ type: Reading.Scale) -> Markdown.Style {
         Markdown.Style(body: type.body, lineSpacing: type.lineSpacing) { ink in
             switch ink {
@@ -441,16 +441,16 @@ struct DetailView: View {
         }
     }
 
-    /// 有正文的网页按文章读
+    /// Web pages with body text are read as articles
     static func isArticle(_ card: Card) -> Bool { card.kind == .web && !(card.body ?? "").isEmpty }
 
-    // MARK: 画面
+    // MARK: Visual
 
     @ViewBuilder
     private func stage(_ card: Card) -> some View {
         switch card.kind {
         case .video where card.original != nil:
-            // 点了转录里的时间点：带声音从那里播
+            // A timestamp in the transcript clicked: play from there with sound
             if let playing {
                 StreamVideo(url: store.files.url(of: card.original!), seek: playing, hushed: audio.isPlaying) { audio.pause() }
             } else {
@@ -459,22 +459,22 @@ struct DetailView: View {
         case .video where card.player != nil:
             onlineVideo(card.player!, page: card.sourceURL ?? card.url)
         case .document where Self.isPDF(card):
-            // 整份 PDF 盖在第一页的预览图上：文件打开之前、打不开时看到的还是预览图
+            // The whole PDF covers the first page's preview image: before the file opens, or if it can't, the preview image is still visible
             pictures(long: false).overlay { PDFPages(url: store.files.url(of: card.original!)) }
         default:
             pictures(long: card.form == .long)
         }
     }
 
-    /// 图片：能捏合放大凑近看；长图上下滚动看完；多图左右切换
+    /// Images: pinch to zoom in; scroll through long images vertically; switch between multiple images left and right
     private func pictures(long: Bool) -> some View {
         ZStack(alignment: .bottom) {
             if let picture {
                 if !long, page == 0, let moving {
-                    // 动图：原文件读进来了就由它接着动，换下静止的第一帧（留着的话透明底的动图会透出一个不动的影子）
+                    // Animated image: once the original file loads it takes over animating, replacing the static first frame (if kept, transparent animated images would show a still shadow through)
                     MovingImage(image: moving)
                 } else {
-                    // 翻到下一张从没放大的样子看起；关的时候也先回到没放大，飞回卡片的那张才对得上
+                    // Flipping to the next image starts unzoomed; closing also returns to unzoomed first so the image flying back to the card matches
                     ZoomableImage(image: picture, long: long, whole: leaving).id(page)
                 }
             }
@@ -492,8 +492,8 @@ struct DetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 网上的视频：先是封面，点了才加载播放器（打开放大查看不额外联网）。
-    /// 播放器网页嵌在一个以原页面为来源的空白页里：有的平台（YouTube）不知道被谁嵌入就不播。没有原页面时用播放器自己的来源
+    /// Online video: cover first, the player loads only when clicked (opening detail view doesn't go online).
+    /// The player page is embedded in a blank page whose origin is the original page: some platforms (YouTube) won't play if they don't know who embedded them. Without an original page, use the player's own origin
     @ViewBuilder
     private func onlineVideo(_ player: String, page: String?) -> some View {
         if let playing {
@@ -504,7 +504,7 @@ struct DetailView: View {
                                origin: [page, player].lazy.compactMap { $0.flatMap(URL.init(string:)).flatMap(Self.origin) }.first)
             }
         } else {
-            // 封面没下下来时是一块黑底，看得出是视频
+            // When the cover didn't download, a black block, so it still reads as a video
             pictures(long: false).background(gallery.isEmpty ? Color.black : .clear).overlay {
                 Button { playing = Seek(seconds: 0) } label: {
                     Image(systemName: "play.fill").font(.system(size: 26)).frame(width: 68, height: 68)
@@ -515,15 +515,15 @@ struct DetailView: View {
         }
     }
 
-    /// 网址的来源部分：https://www.bilibili.com
+    /// The origin part of a URL: https://www.bilibili.com
     static func origin(_ url: URL) -> URL? {
         guard let scheme = url.scheme, let host = url.host() else { return nil }
         return URL(string: "\(scheme)://\(host)")
     }
 
-    // MARK: 全文、转录
+    // MARK: Full text, transcript
 
-    /// 全文。你写的文字、Markdown 文件按 Markdown 排；文章的正文由阅读页自己带着配图排，这里不排
+    /// Full text. Your own text and Markdown files are laid out as Markdown; an article's body is laid out by the reading page with its images, not here
     static func bodyText(_ card: Card, type: Reading.Scale) -> NSAttributedString? {
         if card.kind == .text || Markdown.applies(to: card) {
             guard let text = card.text ?? card.body, !text.isEmpty else { return nil }
@@ -534,12 +534,12 @@ struct DetailView: View {
         return timed(body, card: card, type: type, paragraphSpacing: type == Reading.wide ? type.paragraphSpacing : 0)
     }
 
-    /// 转录一段一行，段与段之间空开一点
+    /// One transcript segment per line, with a little space between segments
     static func transcriptText(_ card: Card, type: Reading.Scale) -> NSAttributedString? {
         card.transcript.map { timed($0, card: card, type: type, paragraphSpacing: 8) }
     }
 
-    /// 视频、音频行首的时间点数字等宽、颜色淡一级（文章里的「19:00 晚宴」不算）；能跳时间的（本机文件、认得的播放器），时间点变成链接 seek:秒数
+    /// Timestamp digits at the start of video and audio lines are monospaced and one shade lighter (a "19:00 dinner" in an article doesn't count); for seekable ones (local files, recognized players), timestamps become seek:seconds links
     static func timed(_ string: String, card: Card, type: Reading.Scale, paragraphSpacing: CGFloat) -> NSAttributedString {
         let font = NSFont.systemFont(ofSize: type.body)
         let text = NSMutableAttributedString(attributedString: LongText.attributed(string, font: font, lineSpacing: type.lineSpacing, paragraphSpacing: paragraphSpacing))
@@ -553,12 +553,12 @@ struct DetailView: View {
         return text
     }
 
-    /// 动图的原文件在后台读进来；各帧由系统的图片视图边播边解，一百多帧的大图也只占一两帧的内存
+    /// The animated image's original file is loaded in the background; the system image view decodes frames while playing, so even a big image with a hundred-plus frames only takes memory for a frame or two
     @concurrent static func moving(_ url: URL) async -> NSImage? {
         (try? Data(contentsOf: url)).flatMap(NSImage.init(data:))
     }
 
-    /// 在后台解码，最长边不超过 maxPixel
+    /// Decode in the background, longest side no more than maxPixel
     @concurrent static func decode(_ url: URL, maxPixel: Int) async -> CGImage? {
         guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true,
@@ -566,7 +566,7 @@ struct DetailView: View {
         return CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary)
     }
 
-    /// 颜色统计里的几块主色（十六进制）
+    /// The main colors from the color statistics (hex)
     static func swatches(_ json: String?) -> [String]? {
         guard let data = json?.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
@@ -574,7 +574,7 @@ struct DetailView: View {
     }
 }
 
-/// 给里面的东西最多这么高的地方，它实际用多高自己就多高
+/// Give the content at most this much height; it takes however much it actually uses
 private struct AtMost: SwiftUI.Layout {
     let height: CGFloat
 
@@ -591,17 +591,17 @@ private extension View {
     func layout(_ layout: some SwiftUI.Layout) -> some View { layout { self } }
 }
 
-/// 长正文交给系统文本视图排版：SwiftUI 的 Text 排一篇几千字的公众号文章要卡一秒左右，打开放大查看时会排好几遍
+/// Long body text is laid out by the system text view: SwiftUI's Text takes about a second to lay out a several-thousand-character WeChat article, and opening detail view lays it out several times
 struct LongText: NSViewRepresentable {
     let content: NSAttributedString
-    /// 要滚到、闪一下的一段字：含它的那一块文本自己滚过去
+    /// The passage to scroll to and flash: the text block containing it scrolls itself
     var highlight: Highlight?
-    /// 点了正文里的链接：返回 true 表示处理过了，否则照常用浏览器打开
+    /// A link in the body text clicked: return true if handled, otherwise open in the browser as usual
     var onLink: ((URL) -> Bool)?
 
     struct Highlight: Equatable {
         var text: String
-        /// 同一段再点一次也再闪一次
+        /// Clicking the same passage again flashes it again
         let id = UUID()
     }
 
@@ -631,7 +631,7 @@ struct LongText: NSViewRepresentable {
         view.textContainer?.lineFragmentPadding = 0
         view.textContainer?.widthTracksTextView = true
         view.delegate = context.coordinator
-        // 链接只换颜色，不加下划线；自己定了颜色的链接（讨论里的引用数字）照它自己的
+        // Links only change color, no underline; links with their own color (citation numbers in the discussion) keep theirs
         view.linkTextAttributes = [.cursor: NSCursor.pointingHand]
         return view
     }
@@ -641,19 +641,19 @@ struct LongText: NSViewRepresentable {
         if view.textStorage?.isEqual(to: content) == false { view.textStorage?.setAttributedString(content) }
         if let highlight, context.coordinator.flashed != highlight.id {
             context.coordinator.flashed = highlight.id
-            // 等这一轮排版落定再找位置
+            // Find the position after this layout pass settles
             DispatchQueue.main.async { Self.flash(highlight.text, in: view) }
         }
     }
 
-    /// 滚到这段字，铺一层临时的底色，一会儿褪掉。不在这块文本里就什么也不做
+    /// Scroll to this passage, lay a temporary highlight under it, fade it after a moment. Do nothing if it's not in this text block
     static func flash(_ text: String, in view: NSTextView) {
         let range = (view.string as NSString).range(of: text)
         guard range.location != NSNotFound, let layout = view.layoutManager, let container = view.textContainer else { return }
         layout.ensureLayout(for: container)
         var rect = layout.boundingRect(forGlyphRange: layout.glyphRange(forCharacterRange: range, actualCharacterRange: nil), in: container)
         rect.origin.y += view.textContainerOrigin.y
-        // 留出上下文：那一段落在可见区的上三分之一
+        // Leave context: the passage lands in the top third of the visible area
         view.scrollToVisible(rect.insetBy(dx: 0, dy: -min(160, view.visibleRect.height / 3)))
         layout.addTemporaryAttribute(.backgroundColor, value: NSColor.findHighlightColor.withAlphaComponent(Palette.flash), forCharacterRange: range)
         DispatchQueue.main.asyncAfter(deadline: .now() + Motion.flash) { layout.removeTemporaryAttribute(.backgroundColor, forCharacterRange: range) }
@@ -664,8 +664,8 @@ struct LongText: NSViewRepresentable {
         container.size = NSSize(width: width, height: .greatestFiniteMagnitude)
         layout.ensureLayout(for: container)
         let height = ceil(layout.usedRect(for: container).height)
-        // SwiftUI 会拿好几种宽度来量：量完把文本框还给视图现在的宽度，不然字按最后量的那个宽度排，
-        // 视图宽度没变时不会再改回来（字排窄了、或溢出到右边，下面的东西压上来）
+        // SwiftUI measures at several widths: after measuring, give the text container back the view's current width, otherwise text lays out at the last measured width,
+        // and won't change back if the view width doesn't change (text too narrow, or overflowing to the right, with content below overlapping)
         if view.bounds.width > 0 { container.size = NSSize(width: view.bounds.width, height: .greatestFiniteMagnitude) }
         return CGSize(width: width, height: height)
     }
@@ -683,14 +683,14 @@ struct LongText: NSViewRepresentable {
     }
 }
 
-/// 能凑近看的图：双指捏合放大，放大后双指拖着看，双击在整张和原大之间切换。用系统的滚动视图，手感和预览、照片里一样。
-/// 没放大时，一般的图按比例整张放进这块地方、居中，和飞进来的那张重合；长图（long）按宽度铺满，上下滚着看
+/// An image you can look at closely: pinch to zoom, two-finger drag when zoomed, double-click to toggle between fit and actual size. Uses the system scroll view, so it feels like Preview and Photos.
+/// Unzoomed, a normal image fits proportionally in this area, centered, matching the flown-in image; long images (long) fill the width and scroll vertically
 private struct ZoomableImage: NSViewRepresentable {
     let image: CGImage
     var long = false
-    /// 回到没放大的样子
+    /// Back to unzoomed
     var whole = false
-    /// 原图不比没放大时清楚的，双击放到多大；最多能放到双击那一档的几倍
+    /// How far double-click zooms for images whose original isn't sharper than unzoomed; at most this many times the double-click level
     private static let fallback: CGFloat = 2, headroom: CGFloat = 3
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -702,7 +702,7 @@ private struct ZoomableImage: NSViewRepresentable {
         scroll.autohidesScrollers = true
         scroll.scrollerStyle = .overlay
         scroll.documentView = Picture()
-        // 这块地方变大变小，没放大的那张图跟着重新摆
+        // When this area grows or shrinks, the unzoomed image is laid out again
         scroll.postsFrameChangedNotifications = true
         NotificationCenter.default.addObserver(context.coordinator, selector: #selector(Coordinator.resized(_:)), name: NSView.frameDidChangeNotification, object: scroll)
         let twice = NSClickGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.toggle(_:)))
@@ -725,7 +725,7 @@ private struct ZoomableImage: NSViewRepresentable {
         var image: CGImage?
         var long = false
 
-        /// 没放大时那张图占多大：一般的图占满这块地方（图在里面按比例居中），长图和这块地方一样宽、按比例那么高
+        /// How big the image is unzoomed: a normal image fills this area (fitted and centered inside), a long image is as wide as this area and proportionally tall
         func fit(_ scroll: NSScrollView) {
             guard let picture = scroll.documentView, let image, scroll.magnification == 1 else { return }
             let room = scroll.contentSize
@@ -734,7 +734,7 @@ private struct ZoomableImage: NSViewRepresentable {
             scroll.maxMagnification = closeUp(in: scroll) * ZoomableImage.headroom
         }
 
-        /// 双击放到多大：凑近看是为了看清真实的像素，所以放到图上一个像素对屏幕一个像素；没放大时就已经这么清楚的小图，放到固定的倍数
+        /// How far double-click zooms: looking closely is about seeing real pixels, so zoom to one image pixel per screen pixel; small images already this sharp unzoomed get a fixed factor
         private func closeUp(in scroll: NSScrollView) -> CGFloat {
             guard let image, let shown = scroll.documentView?.frame.size, shown.width > 0, shown.height > 0 else { return ZoomableImage.fallback }
             let drawn = min(shown.width / CGFloat(image.width), shown.height / CGFloat(image.height)) * (scroll.window?.backingScaleFactor ?? 2)
@@ -745,7 +745,7 @@ private struct ZoomableImage: NSViewRepresentable {
             if let scroll = note.object as? NSScrollView { fit(scroll) }
         }
 
-        /// 双击：以点的地方为中心放到原大；已经放大了就回去
+        /// Double-click: zoom to actual size centered on the clicked point; if already zoomed, go back
         @objc func toggle(_ click: NSClickGestureRecognizer) {
             guard let scroll = click.view as? NSScrollView, let picture = scroll.documentView else { return }
             let point = click.location(in: picture), target = scroll.magnification > 1 ? 1 : closeUp(in: scroll)
@@ -756,7 +756,7 @@ private struct ZoomableImage: NSViewRepresentable {
         }
     }
 
-    /// 画着那张图的一块：图按比例放进去、居中。从上往下排，长图打开停在开头
+    /// The block that draws the image: fitted proportionally, centered. Laid out top-down, so long images open at the top
     private final class Picture: NSView {
         var image: CGImage? {
             didSet { if image !== oldValue { needsDisplay = true } }
@@ -772,7 +772,7 @@ private struct ZoomableImage: NSViewRepresentable {
     }
 }
 
-/// 整份 PDF：上下滚着一页页看，能放大、能选字。文件在后台打开，打开了才淡出来
+/// Whole PDF: scroll through page by page, zoomable, text selectable. The file opens in the background and fades in once open
 private struct PDFPages: NSViewRepresentable {
     let url: URL
 
@@ -781,15 +781,15 @@ private struct PDFPages: NSViewRepresentable {
         view.displayMode = .singlePageContinuous
         view.autoScales = true
         view.backgroundColor = NSColor(Palette.stage.color)
-        // 打开之前藏着（不只是透明）：透明的视图照样接手势，底下那张预览图就放不大了
+        // Hidden (not just transparent) before opening: a transparent view still takes gestures, and the preview image underneath couldn't zoom
         view.isHidden = true
         view.alphaValue = 0
         Task {
-            // 打不开、带密码、一页都没有的：不盖上去，留着底下的预览图
+            // Can't open, password protected, or no pages: don't cover, keep the preview image underneath
             guard let document = await Self.open(url).document, !document.isLocked, document.pageCount > 0 else { return }
             view.isHidden = false
             view.document = document
-            // 按栏宽定好缩放之后再回到第一页顶上：不然停的地方是缩放前算的，标题会被切掉半行
+            // Go back to the top of page one after setting the scale from the column width: otherwise the position was computed before scaling and the title gets cut by half a line
             view.layoutDocumentView()
             if let first = document.page(at: 0) {
                 view.go(to: PDFDestination(page: first, at: CGPoint(x: 0, y: first.bounds(for: view.displayBox).maxY)))
@@ -804,7 +804,7 @@ private struct PDFPages: NSViewRepresentable {
 
     func updateNSView(_ view: PDFView, context: Context) {}
 
-    /// 右键菜单只留「拷贝」：系统自带的那些（单页、双页、连续滚动……）会把它切成和面板对不上的样子，下次打开又变回来
+    /// The context menu keeps only "Copy": the system's built-in items (single page, two pages, continuous scroll…) would switch it to a layout that doesn't fit the panel, reverting on next open
     private final class Pages: PDFView {
         override func menu(for event: NSEvent) -> NSMenu? {
             guard let menu = super.menu(for: event) else { return nil }
@@ -813,13 +813,13 @@ private struct PDFPages: NSViewRepresentable {
         }
     }
 
-    /// 打开的文档只交回主线程用一次
+    /// The opened document is handed back to the main thread for one use only
     private struct Opened: @unchecked Sendable { let document: PDFDocument? }
 
     @concurrent private static func open(_ url: URL) async -> Opened { Opened(document: PDFDocument(url: url)) }
 }
 
-/// 一直在动的动图：按比例放进给它的地方，居中
+/// A continuously animating image: fitted proportionally in the space given, centered
 private struct MovingImage: NSViewRepresentable {
     let image: NSImage
 
@@ -827,7 +827,7 @@ private struct MovingImage: NSViewRepresentable {
         let view = NSImageView()
         view.imageScaling = .scaleProportionallyUpOrDown
         view.animates = true
-        // 大小听外面的，不按图的原始尺寸把面板撑开
+        // Size is decided from outside; don't stretch the panel to the image's original size
         for axis in [NSLayoutConstraint.Orientation.horizontal, .vertical] {
             view.setContentCompressionResistancePriority(.defaultLow, for: axis)
             view.setContentHuggingPriority(.defaultLow, for: axis)
@@ -840,7 +840,7 @@ private struct MovingImage: NSViewRepresentable {
     }
 }
 
-/// 静音循环播放
+/// Muted looping playback
 private struct LoopingVideo: NSViewRepresentable {
     let url: URL
 
@@ -863,19 +863,19 @@ private struct LoopingVideo: NSViewRepresentable {
     final class Coordinator { var looper: AVPlayerLooper? }
 }
 
-/// 点了播放或者某个时间点。每点一次都是新的一次，同一个时间点再点也跳回去
+/// Play or a timestamp clicked. Each click is a new one, so clicking the same timestamp again jumps back
 struct Seek: Equatable {
     let seconds: Int
     let id = UUID()
 }
 
-/// 带声音、带控制条，从点的那一秒开始播：网上的视频流，点了时间点的本机视频
+/// With sound and controls, playing from the clicked second: online video streams, local video with a timestamp clicked
 struct StreamVideo: NSViewRepresentable {
     let url: URL
     let seek: Seek
-    /// 别处（音频）出声了：这边暂停，停在看到的地方
+    /// Something else (audio) is making sound: pause here, staying on the visible frame
     let hushed: Bool
-    /// 这边出声了（刚开播，或者你在控制条上点了继续）：让别处停
+    /// This one is making sound (just started, or you clicked resume on the controls): make the other stop
     let sounded: () -> Void
 
     func makeNSView(context: Context) -> AVPlayerView {
@@ -890,7 +890,7 @@ struct StreamVideo: NSViewRepresentable {
         return view
     }
 
-    /// 点了别的时间点：跳过去接着播
+    /// Another timestamp clicked: jump there and keep playing
     func updateNSView(_ view: AVPlayerView, context: Context) {
         let coordinator = context.coordinator
         coordinator.sounded = sounded
@@ -918,7 +918,7 @@ struct StreamVideo: NSViewRepresentable {
     }
 }
 
-/// 平台的嵌入播放器：铺满的 iframe，放在以 origin 为来源的空白页里
+/// A platform's embedded player: a full-size iframe in a blank page whose origin is origin
 private struct EmbeddedPlayer: NSViewRepresentable {
     let player: String
     let seek: Seek
@@ -926,7 +926,7 @@ private struct EmbeddedPlayer: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        // 点了播放按钮才加载，自动播放就是你点的那一下
+        // Loaded only after the play button is clicked, so autoplay is that click of yours
         config.mediaTypesRequiringUserActionForPlayback = []
         config.preferences.isElementFullscreenEnabled = true
         let view = WKWebView(frame: .zero, configuration: config)
@@ -937,7 +937,7 @@ private struct EmbeddedPlayer: NSViewRepresentable {
         return view
     }
 
-    /// 点了时间点：带着开始时间重新加载
+    /// Timestamp clicked: reload with the start time
     func updateNSView(_ view: WKWebView, context: Context) {
         guard context.coordinator.seek != seek, let url = Player.url(player, start: seek.seconds) else { return }
         context.coordinator.seek = seek
@@ -950,7 +950,7 @@ private struct EmbeddedPlayer: NSViewRepresentable {
         view.loadHTMLString(html, baseURL: origin)
     }
 
-    /// 关掉放大查看时停下声音
+    /// Stop the sound when the detail view closes
     static func dismantleNSView(_ view: WKWebView, coordinator: Coordinator) {
         coordinator.ownLoad = true
         view.loadHTMLString("", baseURL: nil)
@@ -958,10 +958,10 @@ private struct EmbeddedPlayer: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    /// 播放器里点的链接（视频标题、「在 YouTube 上观看」）要换掉整页或开新窗口：交给浏览器，左边一直是播放器
+    /// Links clicked in the player (video title, "Watch on YouTube") would replace the whole page or open a new window: hand them to the browser, keep the player on the left
     @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var seek: Seek?
-        /// 下一次整页加载是自己装的空白页
+        /// The next full-page load is the blank page we set up ourselves
         var ownLoad = false
 
         func webView(_ view: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
