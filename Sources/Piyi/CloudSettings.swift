@@ -176,7 +176,7 @@ extension Writing.Part {
         case .summary: String(localized: "要点")
         case .discussion: String(localized: "讨论")
         case .answer: String(localized: "搜索提问")
-        case .draw: String(localized: "随机抽卡")
+        case .draw: String(localized: "styles.draw", defaultValue: "随机抽卡")
         case .inspiration: String(localized: "灵感")
         }
     }

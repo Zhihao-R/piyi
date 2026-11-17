@@ -437,7 +437,7 @@
 "写作要求" = "Writing Instructions";
 "此处仅调整写作风格与侧重。输出格式、出处标注和语言由片羽统一处理，不受此处设置影响。" = "These adjust only style and focus. Output format, source citations, and language are handled by Piyi and are not affected.";
 "搜索提问" = "Search Questions";
-"随机抽卡" = "Random Card";
+"styles.draw" = "Random Card";
 "仅对此后整理的卡片生效；标签最多保留 10 个。" = "Applies only to cards processed from now on. Up to 10 tags are kept.";
 "仅对此后整理的卡片生效；要点最多保留 5 条。" = "Applies only to cards processed from now on. Up to 5 key points are kept.";
 "每组灵感均需核对其内容能否在卡片中得到印证；要求越宽泛，生成越慢、数量越少。" = "Each idea is verified against the cards; the looser the instructions, the slower and fewer the ideas.";
