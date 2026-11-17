@@ -1,6 +1,6 @@
 # Piyi
 
-[中文](README.md)
+[中文](README.zh-CN.md)
 
 Piyi (片羽, “a fragment of a feather”) is a visual library for macOS. Web pages, images, videos, audio, and documents become cards that you arrange freely on boundless boards; to find something, describe it in a sentence and the matching cards are gathered in front of you. All data stays on your Mac. Requires macOS 26; for now it must be built from source.
 
@@ -67,6 +67,12 @@ Piyi opens on a Sample board whose cards already include descriptions and key po
 2. Download the local model (about 600 MB): search depends on it and works offline once it is downloaded.
 3. Install the browser extension: load the extension bundled with the app from the browser's extensions page, as the guide shows. Piyi also uses it to open pages that require a login or load through scripts, in the background.
 4. Collect from the iPhone: add the “Collect To Piyi” shortcut. The iPhone and Mac must be signed in to the same Apple Account, with iCloud Drive turned on on the Mac.
+
+## Language
+
+The interface is available in English and Simplified Chinese and follows the system language; it can be changed under Settings › Language. Titles, descriptions, tags, key points, and Inspire are written in the interface language, while Discuss and search questions are answered in the language of the question.
+
+The style of AI-generated text can be adjusted under Settings › Cloud Model › Advanced, separately for titles and tags, key points, Discuss, search questions, random cards, and Inspire. Output format, source citations, and language remain fixed.
 
 ## Data and privacy
 
