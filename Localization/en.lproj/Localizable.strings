@@ -392,7 +392,7 @@
 "与上方模型相同" = "Same as the model above";
 "讨论时深入思考" = "Think deeply in discussions";
 "云端模型" = "Cloud Model";
-"深入思考时回答更细致，也更慢。" = " Deep thinking gives more thorough but slower answers.";
+
 "%@。" = " %@.";
 "用于搜索，离线可用。" = "Powers search and works offline.";
 "在网页上右键「收进片羽」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”. In other apps, copy and press ⌃⌥C, or right-click Services › “Collect to Piyi”.";
@@ -416,21 +416,28 @@
 "像聊天一样自然、简洁，一般两三段以内；内容本来就是并列的几项时才用列表。\n用户讲自己的经历和想法，直接接着聊，不用去卡片里找证据，也不用为卡片里没有而道歉。" = "Natural and brief, like a chat, usually two or three paragraphs at most; use a list only when the content is a set of parallel items.\nWhen the user talks about their own experiences and ideas, just carry on; no need to look for evidence in the cards or apologize when the cards don't cover it.";
 "指向具体的卡片和细节，不超过 200 字。" = "Point to specific cards and details, in under 100 words.";
 "从这张卡的具体细节出发，回应用户这句话，不写空话。三到五句，不超过 150 字。" = "Start from this card's specific details and respond to what the user said, with no filler. Three to five sentences, under 75 words.";
-"判断模型用于理解搜索语句、排序结果，宜选较快的模型。" = "The judgment model interprets searches and ranks results, so a faster model works best.";
-"给 AI 的要求" = "Instructions for AI";
-"这里只管写法和侧重。输出格式、出处标注和用哪种语言由片羽决定，不受这里影响。" = "These cover style and focus only. Output format, source citations, and language are handled by Piyi and aren't affected.";
+
 "恢复默认" = "Restore Default";
 "已修改" = "Edited";
 "标题、描述和标签" = "Titles, Captions, and Tags";
-"搜索框里提问" = "Questions in Search";
+
 "抽一张" = "Draw a Card";
-"只影响之后整理的卡片，最多保留 5 条。" = "Applies to cards processed from now on. At most 5 points are kept.";
-"每组灵感都要核对说的在卡里看得到，要求越发散，出得越慢、越少。" = "Each idea is checked against what the cards actually show, so the looser the instructions, the slower and fewer the ideas.";
-"界面、卡片上 AI 写的内容和灵感用这种语言；讨论和提问跟着你说的话走。重新打开片羽后生效。" = "Used for the interface, AI-written card content, and ideas; discussions and questions follow the language you write in. Takes effect after reopening Piyi.";
+
 "详细设置" = "Advanced";
-"用于生成标题、描述、标签和要点，以及搜索和讨论。密钥仅保存在本机。" = "Used for titles, captions, tags, key points, search, and discussions. Keys are stored only on this Mac.";
+
 "语言" = "Language";
 "跟随系统" = "System";
 "一两句，说完就停，不加建议和感想。\n不讲道理；不用比喻，不用破折号。\n不超过 100 字。" = "One or two sentences, then stop; no advice or reflections.\nDon't moralize; no metaphors, no dashes.\nUnder 50 words.";
-"只影响之后整理的卡片，标签最多保留 10 个。" = "Applies to cards processed from now on. At most 10 tags are kept.";
-"OpenRouter 上未找到该模型，可在详细设置里更换" = "Model not found on OpenRouter; change it in Advanced";
+
+"界面、AI 生成的卡片内容和灵感使用此语言；讨论与提问使用你输入时所用的语言。重新打开片羽后生效。" = "Used for the interface, AI-generated card content, and ideas. Discussions and questions use the language you write in. Takes effect after reopening Piyi.";
+"用于生成标题、描述、标签和要点，并支持搜索与讨论。密钥仅保存在本机。" = "Used to generate titles, captions, tags, and key points, and for search and discussions. Keys are stored only on this Mac.";
+"OpenRouter 上未找到该模型，可在「详细设置」中更换" = "Model not found on OpenRouter. You can change it in Advanced.";
+"判断模型用于解析搜索语句和排序结果，建议选用响应较快的模型。" = "The judgment model parses searches and ranks results; a faster model is recommended.";
+"开启深入思考后，回答更为细致，耗时也更长。" = " With deep thinking on, answers are more thorough but take longer.";
+"写作要求" = "Writing Instructions";
+"此处仅调整写作风格与侧重。输出格式、出处标注和语言由片羽统一处理，不受此处设置影响。" = "These adjust only style and focus. Output format, source citations, and language are handled by Piyi and are not affected.";
+"搜索提问" = "Search Questions";
+"随机抽卡" = "Random Card";
+"仅对此后整理的卡片生效；标签最多保留 10 个。" = "Applies only to cards processed from now on. Up to 10 tags are kept.";
+"仅对此后整理的卡片生效；要点最多保留 5 条。" = "Applies only to cards processed from now on. Up to 5 key points are kept.";
+"每组灵感均需核对其内容能否在卡片中得到印证；要求越宽泛，生成越慢、数量越少。" = "Each idea is verified against the cards; the looser the instructions, the slower and fewer the ideas.";

@@ -13,12 +13,12 @@ struct SettingsView: View {
             Section {
                 LanguagePicker()
             } footer: {
-                Text("界面、卡片上 AI 写的内容和灵感用这种语言；讨论和提问跟着你说的话走。重新打开片羽后生效。").foregroundStyle(.secondary)
+                Text("界面、AI 生成的卡片内容和灵感使用此语言；讨论与提问使用你输入时所用的语言。重新打开片羽后生效。").foregroundStyle(.secondary)
             }
             Section {
                 CloudAccess(model: model)
                 if model.cloudModelUnknown {
-                    Text("OpenRouter 上未找到该模型，可在详细设置里更换").font(.caption).foregroundStyle(.secondary)
+                    Text("OpenRouter 上未找到该模型，可在「详细设置」中更换").font(.caption).foregroundStyle(.secondary)
                 } else if let failure = model.cloudFailure {
                     Text("上次请求未成功。\(failure)").font(.caption).foregroundStyle(.secondary)
                 }
@@ -34,7 +34,7 @@ struct SettingsView: View {
             } header: {
                 Text("云端模型")
             } footer: {
-                Text(String(localized: "用于生成标题、描述、标签和要点，以及搜索和讨论。密钥仅保存在本机。")
+                Text(String(localized: "用于生成标题、描述、标签和要点，并支持搜索与讨论。密钥仅保存在本机。")
                      + (model.sortingUnavailable.map { String(localized: "\($0)。") } ?? ""))
                     .foregroundStyle(.secondary)
             }

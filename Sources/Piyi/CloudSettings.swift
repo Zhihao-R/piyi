@@ -114,16 +114,16 @@ struct CloudDetails: View {
                 } header: {
                     Text("模型")
                 } footer: {
-                    Text(String(localized: "判断模型用于理解搜索语句、排序结果，宜选较快的模型。")
-                         + (vendor.canSetThinking ? String(localized: "深入思考时回答更细致，也更慢。") : ""))
+                    Text(String(localized: "判断模型用于解析搜索语句和排序结果，建议选用响应较快的模型。")
+                         + (vendor.canSetThinking ? String(localized: "开启深入思考后，回答更为细致，耗时也更长。") : ""))
                         .foregroundStyle(.secondary)
                 }
                 Section {
                     ForEach(Writing.Part.allCases, id: \.self) { StyleRow(part: $0) }
                 } header: {
-                    Text("给 AI 的要求")
+                    Text("写作要求")
                 } footer: {
-                    Text("这里只管写法和侧重。输出格式、出处标注和用哪种语言由片羽决定，不受这里影响。").foregroundStyle(.secondary)
+                    Text("此处仅调整写作风格与侧重。输出格式、出处标注和语言由片羽统一处理，不受此处设置影响。").foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped)
@@ -175,8 +175,8 @@ extension Writing.Part {
         case .card: String(localized: "标题、描述和标签")
         case .summary: String(localized: "要点")
         case .discussion: String(localized: "讨论")
-        case .answer: String(localized: "搜索框里提问")
-        case .draw: String(localized: "抽一张")
+        case .answer: String(localized: "搜索提问")
+        case .draw: String(localized: "随机抽卡")
         case .inspiration: String(localized: "灵感")
         }
     }
@@ -184,9 +184,9 @@ extension Writing.Part {
     /// 改之前要知道的事
     var note: String? {
         switch self {
-        case .card: String(localized: "只影响之后整理的卡片，标签最多保留 10 个。")
-        case .summary: String(localized: "只影响之后整理的卡片，最多保留 5 条。")
-        case .inspiration: String(localized: "每组灵感都要核对说的在卡里看得到，要求越发散，出得越慢、越少。")
+        case .card: String(localized: "仅对此后整理的卡片生效；标签最多保留 10 个。")
+        case .summary: String(localized: "仅对此后整理的卡片生效；要点最多保留 5 条。")
+        case .inspiration: String(localized: "每组灵感均需核对其内容能否在卡片中得到印证；要求越宽泛，生成越慢、数量越少。")
         default: nil
         }
     }
