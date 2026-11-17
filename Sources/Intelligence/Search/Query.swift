@@ -138,6 +138,7 @@ public enum QueryRules {
     /// 没有模型时认意图。抽一张、要灵感只认整句就是指令的（「抽一张」「给我点灵感」）：句子里还有别的词，
     /// 多半是要找的东西（「灵感板参考」），当找卡片。提问只认说得很明白的，它不删词，依据的卡照样聚拢
     static func intent(of text: String) -> Intent {
+        let text = text.lowercased()
         for (intent, commands, _) in hints where commands.contains(where: text.contains) {
             if tokenize(removingHints(of: intent, from: text)).isEmpty { return intent }
         }
@@ -148,16 +149,19 @@ public enum QueryRules {
     /// 去掉这种意图的指令词，剩下的是主题；找卡片、提问没有指令词，原样返回
     static func removingHints(of intent: Intent, from text: String) -> String {
         guard let hint = hints.first(where: { $0.intent == intent }) else { return text }
-        return (hint.commands + hint.companions).reduce(text) { $0.replacingOccurrences(of: $1, with: " ") }
+        return (hint.commands + hint.companions).reduce(text) { $0.replacingOccurrences(of: $1, with: " ", options: .caseInsensitive) }
     }
 
     /// 指令的说法。commands 单独成句就是指令；companions 是常跟着指令出现的词（「抽一张塔罗牌」），
     /// 单独出现时是要找的东西。长的排在前面，先被去掉
     private static let hints: [(intent: Intent, commands: [String], companions: [String])] = [
-        (.draw, ["帮我抽一张", "抽一张", "抽张", "抽一下", "抽卡", "随便来一张", "随机一张"], ["塔罗牌", "塔罗"]),
-        (.inspire, ["给我点灵感", "给点灵感", "来点灵感", "找点灵感"], ["灵感", "inspire", "inspiration"]),
+        (.draw, ["帮我抽一张", "抽一张", "抽张", "抽一下", "抽卡", "随便来一张", "随机一张", "draw a card", "pick a card", "random card"],
+         ["塔罗牌", "塔罗", "tarot"]),
+        (.inspire, ["给我点灵感", "给点灵感", "来点灵感", "找点灵感", "give me some inspiration", "give me inspiration", "inspire me"],
+         ["灵感", "inspire", "inspiration"]),
     ]
-    private static let questions = ["都在讲什么", "讲了什么", "说了什么", "是什么意思", "为什么", "有什么区别", "总结一下"]
+    private static let questions = ["都在讲什么", "讲了什么", "说了什么", "是什么意思", "为什么", "有什么区别", "总结一下",
+                                    "what is", "what are", "what's", "why", "difference between", "summarize", "sum up"]
 
     static let timePhrases: [(String, Int)] = [
         ("今天", 1), ("昨天", 2), ("这几天", 5), ("前几天", 7), ("本周", 7), ("这周", 7), ("这个星期", 7),

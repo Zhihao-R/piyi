@@ -149,7 +149,7 @@ public final class Cloud: Generation, Keyed {
                 throw Unavailable.notReady
             }
             let json = (try? JSONSerialization.jsonObject(with: try await errorData(response))) as? [String: Any] ?? [:]
-            lastError = Failure(message: "\(name)：\((json["error"] as? [String: Any])?["message"] as? String ?? "HTTP \(status)")")
+            lastError = Failure(message: String(localized: "\(displayed(name))：\((json["error"] as? [String: Any])?["message"] as? String ?? "HTTP \(status)")"))
             guard status == 429 || status >= 500 else {
                 failure.withLock { $0 = lastError.localizedDescription }
                 throw lastError

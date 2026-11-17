@@ -11,6 +11,11 @@ import Foundation
         #expect(QueryRules.parse("我收过的配色文章都在讲什么").intent == .ask)
         #expect(QueryRules.parse("这两种做法有什么区别？").intent == .ask)
         #expect(QueryRules.parse("古代文本").intent == .find)
+        // 英文界面的说法
+        #expect(QueryRules.parse("Draw a card").intent == .draw)
+        #expect(QueryRules.parse("Inspire me").intent == .inspire)
+        #expect(QueryRules.parse("What is wabi-sabi").intent == .ask)
+        #expect(QueryRules.parse("ancient texts").intent == .find)
     }
 
     @Test func conditionsMergeWithButtons() {
