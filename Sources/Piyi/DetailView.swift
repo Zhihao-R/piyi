@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import PDFKit
 import WebKit
 import Library
 import Canvas
@@ -360,7 +361,8 @@ struct DetailView: View {
             }
             .frame(maxWidth: room.width, maxHeight: room.height)
         } else if Self.hasStage(card, pictures: gallery.count) {
-            let size = Self.stageSize(aspect: aspect, long: card.form == .long, in: room)
+            // PDF 和长图一样是上下滚着读的，没有「整张的比例」可贴：给固定的阅读宽度，占满高度
+            let size = Self.stageSize(aspect: aspect, long: card.form == .long || Self.isPDF(card), in: room)
             HStack(spacing: 0) {
                 stage(card)
                     .frame(width: size.width, height: size.height)
@@ -387,6 +389,9 @@ struct DetailView: View {
                refetch: refetch, rewrite: rewrite)
     }
 
+    /// 原文件还在的 PDF：放大查看里整份能翻
+    static func isPDF(_ card: Card) -> Bool { card.kind == .document && card.format == "PDF" && card.original != nil }
+
     /// 有没有画面可看：图片、视频总有；网页和文档要有配图、且不是按文章读的
     static func hasStage(_ card: Card, pictures: Int) -> Bool {
         switch card.kind {
@@ -397,7 +402,7 @@ struct DetailView: View {
     }
 
     /// 画面那一块多大：尽量大，又刚好贴着画面的比例，四周不留大块空白。横图和视频的面板矮而宽，竖图的面板高。
-    /// 再矮也留出旁边那一栏放标题、描述、要点的高度；长图给固定的宽度，上下滚着看
+    /// 再矮也留出旁边那一栏放标题、描述、要点的高度；长图、PDF（long）给固定的宽度，上下滚着看
     static func stageSize(aspect: CGFloat, long: Bool, in room: CGSize) -> CGSize {
         let widest = room.width - Reading.narrowWidth
         if long { return CGSize(width: min(widest, 560), height: room.height) }
@@ -453,24 +458,24 @@ struct DetailView: View {
             }
         case .video where card.player != nil:
             onlineVideo(card.player!, page: card.sourceURL ?? card.url)
+        case .document where Self.isPDF(card):
+            // 整份 PDF 盖在第一页的预览图上：文件打开之前、打不开时看到的还是预览图
+            pictures(long: false).overlay { PDFPages(url: store.files.url(of: card.original!)) }
         default:
             pictures(long: card.form == .long)
         }
     }
 
-    /// 图片：长图上下滚动看完；多图左右切换
+    /// 图片：能捏合放大凑近看；长图上下滚动看完；多图左右切换
     private func pictures(long: Bool) -> some View {
         ZStack(alignment: .bottom) {
             if let picture {
-                let image = Image(decorative: picture, scale: 2)
-                if long {
-                    ScrollView { image.resizable().scaledToFit() }
+                if !long, page == 0, let moving {
+                    // 动图：原文件读进来了就由它接着动，换下静止的第一帧（留着的话透明底的动图会透出一个不动的影子）
+                    MovingImage(image: moving)
                 } else {
-                    // 动图：原文件读进来了就由它接着动。静止的第一帧留着占位置，但藏起来：透明底的动图不然会透出一个不动的影子
-                    let moves = page == 0 ? moving : nil
-                    image.resizable().scaledToFit()
-                        .opacity(moves == nil ? 1 : 0)
-                        .overlay { if let moves { MovingImage(image: moves) } }
+                    // 翻到下一张从没放大的样子看起；关的时候也先回到没放大，飞回卡片的那张才对得上
+                    ZoomableImage(image: picture, long: long, whole: leaving).id(page)
                 }
             }
             if gallery.count > 1 {
@@ -678,7 +683,143 @@ struct LongText: NSViewRepresentable {
     }
 }
 
-/// 一直在动的动图：按比例放进给它的地方，和垫在下面的第一帧重合
+/// 能凑近看的图：双指捏合放大，放大后双指拖着看，双击在整张和原大之间切换。用系统的滚动视图，手感和预览、照片里一样。
+/// 没放大时，一般的图按比例整张放进这块地方、居中，和飞进来的那张重合；长图（long）按宽度铺满，上下滚着看
+private struct ZoomableImage: NSViewRepresentable {
+    let image: CGImage
+    var long = false
+    /// 回到没放大的样子
+    var whole = false
+    /// 原图不比没放大时清楚的，双击放到多大；最多能放到双击那一档的几倍
+    private static let fallback: CGFloat = 2, headroom: CGFloat = 3
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let scroll = NSScrollView()
+        scroll.drawsBackground = false
+        scroll.allowsMagnification = true
+        scroll.minMagnification = 1
+        scroll.hasVerticalScroller = long
+        scroll.autohidesScrollers = true
+        scroll.scrollerStyle = .overlay
+        scroll.documentView = Picture()
+        // 这块地方变大变小，没放大的那张图跟着重新摆
+        scroll.postsFrameChangedNotifications = true
+        NotificationCenter.default.addObserver(context.coordinator, selector: #selector(Coordinator.resized(_:)), name: NSView.frameDidChangeNotification, object: scroll)
+        let twice = NSClickGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.toggle(_:)))
+        twice.numberOfClicksRequired = 2
+        scroll.addGestureRecognizer(twice)
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        let coordinator = context.coordinator
+        (coordinator.image, coordinator.long) = (image, long)
+        (scroll.documentView as? Picture)?.image = image
+        if whole, scroll.magnification != 1 { scroll.magnification = 1 }
+        coordinator.fit(scroll)
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    @MainActor final class Coordinator: NSObject {
+        var image: CGImage?
+        var long = false
+
+        /// 没放大时那张图占多大：一般的图占满这块地方（图在里面按比例居中），长图和这块地方一样宽、按比例那么高
+        func fit(_ scroll: NSScrollView) {
+            guard let picture = scroll.documentView, let image, scroll.magnification == 1 else { return }
+            let room = scroll.contentSize
+            let size = long ? CGSize(width: room.width, height: (room.width * CGFloat(image.height) / CGFloat(image.width)).rounded()) : room
+            if picture.frame.size != size { picture.frame = CGRect(origin: .zero, size: size) }
+            scroll.maxMagnification = closeUp(in: scroll) * ZoomableImage.headroom
+        }
+
+        /// 双击放到多大：凑近看是为了看清真实的像素，所以放到图上一个像素对屏幕一个像素；没放大时就已经这么清楚的小图，放到固定的倍数
+        private func closeUp(in scroll: NSScrollView) -> CGFloat {
+            guard let image, let shown = scroll.documentView?.frame.size, shown.width > 0, shown.height > 0 else { return ZoomableImage.fallback }
+            let drawn = min(shown.width / CGFloat(image.width), shown.height / CGFloat(image.height)) * (scroll.window?.backingScaleFactor ?? 2)
+            return drawn < 1 / 1.2 ? 1 / drawn : ZoomableImage.fallback
+        }
+
+        @objc func resized(_ note: Notification) {
+            if let scroll = note.object as? NSScrollView { fit(scroll) }
+        }
+
+        /// 双击：以点的地方为中心放到原大；已经放大了就回去
+        @objc func toggle(_ click: NSClickGestureRecognizer) {
+            guard let scroll = click.view as? NSScrollView, let picture = scroll.documentView else { return }
+            let point = click.location(in: picture), target = scroll.magnification > 1 ? 1 : closeUp(in: scroll)
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = Motion.fade
+                scroll.animator().setMagnification(target, centeredAt: point)
+            }
+        }
+    }
+
+    /// 画着那张图的一块：图按比例放进去、居中。从上往下排，长图打开停在开头
+    private final class Picture: NSView {
+        var image: CGImage? {
+            didSet { if image !== oldValue { needsDisplay = true } }
+        }
+
+        override var isFlipped: Bool { true }
+        override var wantsUpdateLayer: Bool { true }
+
+        override func updateLayer() {
+            layer?.contentsGravity = .resizeAspect
+            layer?.contents = image
+        }
+    }
+}
+
+/// 整份 PDF：上下滚着一页页看，能放大、能选字。文件在后台打开，打开了才淡出来
+private struct PDFPages: NSViewRepresentable {
+    let url: URL
+
+    func makeNSView(context: Context) -> PDFView {
+        let view = Pages(), url = url
+        view.displayMode = .singlePageContinuous
+        view.autoScales = true
+        view.backgroundColor = NSColor(Palette.stage.color)
+        // 打开之前藏着（不只是透明）：透明的视图照样接手势，底下那张预览图就放不大了
+        view.isHidden = true
+        view.alphaValue = 0
+        Task {
+            // 打不开、带密码、一页都没有的：不盖上去，留着底下的预览图
+            guard let document = await Self.open(url).document, !document.isLocked, document.pageCount > 0 else { return }
+            view.isHidden = false
+            view.document = document
+            // 按栏宽定好缩放之后再回到第一页顶上：不然停的地方是缩放前算的，标题会被切掉半行
+            view.layoutDocumentView()
+            if let first = document.page(at: 0) {
+                view.go(to: PDFDestination(page: first, at: CGPoint(x: 0, y: first.bounds(for: view.displayBox).maxY)))
+            }
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = Motion.swap
+            view.animator().alphaValue = 1
+            NSAnimationContext.endGrouping()
+        }
+        return view
+    }
+
+    func updateNSView(_ view: PDFView, context: Context) {}
+
+    /// 右键菜单只留「拷贝」：系统自带的那些（单页、双页、连续滚动……）会把它切成和面板对不上的样子，下次打开又变回来
+    private final class Pages: PDFView {
+        override func menu(for event: NSEvent) -> NSMenu? {
+            guard let menu = super.menu(for: event) else { return nil }
+            for item in menu.items where item.action != #selector(NSText.copy(_:)) { menu.removeItem(item) }
+            return menu.items.isEmpty ? nil : menu
+        }
+    }
+
+    /// 打开的文档只交回主线程用一次
+    private struct Opened: @unchecked Sendable { let document: PDFDocument? }
+
+    @concurrent private static func open(_ url: URL) async -> Opened { Opened(document: PDFDocument(url: url)) }
+}
+
+/// 一直在动的动图：按比例放进给它的地方，居中
 private struct MovingImage: NSViewRepresentable {
     let image: NSImage
 
