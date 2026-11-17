@@ -169,7 +169,9 @@ public enum CardType {
     public static let playMark = 0.16
     /// 要点和要点之间的空隙
     public static let pointSpacing = 0.016
-    /// 多短算短文：短文做引文卡，长文显示标题和开头几段
+    /// 后面还有正文时，要点最多占掉这块地方的几成：剩下的留给正文露几行
+    public static let pointsShare = 0.6
+    /// 多短算短文：短文做引文卡，长文显示标题、要点和开头几段
     public static let shortTextLimit = 140
     /// 你写的文字卡正文字号：比文章正文大，画布上缩远了也读得出
     public static let note = 0.062

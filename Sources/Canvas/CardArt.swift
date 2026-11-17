@@ -128,7 +128,7 @@ struct CardArt {
         return style
     }
 
-    /// 长文、没有图的网页和文档：标题 + 开头几段，底部渐隐 + 一行出处
+    /// 长文、没有图的网页和文档：标题 + 要点 + 开头几段，底部渐隐 + 一行出处
     private func article(_ card: CardFace, footer: String?, _ pen: inout Pen) {
         pen.fill(Palette.card.now)
         let p = t * CardType.padding
@@ -139,6 +139,7 @@ struct CardArt {
         }
         let bodyBottom = size.height - p - t * CardType.footer * 1.8
         let body = card.excerpt == card.title ? "" : card.excerpt
+        y += points(card, at: y, bottom: bodyBottom, sharing: !body.isEmpty, &pen)
         let column = CGRect(x: p, y: y, width: w - p * 2, height: max(0, bodyBottom - y))
         if Markdown.applies(to: card) {
             var style = Markdown.Style(body: t * CardType.body, lineSpacing: t * CardType.bodyLineSpacing) { ink in
@@ -170,16 +171,33 @@ struct CardArt {
 
         let bottom = size.height - p - t * CardType.footer * 1.8
         var y = coverHeight + p * 0.9
-        let column = { (y: CGFloat) in CGRect(x: p, y: y, width: w - p * 2, height: max(0, bottom - y)) }
-        if let summary = card.summary {
-            y += pen.text(summary, size: t * CardType.body, color: Palette.ink.now, lineSpacing: t * CardType.bodyLineSpacing,
-                          paragraphSpacing: t * CardType.pointSpacing, hanging: "· ", in: column(y)) + t * CardType.gap
-        }
+        y += points(card, at: y, bottom: bottom, sharing: card.excerpt != card.title, &pen)
         if card.excerpt != card.title {
-            pen.text(card.excerpt, size: t * CardType.body, color: Palette.inkSecondary.now, lineSpacing: t * CardType.bodyLineSpacing, in: column(y))
+            pen.text(card.excerpt, size: t * CardType.body, color: Palette.inkSecondary.now, lineSpacing: t * CardType.bodyLineSpacing,
+                     in: CGRect(x: p, y: y, width: w - p * 2, height: max(0, bottom - y)))
         }
         pen.fade(Palette.card.now, from: bottom - t * 0.18, to: bottom)
         pen.text(footer ?? "", size: t * CardType.footer, color: Palette.inkTertiary.now, in: footerRect)
+    }
+
+    /// 要点排在正文前面：在画布上是扫一眼，要点比开头那几句更说得清这篇讲什么。一条一段，折行和圆点后的字对齐。
+    /// 后面还有正文（sharing）时要点不占满：卡片的大小是收进来时定的，那时还没有要点，放不下的整条不画，留出地方让正文露几行。
+    /// 返回占了多高（连同和正文之间的空隙）；没有要点是 0
+    private func points(_ card: CardFace, at y: CGFloat, bottom: CGFloat, sharing: Bool, _ pen: inout Pen) -> CGFloat {
+        guard let summary = card.summary else { return 0 }
+        let p = t * CardType.padding, width = w - p * 2, room = max(0, bottom - y)
+        let font = NSFont.systemFont(ofSize: pen.fontSize(t * CardType.body))
+        let lineSpacing = t * CardType.bodyLineSpacing, spacing = t * CardType.pointSpacing
+        var shown: [Substring] = [], used: CGFloat = 0
+        for point in summary.split(separator: "\n") {
+            let height = pen.height(String(point), font: font, lineSpacing: lineSpacing, hanging: "· ", maxLines: .max, width: width) + spacing
+            // 第一条总是画
+            if sharing, !shown.isEmpty, used + height > room * CardType.pointsShare { break }
+            shown.append(point)
+            used += height
+        }
+        return pen.text(shown.joined(separator: "\n"), font: font, color: Palette.ink.now, lineSpacing: lineSpacing, paragraphSpacing: spacing, hanging: "· ",
+                        in: CGRect(x: p, y: y, width: width, height: room)) + t * CardType.gap
     }
 
     /// 有封面、没有正文的网页：封面 + 下面一栏标题和网站
@@ -287,9 +305,10 @@ struct Pen {
     }
 
     /// 只量不画：排进这么宽、最多 maxLines 行要多高
-    func height(_ string: String, font: NSFont, maxLines: Int, width: CGFloat) -> CGFloat {
+    func height(_ string: String, font: NSFont, lineSpacing: CGFloat = 0, hanging: String? = nil, maxLines: Int, width: CGFloat) -> CGFloat {
         guard !string.isEmpty else { return 0 }
-        return Self.height(CTFramesetterCreateWithAttributedString(Self.attributed(string, font: font, color: Palette.ink.now)), maxLines: maxLines, width: width)
+        let text = Self.attributed(string, font: font, color: Palette.ink.now, lineSpacing: lineSpacing, hanging: hanging)
+        return Self.height(CTFramesetterCreateWithAttributedString(text), maxLines: maxLines, width: width)
     }
 
     /// 按实际排出的前 maxLines 行量高度：中文字体的行高比系统字体的标称值高，按标称值估会少排一行
