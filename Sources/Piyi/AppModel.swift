@@ -101,6 +101,12 @@ final class AppModel {
     private(set) var counts = Counts()
     /// Local model download progress 0–1; nil means not downloading
     private(set) var modelDownload: Double?
+    /// When the current download got its first progress and from where (a resumed download doesn't start at 0), for estimating the time left
+    private(set) var modelDownloadStart: (date: Date, progress: Double)?
+    /// The last download stopped partway; the floating bar offers a retry
+    private(set) var modelDownloadFailed = false
+    /// Just finished downloading: the floating bar says search is ready for a moment, then goes away
+    private(set) var modelJustReady = false
     /// Cloud providers that need a key; the settings page shows a key field for each
     private(set) var cloud: [any Keyed] = []
     /// Key status per provider and whether the local model is present: updated when a key is entered, the model finishes downloading, or understanding progresses (which may reveal a rejected key)
@@ -141,6 +147,8 @@ final class AppModel {
             self.embedder = embedder
             cloud = [cloudAPI]
             refreshModelStates()
+            // A download cut off last time (dropped connection, app quit) carries on in the background
+            if !localModelReady, LocalModel.hasPartial(in: store.root) { downloadLocalModel() }
             understander = Understander(store: store, gateway: gateway) { [weak self] in
                 Task { @MainActor in self?.understandingProgressed() }
             }
@@ -622,15 +630,32 @@ final class AppModel {
         Task.detached(priority: .utility) { try? embedder.load() }
     }
 
+    /// Downloads in the background: no alert on failure, since you may be busy elsewhere; the floating bar shows it with a retry
     func downloadLocalModel() {
-        guard let store, modelDownload == nil else { return }
+        guard let store, modelDownload == nil, !localModelReady else { return }
         modelDownload = 0
-        perform { [self] in
+        modelDownloadStart = nil
+        modelDownloadFailed = false
+        Task { [self] in
             defer { modelDownload = nil }
-            try await LocalModel.download(to: store.root) { p in Task { @MainActor [weak self] in if self?.modelDownload != nil { self?.modelDownload = p } } }
+            do {
+                try await LocalModel.download(to: store.root) { p in
+                    Task { @MainActor [weak self] in
+                        guard let self, modelDownload != nil else { return }
+                        modelDownload = p
+                        if modelDownloadStart == nil { modelDownloadStart = (.now, p) }
+                    }
+                }
+            } catch {
+                modelDownloadFailed = true
+                return
+            }
             refreshModelStates()
             loadLocalModel()
             understander?.kick()
+            modelJustReady = true
+            try? await Task.sleep(for: .seconds(Motion.notice))
+            modelJustReady = false
         }
     }
 

@@ -22,17 +22,30 @@ public enum LocalModel {
         public var errorDescription: String? { message }
     }
 
+    /// The part downloaded so far, kept next to the model file: the next download continues from it, whether the connection dropped or the app quit
+    static func partial(in root: URL) -> URL {
+        file(in: root).appendingPathExtension("part")
+    }
+
+    /// A download stopped partway last time
+    public static func hasPartial(in root: URL) -> Bool {
+        FileManager.default.fileExists(atPath: partial(in: root).path)
+    }
+
     /// Download and verify; only moved into its final place on success. progress is 0–1
     public static func download(to root: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
-        let target = file(in: root)
+        let target = file(in: root), part = partial(in: root)
         try FileManager.default.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         var lastError: Error = Failure(message: String(localized: "下载失败"))
         for source in sources {
             do {
-                let temporary = try await fetch(URL(string: source)!, progress: progress)
-                defer { try? FileManager.default.removeItem(at: temporary) }
-                guard try checksum(temporary) == sha256 else { throw Failure(message: String(localized: "下载的文件不完整，请重试")) }
-                _ = try FileManager.default.replaceItemAt(target, withItemAt: temporary)
+                // Both sources serve the same file, so the next source carries on from what the previous one got
+                try await fetch(URL(string: source)!, to: part, progress: progress)
+                guard try checksum(part) == sha256 else {
+                    try? FileManager.default.removeItem(at: part)
+                    throw Failure(message: String(localized: "下载的文件不完整，请重试"))
+                }
+                _ = try FileManager.default.replaceItemAt(target, withItemAt: part)
                 return
             } catch is CancellationError {
                 throw CancellationError()
@@ -43,32 +56,79 @@ public enum LocalModel {
         throw lastError
     }
 
-    /// Download to a temporary file, reporting progress along the way
-    private static func fetch(_ url: URL, progress: @escaping @Sendable (Double) -> Void) async throws -> URL {
-        let box = TaskBox()
-        return try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                let task = URLSession.shared.downloadTask(with: url) { file, response, error in
-                    if let error { return continuation.resume(throwing: error) }
-                    guard let file, (response as? HTTPURLResponse)?.statusCode ?? 0 < 400 else {
-                        return continuation.resume(throwing: Failure(message: String(localized: "下载源返回错误")))
-                    }
-                    // The system deletes this file after the callback ends, so move it first
-                    let kept = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".gguf")
-                    do { try FileManager.default.moveItem(at: file, to: kept); continuation.resume(returning: kept) } catch { continuation.resume(throwing: error) }
+    /// Append to the partial file, asking the server only for the bytes still missing
+    private static func fetch(_ url: URL, to part: URL, progress: @escaping @Sendable (Double) -> Void) async throws {
+        if !FileManager.default.fileExists(atPath: part.path) { FileManager.default.createFile(atPath: part.path, contents: nil) }
+        let have = (try FileManager.default.attributesOfItem(atPath: part.path)[.size] as? Int64) ?? 0
+        guard have < size else { return }
+        var request = URLRequest(url: url)
+        if have > 0 { request.setValue("bytes=\(have)-", forHTTPHeaderField: "Range") }
+        let writer = try PartWriter(file: part, have: have, progress: progress)
+        let session = URLSession(configuration: .default, delegate: writer, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        do {
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    writer.done = continuation
+                    session.dataTask(with: request).resume()
                 }
-                box.observation = task.progress.observe(\.fractionCompleted) { p, _ in progress(p.fractionCompleted) }
-                box.task = task
-                task.resume()
+            } onCancel: {
+                session.invalidateAndCancel()
             }
-        } onCancel: {
-            box.task?.cancel()
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         }
     }
 
-    private final class TaskBox: @unchecked Sendable {
-        var task: URLSessionDownloadTask?
-        var observation: NSKeyValueObservation?
+    /// Writes each piece to the end of the partial file as it arrives. If the server ignores the range and sends the whole file, start the file over
+    private final class PartWriter: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+        let handle: FileHandle
+        var written: Int64
+        var reported = -1
+        let progress: @Sendable (Double) -> Void
+        var done: CheckedContinuation<Void, Error>?
+        var failure: Error?
+
+        init(file: URL, have: Int64, progress: @escaping @Sendable (Double) -> Void) throws {
+            handle = try FileHandle(forWritingTo: file)
+            written = have
+            self.progress = progress
+        }
+
+        func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse) async -> URLSession.ResponseDisposition {
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            switch status {
+            case 206:
+                break
+            case 200..<300:
+                written = 0
+                try? handle.truncate(atOffset: 0)
+            default:
+                failure = Failure(message: String(localized: "下载源返回错误"))
+                return .cancel
+            }
+            try? handle.seek(toOffset: UInt64(written))
+            return .allow
+        }
+
+        func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+            do {
+                try handle.write(contentsOf: data)
+                written += Int64(data.count)
+                // Pieces arrive every few dozen KB; report only when the progress moves by a thousandth
+                let step = Int(Double(written) / Double(LocalModel.size) * 1000)
+                if step != reported { reported = step; progress(Double(step) / 1000) }
+            } catch {
+                failure = error
+                dataTask.cancel()
+            }
+        }
+
+        func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+            try? handle.close()
+            if let error = failure ?? error { done?.resume(throwing: error) } else { done?.resume() }
+            done = nil
+        }
     }
 
     private static func checksum(_ file: URL) throws -> String {

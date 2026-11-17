@@ -65,22 +65,22 @@ struct ExtensionGuide: View {
                         .font(.headline)
                         .symbolRenderingMode(.multicolor)
                         .symbolEffect(.bounce, value: names)
-                    Text("在浏览器里点工具栏上的片羽图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把片羽固定上去。")
+                    Text("若工具栏上没有片羽图标，请点击拼图图标将其固定。")
                         .font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
             } else {
                 VStack(alignment: .leading, spacing: 18) {
-                    GuideStep(number: 1, text: String(localized: "在浏览器里打开扩展页，打开「开发者模式」（Edge 里叫「开发人员模式」）")) {
+                    GuideStep(number: 1, text: String(localized: "打开浏览器的扩展页，开启「开发者模式」")) {
                         OpenPageButton(browserExtension: browserExtension)
                     }
-                    GuideStep(number: 2, text: String(localized: "把下面这个文件夹拖进扩展页。浏览器有多个个人资料的，拖进常用的那个")) {
+                    GuideStep(number: 2, text: String(localized: "将下方文件夹拖入扩展页")) {
                         FolderTile(browserExtension: browserExtension)
                     }
                     HStack(spacing: 8) {
                         StatusDot(on: browserExtension.status.isConnected)
-                        Text("装好后这里会自动变成已连上").font(.callout).foregroundStyle(.secondary)
+                        Text("安装完成后将自动连接").font(.callout).foregroundStyle(.secondary)
                     }
                 }
                 .transition(.opacity)
@@ -139,10 +139,7 @@ private struct FolderTile: View {
             Image(nsImage: NSWorkspace.shared.icon(forFile: browserExtension.folder.path))
                 .resizable()
                 .frame(width: 36, height: 36)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("片羽扩展").font(.callout.weight(.medium))
-                Text("也可以在扩展页点「加载已解压的扩展程序」选它").font(.caption).foregroundStyle(.secondary)
-            }
+            Text("片羽扩展").font(.callout.weight(.medium))
             Spacer(minLength: 12)
             Button("在访达中显示") { browserExtension.revealFolder() }.buttonStyle(.link).font(.caption)
         }

@@ -37,21 +37,31 @@ struct Shell: View {
                     detailLayer
                 }
                 .overlay(alignment: .top) {
-                    if let notice = model.notice {
-                        HStack(spacing: 12) {
-                            Text(notice.text)
-                            if notice.undo != nil {
-                                Button("撤销") { model.undoNotice() }.buttonStyle(.borderless)
-                            }
+                    // Download progress and notices stack, so they don't cover each other when both show
+                    VStack(spacing: 0) {
+                        if model.modelDownload != nil || model.modelDownloadFailed || model.modelJustReady {
+                            ModelDownloadBar(model: model)
+                                .transition(.opacity.combined(with: .offset(y: -6)))
                         }
-                        .noticeStyle()
-                        .transition(.opacity.combined(with: .offset(y: -6)))
+                        if let notice = model.notice {
+                            HStack(spacing: 12) {
+                                Text(notice.text)
+                                if notice.undo != nil {
+                                    Button("撤销") { model.undoNotice() }.buttonStyle(.borderless)
+                                }
+                            }
+                            .noticeStyle()
+                            .transition(.opacity.combined(with: .offset(y: -6)))
+                        }
                     }
                 }
                 // When switching boards, the detail view changes along with the canvas's content
                 .animation(model.swapping ? .swapSpan : .fade, value: model.detail)
                 .animation(.fade, value: model.closing)
                 .animation(.fade, value: model.notice)
+                .animation(.fade, value: model.modelDownload == nil)
+                .animation(.fade, value: model.modelDownloadFailed)
+                .animation(.fade, value: model.modelJustReady)
                 .animation(.fade, value: model.emptyHint)
                 StatusBar(model: model)
             }
@@ -387,5 +397,31 @@ extension View {
     /// the on-screen one (prominent) is a roomier capsule with one size larger text
     func noticeStyle(prominent: Bool = false) -> some View {
         padding(.horizontal, prominent ? 22 : 16).padding(.vertical, prominent ? 14 : 10).glassEffect().padding(16)
+    }
+}
+
+/// Floating at the top of the window while the local model downloads in the background; says search is ready when done, offers a retry if it stopped
+struct ModelDownloadBar: View {
+    let model: AppModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            if let progress = model.modelDownload {
+                ProgressView(value: progress).progressViewStyle(.circular).controlSize(.small)
+                Text("下载本机模型")
+                Text("\(Int(progress * 100))%").foregroundStyle(.secondary).monospacedDigit()
+            } else if model.modelDownloadFailed {
+                Text("下载中断")
+                Button("重试") { model.downloadLocalModel() }.buttonStyle(.link)
+            } else {
+                Label("可以搜索了", systemImage: "checkmark.circle.fill")
+            }
+        }
+        // Same glass capsule as the search bar and selection bar at the bottom
+        .font(.system(size: 13))
+        .padding(.horizontal, 16)
+        .frame(height: Chrome.searchHeight)
+        .glassEffect(.regular, in: .capsule)
+        .padding([.horizontal, .top], Chrome.inset)
     }
 }

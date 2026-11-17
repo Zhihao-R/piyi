@@ -131,16 +131,30 @@ struct LocalModelRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(LocalModel.name)
-                Text(model.localModelReady ? "已下载" : "约 \(LocalModel.size / 1_000_000) MB")
-                    .font(.caption).foregroundStyle(.secondary)
+                Group {
+                    if let progress = model.modelDownload { Text(downloaded(progress)) }
+                    else if model.localModelReady { Text("已下载") }
+                    else if model.modelDownloadFailed { Text("下载中断") }
+                    else { Text("约 \(LocalModel.size / 1_000_000) MB") }
+                }
+                .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
             Spacer()
             if let progress = model.modelDownload {
                 ProgressView(value: progress).frame(width: 120)
             } else if !model.localModelReady {
-                Button("下载") { model.downloadLocalModel() }
+                Button(model.modelDownloadFailed ? "重试" : "下载") { model.downloadLocalModel() }
             }
         }
+    }
+
+    /// "41 / 639 MB · About 3 min": time left is estimated from the average speed of this download so far
+    private func downloaded(_ progress: Double) -> String {
+        let total = LocalModel.size / 1_000_000
+        let size = String(localized: "\(Int64(Double(total) * progress)) / \(total) MB")
+        guard let start = model.modelDownloadStart, progress - start.progress > 0.02 else { return size }
+        let left = Int(Date.now.timeIntervalSince(start.date) * (1 - progress) / (progress - start.progress))
+        return size + " · " + (left >= 60 ? String(localized: "约 \((left + 59) / 60) 分钟") : String(localized: "约 \(max(left, 1)) 秒"))
     }
 }
 

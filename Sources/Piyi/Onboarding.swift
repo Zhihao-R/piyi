@@ -10,7 +10,7 @@ enum OnboardingStep: String, CaseIterable {
         switch self {
         case .keys: String(localized: "接入云端模型")
         case .model: String(localized: "下载本机模型")
-        case .browser: String(localized: "装上浏览器扩展")
+        case .browser: String(localized: "安装浏览器扩展")
         case .phone: String(localized: "从手机收集")
         }
     }
@@ -19,7 +19,7 @@ enum OnboardingStep: String, CaseIterable {
         switch self {
         case .keys: String(localized: "用于生成标题、描述、标签和总结。可稍后填写，已收集的卡片会自动补全。")
         case .model: String(localized: "用于搜索，离线可用。仅需下载一次。")
-        case .browser: String(localized: "在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，片羽也交给它在后台打开。")
+        case .browser: String(localized: "安装后，在 Chrome、Edge 或 Arc 中点击工具栏上的片羽图标，即可收集当前网页。")
         case .phone: String(localized: "在 iPhone 上分享到「Collect To Piyi」，内容经 iCloud 云盘存入资料库。")
         }
     }
@@ -71,7 +71,15 @@ struct Onboarding: View {
             case .keys:
                 VStack(alignment: .leading, spacing: 12) { CloudAccess(model: model, labeled: false) }
                     .labelsHidden()
-            case .model: LocalModelRow(model: model)
+            case .model:
+                // Starts on arrival: it takes a couple of minutes, and you can keep going while it downloads
+                VStack(alignment: .leading, spacing: 14) {
+                    LocalModelRow(model: model)
+                    if model.modelDownload != nil {
+                        Text("后台下载中，可继续操作").font(.callout).foregroundStyle(.tint)
+                    }
+                }
+                .onAppear { model.downloadLocalModel() }
             case .browser: ExtensionGuide(model: model)
             case .phone: PhoneGuide(inbox: model.phoneInbox)
             }
@@ -84,11 +92,8 @@ struct Onboarding: View {
                 Button("上一步") { go(-1) }.buttonStyle(.plain).foregroundStyle(.secondary)
             }
             Spacer()
+            // No "Not Now": Continue on a step left unfilled simply skips it, so every step, including the download, gets seen
             let last = index == steps.count - 1
-            if !last {
-                Button("以后再说") { model.finishOnboarding() }.buttonStyle(.plain).foregroundStyle(.secondary)
-                    .padding(.trailing, 8)
-            }
             Button(last ? "完成" : "继续") { if last { model.finishOnboarding() } else { go(1) } }
             .buttonStyle(.glassProminent)
             .controlSize(.large)

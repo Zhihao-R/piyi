@@ -5,6 +5,8 @@
 "%@，没再放" = "%@, so they weren’t added again";
 "%lld" = "%lld";
 "%lld / %lld" = "%lld / %lld";
+"%lld%%" = "%lld%%";
+"%lld / %lld MB" = "%lld / %lld MB";
 "B 站" = "Bilibili";
 "OpenRouter 没有返回内容" = "OpenRouter returned nothing";
 "OpenRouter 请求失败" = "OpenRouter request failed";
@@ -21,6 +23,7 @@
 "上一步" = "Back";
 "上次接收：%@" = "Last received: %@";
 "下载" = "Download";
+"下载中断" = "Download stopped";
 "下载失败" = "Download failed";
 "下载本机模型" = "Download the local model";
 "下载源返回错误" = "The download server returned an error";
@@ -28,7 +31,6 @@
 "不能放进来" = "Can’t add this here";
 "不限" = "Any";
 "之前聊过" = "Earlier";
-"也可以在扩展页点「加载已解压的扩展程序」选它" = "Or click “Load unpacked” on the extensions page and select it";
 "也放进" = "Also Add To";
 "也放进了「%@」" = "Also added to “%@”";
 "也放进画板" = "Also Add to Board";
@@ -37,7 +39,6 @@
 "从手机收集" = "Collect from your phone";
 "从资料库删除" = "Delete from Library";
 "从这里播" = "Play from Here";
-"以后再说" = "Not Now";
 "你写的" = "Your Notes";
 "保存" = "Save";
 "停止" = "Stop";
@@ -71,17 +72,21 @@
 "取消引用 · %@" = "Uncited · %@";
 "取消裁剪" = "Cancel Crop";
 "取消选择（Esc）" = "Deselect (Esc)";
+"可以搜索了" = "Search is ready";
+"后台下载中，可继续操作" = "Downloading in the background. You can keep going";
 "后退" = "Back";
 "向量在本机算：离线也能搜。" = "Search runs on this Mac, so it works offline.";
 "哔哩哔哩" = "Bilibili";
 "回到全景" = "Zoom to Fit";
 "回答" = "Answer";
 "图片" = "Images";
-"在 Chrome、Edge、Arc 里一键收下正在看的网页；要登录、靠脚本加载的网页，片羽也交给它在后台打开。" = "Collect the page you’re viewing in Chrome, Edge, or Arc with one click. Piyi also uses it to open pages that need sign-in or scripts in the background.";
+"安装后，在 Chrome、Edge 或 Arc 中点击工具栏上的片羽图标，即可收集当前网页。" = "Once installed, click the Piyi icon in the Chrome, Edge, or Arc toolbar to collect the page you’re viewing.";
 "在 iPhone 上分享到「Collect To Piyi」，内容经 iCloud 云盘存入资料库。" = "Share to “Collect To Piyi” on your iPhone; items arrive in your library through iCloud Drive.";
 "iPhone 和这台 Mac 须登录同一个 Apple 账户，并开启 iCloud 云盘，否则收不到" = "Your iPhone and this Mac must be signed in to the same Apple Account with iCloud Drive turned on, or nothing will arrive";
-"在浏览器里打开扩展页，打开「开发者模式」（Edge 里叫「开发人员模式」）" = "Open your browser’s extensions page and turn on “Developer mode”";
-"在浏览器里点工具栏上的片羽图标，就把正在看的网页收进来。图标没出现的话，点工具栏上的拼图图标，把片羽固定上去。" = "Click the Piyi icon in your browser’s toolbar to collect the page you’re viewing. If you don’t see it, click the puzzle-piece icon and pin Piyi.";
+"打开浏览器的扩展页，开启「开发者模式」" = "Open your browser’s extensions page and turn on “Developer mode”";
+"约 %lld 分钟" = "About %lld min";
+"约 %lld 秒" = "About %lld sec";
+"若工具栏上没有片羽图标，请点击拼图图标将其固定。" = "If the Piyi icon isn’t in the toolbar, click the puzzle-piece icon and pin it.";
 "在画板上写一张文字卡（也可以双击空白处）" = "Write a note on the board (or double-click empty space)";
 "在相册中分享一张照片，选择「Collect To Piyi」" = "Share a photo from Photos and choose “Collect To Piyi”";
 "在网页上右键「收进片羽」：点在图上收这张图，选中了文字收这段话，其余收整页。要登录、靠脚本加载的网页，也交给它在你的浏览器里后台打开。\n别的 App 里：复制后按 ⌃⌥C，或者选中文字、文件后右键「服务」→「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”: on an image it collects the image, on selected text it collects the text, anywhere else the whole page. Pages that need sign-in or scripts are opened in your browser in the background.\nIn other apps: copy and press ⌃⌥C, or select text or files and right-click Services → “Collect to Piyi”.";
@@ -142,7 +147,7 @@
 "打开扩展页" = "Open Extensions Page";
 "打开系统设置" = "Open System Settings";
 "找卡" = "Find cards";
-"把下面这个文件夹拖进扩展页。浏览器有多个个人资料的，拖进常用的那个" = "Drag this folder onto the extensions page. If your browser has several profiles, use the one you browse with";
+"将下方文件夹拖入扩展页" = "Drag the folder below onto the extensions page";
 "把这里的卡重新分拣一遍，有把握的放进对应的画板" = "Sort the cards here again and add the confident matches to their boards";
 "抖音" = "Douyin";
 "抽到这一张" = "Your draw";
@@ -287,8 +292,8 @@
 "范围" = "Scope";
 "蓝" = "Blue";
 "裁剪" = "Crop";
-"装上浏览器扩展" = "Install the browser extension";
-"装好后这里会自动变成已连上" = "This will switch to Connected once it’s installed";
+"安装浏览器扩展" = "Install the browser extension";
+"安装完成后将自动连接" = "Connects automatically once installed";
 "要点" = "Key Points";
 "要登录 %@：去浏览器登录后重试" = "Sign in to %@ in your browser, then try again";
 "要联网、填上密钥才能回答" = "you need to be online and have a key";
