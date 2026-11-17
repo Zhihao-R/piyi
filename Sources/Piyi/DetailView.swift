@@ -40,6 +40,9 @@ struct DetailView: View {
     /// 飞进来、飞回去的那张图。平时透明地叠在画面上跟着它走，关的时候显出来飞回去
     @State private var ghost: Ghost?
     @State private var flying = false
+    /// 垫在面板下面的那张上，卡片的样子还剩几分：一展开就很快淡掉，只留一块页面底色接着长大，面板里的字在它上面淡入。
+    /// 不淡掉的话，拉大的卡片字和面板里的字有一阵是一大一小叠着的
+    @State private var faceOpacity = 1.0
     /// 已经在关了。动画做完的回调里要看这个：传进来的 closing 是建视图那一刻的值，回调跑的时候早过期了
     @State private var leaving = false
     /// 画面那一块在窗口里的位置，飞进来落在它里面
@@ -87,7 +90,7 @@ struct DetailView: View {
                 if let ghost, ghost.below { ghostView(ghost, in: space).onAppear { unfold() } }
                 if let loaded {
                     panel(loaded, in: CGSize(width: min(geo.size.width - Self.margin * 2, 1180), height: min(geo.size.height - Self.margin * 2, 800)))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: Self.corner))
                         .shadow(color: .black.opacity(0.3), radius: 30, y: 10)
                         .onGeometryChange(for: CGSize.self) { $0.size } action: { panelSize = $0 }
                         .scaleEffect(x: morphScale.width, y: morphScale.height)
@@ -164,11 +167,19 @@ struct DetailView: View {
         var opacity: Double = 1
         /// 垫在面板下面：展开时面板在它上面淡入；整张飞的图在面板上面，落地后再隐去
         var below = false
+        /// 圆角：垫着的那张从卡片的直角长成面板的圆角
+        var corner: CGFloat = 0
     }
+
+    /// 面板的圆角
+    private static let corner: CGFloat = 14
 
     private func ghostView(_ ghost: Ghost, in space: CGRect) -> some View {
         Image(decorative: ghost.face, scale: 1).resizable()
+            .opacity(ghost.below ? faceOpacity : 1)
+            .background { if ghost.below { Palette.page.color } }
             .frame(width: ghost.frame.width, height: ghost.frame.height)
+            .clipShape(RoundedRectangle(cornerRadius: ghost.corner))
             .rotationEffect(.radians(ghost.rotation))
             .position(x: ghost.frame.midX - space.minX, y: ghost.frame.midY - space.minY)
             .opacity(ghost.opacity)
@@ -194,6 +205,7 @@ struct DetailView: View {
             morph = nil
             ghost?.frame = rest
             ghost?.rotation = 0
+            ghost?.corner = Self.corner
             shown = true
         } completion: {
             guard !leaving else { return }
@@ -201,6 +213,7 @@ struct DetailView: View {
             // 面板是实的了；垫着的那张收起来，不然圆角处会露出来
             ghost?.opacity = 0
         }
+        withAnimation(.swap) { faceOpacity = 0 }
     }
 
     /// 进来：整张画面的卡拿缩略图从卡片原位飞过来；其余的从卡片那边长出来（不是从画布打开的就原地淡入）
@@ -273,6 +286,8 @@ struct DetailView: View {
                 morph = spot.frame
                 ghost?.frame = spot.frame
                 ghost?.rotation = spot.rotation
+                ghost?.corner = 0
+                faceOpacity = 1
                 shown = false
             } completion: { closed() }
             return
@@ -359,7 +374,10 @@ struct DetailView: View {
                 if let track = AudioPlayer.Track(card, files: store.files) { AudioBar(audio: audio, track: track) }
                 reader(card, compact: false)
             }
-            .frame(maxWidth: Reading.pageWidth, maxHeight: room.height)
+            .frame(maxWidth: Reading.pageWidth)
+            // 最高到 room 那么高，内容矮就跟着矮。不能写成 frame(maxHeight:)：它不管内容多高都把面板撑到满高，
+            // 看得见的页面只是中间一小块，从卡片展开时垫着的那张图却按满高放大，展开完一撤，页面像是突然缩了一截
+            .layout(AtMost(height: room.height))
         }
     }
 
@@ -549,6 +567,23 @@ struct DetailView: View {
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         return object["swatches"] as? [String]
     }
+}
+
+/// 给里面的东西最多这么高的地方，它实际用多高自己就多高
+private struct AtMost: SwiftUI.Layout {
+    let height: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        subviews.first?.sizeThatFits(ProposedViewSize(width: proposal.width, height: min(proposal.height ?? height, height))) ?? .zero
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
+    }
+}
+
+private extension View {
+    func layout(_ layout: some SwiftUI.Layout) -> some View { layout { self } }
 }
 
 /// 长正文交给系统文本视图排版：SwiftUI 的 Text 排一篇几千字的公众号文章要卡一秒左右，打开放大查看时会排好几遍
@@ -805,6 +840,7 @@ private struct EmbeddedPlayer: NSViewRepresentable {
         }
     }
 }
+
 
 extension Color {
     /// #RRGGBB
