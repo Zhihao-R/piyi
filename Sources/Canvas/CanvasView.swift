@@ -552,18 +552,18 @@ public final class CanvasView: NSView {
         delegate?.canvasStateChanged(self)
     }
 
-    /// 悬停的卡拿起来（不改叠放次序）；动图开始动
+    /// 悬停的卡拿起来（不改叠放次序）；动图开始动，本机视频开始静音预览
     func setHovered(_ id: Int64?) {
         guard id != hovered else { return }
         let old = hovered
         hovered = id
         if let old, let l = live[old] {
-            l.animate(false, files: store.files)
+            l.hover(false, files: store.files)
             l.setLifted(false)
         }
         // 正在拖、缩放、旋转时不拿起来，免得手底下的卡突然变大
         if let id, let l = live[id] {
-            l.animate(true, files: store.files)
+            l.hover(true, files: store.files)
             if case .none = gesture { l.setLifted(true) }
         }
     }

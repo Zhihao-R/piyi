@@ -1,4 +1,5 @@
 import QuartzCore
+import AVFoundation
 import ImageIO
 import Library
 import Tokens
@@ -22,6 +23,9 @@ final class CardLayer: QuietLayer {
     /// 下一张图到了要和旧图交叉淡化
     private var blends = false
     private var framing: Task<Void, Never>?
+    /// 悬停预览的本机视频：等着开始的那一下，和正在放的
+    private var previewWait: Task<Void, Never>?
+    private var previewing: (player: AVQueuePlayer, looper: AVPlayerLooper, layer: AVPlayerLayer, marks: CALayer)?
 
     override init() {
         super.init()
@@ -76,6 +80,9 @@ final class CardLayer: QuietLayer {
         setAffineTransform(transform(for: p))
         zPosition = p.z
         content.frame = bounds
+        // 预览着的视频跟着卡片变大小
+        previewing?.layer.frame = content.bounds
+        previewing?.marks.frame = content.bounds
         let r = radius
         content.cornerRadius = r
         shadowPath = CGPath(roundedRect: bounds, cornerWidth: r, cornerHeight: r, transform: nil)
@@ -212,6 +219,7 @@ final class CardLayer: QuietLayer {
     func unbind() {
         loading?.cancel()
         framing?.cancel()
+        stopPreview()
         content.removeAllAnimations()
         isHidden = false
         opacity = 1
@@ -264,8 +272,14 @@ final class CardLayer: QuietLayer {
         }
     }
 
+    /// 悬停时会动的卡动起来，移开就停：动图逐帧播，本机视频静音预览
+    @MainActor func hover(_ on: Bool, files: FileStore) {
+        animate(on, files: files)
+        preview(on, files: files)
+    }
+
     /// 动图悬停时才动：在后台解出各帧，按原来的节奏循环播放；移开就停
-    @MainActor func animate(_ on: Bool, files: FileStore) {
+    @MainActor private func animate(_ on: Bool, files: FileStore) {
         framing?.cancel()
         guard on else { content.removeAnimation(forKey: "frames"); return }
         guard case .card(let card)? = item?.face, card.form == .animated, let name = card.original ?? card.cover else { return }
@@ -280,6 +294,52 @@ final class CardLayer: QuietLayer {
             animation.repeatCount = .infinity
             content.add(animation, forKey: "frames")
         }
+    }
+
+    /// 本机视频悬停时静音预览，和动图悬停才动是同一个习惯：停留一小会儿才开始（鼠标路过不算），
+    /// 画面出来了才淡到封面上，移开就停。网上的视频不预览：要联网加载。裁过的卡也不预览：视频画面和裁出来的那一块对不上
+    @MainActor private func preview(_ on: Bool, files: FileStore) {
+        stopPreview()
+        guard on, let item, case .card(let card) = item.face, card.kind == .video, let name = card.original, item.placement.crop == nil else { return }
+        let url = files.url(of: name)
+        previewWait = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Motion.dwell))
+            guard !Task.isCancelled, let self else { return }
+            let player = AVQueuePlayer(), screen = AVPlayerLayer(player: player)
+            player.isMuted = true
+            let looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+            screen.frame = content.bounds
+            screen.videoGravity = .resizeAspectFill
+            screen.opacity = 0
+            // 角标另画一层压在画面上面，跟着画面一起显、一起撤：预览时时长、平台、状态照样看得见
+            let marks = QuietLayer()
+            marks.frame = content.bounds
+            screen.addSublayer(marks)
+            content.addSublayer(screen)
+            previewing = (player, looper, screen, marks)
+            player.play()
+            marks.contents = await Painter.marks(for: item, scale: scale)
+            if Task.isCancelled { return }
+            // 第一帧解出来之前是黑的：等它出来再显
+            while !screen.isReadyForDisplay {
+                try? await Task.sleep(for: .milliseconds(30))
+                if Task.isCancelled { return }
+            }
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 0
+            fade.duration = Motion.swap
+            screen.opacity = 1
+            screen.add(fade, forKey: "opacity")
+        }
+    }
+
+    private func stopPreview() {
+        previewWait?.cancel()
+        previewWait = nil
+        guard let previewing else { return }
+        previewing.player.pause()
+        previewing.layer.removeFromSuperlayer()
+        self.previewing = nil
     }
 
     @concurrent private nonisolated static func frames(_ url: URL, maxWidth: CGFloat) async -> (images: [CGImage], times: [Double], duration: Double)? {

@@ -14,6 +14,8 @@ struct CardArt {
     var zoom: CGFloat = 1
     /// 分拣放进来、你还没看过：右上角标「新」
     var unseen = false
+    /// 只画压在画面上的角标，别处透明：视频悬停预览时盖在播放的画面上面，时长、平台、状态照样看得见
+    var marksOnly = false
 
     /// 画成 size × pixelScale 像素的位图
     func render(pixelScale: CGFloat) -> CGImage? {
@@ -78,9 +80,11 @@ struct CardArt {
                 article(card, footer: label.isEmpty ? card.source : label, &pen)
             }
         case .video:
-            pen.fill(Palette.media)
-            if let cover { pen.image(cover, in: pen.bounds) }
-            pen.playMark(w: t)
+            if !marksOnly {
+                pen.fill(Palette.media)
+                if let cover { pen.image(cover, in: pen.bounds) }
+                pen.playMark(w: t)
+            }
             pen.badges([card.format.map(displayed)].compactMap { $0 }, w: t)
             if let d = card.duration { pen.badges([Self.clock(d)], w: t, bottom: true, trailing: true) }
         case .audio:

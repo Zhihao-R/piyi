@@ -25,6 +25,13 @@ enum Painter {
         return CardArt(face: item.face, size: size, cover: cover, zoom: item.zoom, unseen: item.placement.unseen).render(pixelScale: pixels / size.width)
     }
 
+    /// 只有角标的一张透明图（见 CardArt.marksOnly），在后台画
+    @concurrent nonisolated static func marks(for item: BoardItem, scale: CGFloat) async -> CGImage? {
+        let size = item.placement.frame.size
+        return CardArt(face: item.face, size: size, cover: nil, zoom: item.zoom, unseen: item.placement.unseen, marksOnly: true)
+            .render(pixelScale: resolution(item, scale: scale) / size.width)
+    }
+
     /// 这张卡在给定倍率下要画多少像素宽：有封面的按缩略图档位取整（换档才重画），纯文字的最多画到 2 倍
     nonisolated static func resolution(_ item: BoardItem, scale: CGFloat) -> CGFloat {
         let width = item.placement.width

@@ -38,6 +38,8 @@ public enum Motion {
     public static let fly: Double = 0.4
     /// 长出来时从这么大开始：新来的卡、从卡片那边出来的放大查看
     public static let emerge: Double = 0.92
+    /// 鼠标在卡上停这么久才算停下：路过不算，本机视频这才开始预览
+    public static let dwell: Double = 0.3
     /// 等待：一个来回的时长
     public static let wait: Double = 1.6
     /// 一句提示停留多久再淡出；带「撤销」的停两倍，来得及点

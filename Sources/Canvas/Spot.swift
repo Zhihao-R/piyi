@@ -52,6 +52,7 @@ extension CanvasView {
     /// 卡被拿进放大查看：画布上这张连同选中框一起不见，像是被拿走了
     public func hide(_ spot: Spot) {
         live[spot.placement]?.isHidden = true
+        live[spot.placement]?.hover(false, files: store.files)
         overlay.isHidden = true
     }
 
