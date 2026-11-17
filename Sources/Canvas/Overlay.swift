@@ -182,6 +182,8 @@ final class Overlay: QuietLayer {
     private let guides = CAShapeLayer(), marquee = CAShapeLayer(), handles = CAShapeLayer(), shade = CAShapeLayer()
     /// Radius of the crop frame's corner handles (screen points)
     static let handleRadius: CGFloat = 6
+    /// Alignment guides: how far they stand off the card edges, and half the length of the crossbar at each end (screen points)
+    static let guideInset: CGFloat = 4, guideBar: CGFloat = 4
     /// Corner handles: tucked into the four inner corners of the frame — how far from the corner, how long the two short strokes; how big a patch at the corner is a resize press (just covering the handle) (screen points)
     static let bracketGap: CGFloat = 8, bracketArm: CGFloat = 14, cornerReach = bracketGap + bracketArm + 2
     /// Rotate knob: normally a small white dot just inside the top-right corner, expanding into a round knob as the mouse nears; sits diagonally below the corner's resize area (screen points)
@@ -207,7 +209,7 @@ final class Overlay: QuietLayer {
         }
         shade.fillRule = .evenOdd
         shade.fillColor = Palette.scrim.cg
-        guides.strokeColor = Palette.accent.cg
+        // Guides only fill the gap between two cards, in a muted ink rather than the accent color, so they never read as a card border
         guides.lineWidth = 1
         marquee.strokeColor = Palette.accent.cg
         marquee.fillColor = Palette.accent.opacity(0.08).cg
@@ -341,9 +343,21 @@ final class Overlay: QuietLayer {
         for l in [shade, guides, marquee, handles] { l.frame = bounds }
     }
 
-    func setGuides(_ lines: [(CGPoint, CGPoint)]) {
+    /// Guides in screen coordinates: each one stands off the card edges by guideInset, with a short crossbar at both ends
+    func setGuides(_ lines: [Grid.Guide]) {
         let path = CGMutablePath()
-        for (a, b) in lines { path.move(to: a); path.addLine(to: b) }
+        for g in lines {
+            let vertical = abs(g.to.x - g.from.x) < abs(g.to.y - g.from.y)
+            let out = CGVector(dx: vertical ? g.side * Self.guideInset : 0, dy: vertical ? 0 : g.side * Self.guideInset)
+            let bar = CGVector(dx: vertical ? Self.guideBar : 0, dy: vertical ? 0 : Self.guideBar)
+            let a = CGPoint(x: g.from.x + out.dx, y: g.from.y + out.dy), b = CGPoint(x: g.to.x + out.dx, y: g.to.y + out.dy)
+            path.move(to: a); path.addLine(to: b)
+            for p in [a, b] {
+                path.move(to: CGPoint(x: p.x - bar.dx, y: p.y - bar.dy))
+                path.addLine(to: CGPoint(x: p.x + bar.dx, y: p.y + bar.dy))
+            }
+        }
+        guides.strokeColor = Palette.inkSecondary.now.cg
         guides.path = path
     }
 

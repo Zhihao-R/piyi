@@ -16,7 +16,8 @@ import Library
         let moving = CGRect(x: 4, y: 140, width: 80, height: 60)
         let a = Grid.align(moving, to: [neighbor], tolerance: 10, reach: 200)
         #expect(a.dx == -4)
-        #expect(a.guides.contains { $0.from.x == 0 && $0.to.x == 0 })
+        // The guide only spans the gap between the two cards, on the outer side of their left edges
+        #expect(a.guides == [Grid.Guide(from: CGPoint(x: 0, y: 100), to: CGPoint(x: 0, y: 140), side: -1)])
     }
 
     @Test func alignsWithOneUnitGapWithoutGuide() {

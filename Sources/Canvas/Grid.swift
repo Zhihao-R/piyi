@@ -18,10 +18,11 @@ enum Grid {
         CGRect(origin: CGPoint(x: snap(rect.minX), y: snap(rect.minY)), size: rect.size)
     }
 
-    /// Alignment guides (world coordinates)
+    /// Alignment guide (world coordinates): runs along the shared edge, covering only the gap between the two cards. side is which way is outside the cards: -1 left/up, 1 right/down
     struct Guide: Equatable {
         var from: CGPoint
         var to: CGPoint
+        var side: CGFloat
     }
 
     /// Snap result: how far to move in each direction (nil means nothing nearby to align to in that direction), plus the guides to draw
@@ -64,15 +65,21 @@ enum Grid {
 
         var result = Alignment(dx: bestX.map { $0.target - $0.edge }, dy: bestY.map { $0.target - $0.edge })
         let moved = rect.offsetBy(dx: result.offset.width, dy: result.offset.height)
-        if let x = bestX, x.flush {
-            result.guides.append(Guide(from: CGPoint(x: x.target, y: min(moved.minY, x.other.minY)),
-                                       to: CGPoint(x: x.target, y: max(moved.maxY, x.other.maxY))))
+        if let x = bestX, x.flush, let span = between(moved.minY, moved.maxY, x.other.minY, x.other.maxY) {
+            result.guides.append(Guide(from: CGPoint(x: x.target, y: span.0), to: CGPoint(x: x.target, y: span.1),
+                                       side: x.target == x.other.minX ? -1 : 1))
         }
-        if let y = bestY, y.flush {
-            result.guides.append(Guide(from: CGPoint(x: min(moved.minX, y.other.minX), y: y.target),
-                                       to: CGPoint(x: max(moved.maxX, y.other.maxX), y: y.target)))
+        if let y = bestY, y.flush, let span = between(moved.minX, moved.maxX, y.other.minX, y.other.maxX) {
+            result.guides.append(Guide(from: CGPoint(x: span.0, y: y.target), to: CGPoint(x: span.1, y: y.target),
+                                       side: y.target == y.other.minY ? -1 : 1))
         }
         return result
+    }
+
+    /// The empty stretch between two intervals; nil when they touch or overlap (then there's no gap to draw a guide in)
+    private static func between(_ a0: CGFloat, _ a1: CGFloat, _ b0: CGFloat, _ b1: CGFloat) -> (CGFloat, CGFloat)? {
+        let lo = min(a1, b1), hi = max(a0, b0)
+        return lo < hi ? (lo, hi) : nil
     }
 
     /// The gap between two intervals; 0 when they overlap

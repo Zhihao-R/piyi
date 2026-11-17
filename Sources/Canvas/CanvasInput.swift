@@ -290,7 +290,7 @@ extension CanvasView: NSDraggingSource {
     func moved(_ m: Gesture.Move, to p: CGPoint) -> [Int64: Placement] {
         guard let primary = m.origins[m.primary] else { return m.origins }
         var offset = CGSize(width: (p.x - m.start.x) / camera.scale, height: (p.y - m.start.y) / camera.scale)
-        var lines: [(CGPoint, CGPoint)] = []
+        var lines: [Grid.Guide] = []
         if primary.rotation == 0 {
             let proposed = primary.frame.offsetBy(dx: offset.width, dy: offset.height)
             let reach = Grid.reach / camera.scale
@@ -299,7 +299,7 @@ extension CanvasView: NSDraggingSource {
             let a = Grid.align(proposed, to: neighbors, tolerance: Grid.tolerance / camera.scale, reach: reach)
             offset.width += a.offset.width
             offset.height += a.offset.height
-            lines = a.guides.map { (screenPoint($0.from), screenPoint($0.to)) }
+            lines = a.guides.map { Grid.Guide(from: screenPoint($0.from), to: screenPoint($0.to), side: $0.side) }
         }
         overlay.setGuides(lines)
         // Lifted cards go to the top of the stack, keeping their order relative to each other
