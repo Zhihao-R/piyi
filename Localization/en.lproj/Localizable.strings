@@ -392,9 +392,7 @@
 "与上方模型相同" = "Same as the model above";
 "讨论时深入思考" = "Think deeply in discussions";
 "云端模型" = "Cloud Model";
-"用于生成标题、描述、标签和总结，以及搜索和讨论。判断模型用于理解搜索语句、排序结果，宜选较快的模型。" = "Used for titles, descriptions, tags, summaries, search, and discussions. The judgment model interprets searches and ranks results, so a faster model works best.";
 "深入思考时回答更细致，也更慢。" = " Deep thinking gives more thorough but slower answers.";
-"密钥仅保存在本机。" = " Keys are stored only on this Mac.";
 "%@。" = " %@.";
 "用于搜索，离线可用。" = "Powers search and works offline.";
 "在网页上右键「收进片羽」。其他 App 中，复制后按 ⌃⌥C，或右键「服务」›「收进片羽」。" = "Right-click a web page and choose “Collect to Piyi”. In other apps, copy and press ⌃⌥C, or right-click Services › “Collect to Piyi”.";
@@ -412,3 +410,27 @@
 "硅基流动" = "SiliconFlow";
 "智谱 GLM" = "Zhipu GLM";
 "自定义" = "Custom";
+
+"标题不超过 12 个字。\n描述一句话，40 字以内：写主体和内容，图像类再写风格、色彩和氛围。\n标签 6 到 10 个，覆盖主体、题材、风格、色彩、情绪；只写这件东西本身有的，不猜它能拿来做什么。\n长文和文档概括它在讲什么，而不是描述排版。" = "Title: at most 6 words.\nCaption: one sentence, under 20 words, on the subject and content; for images, also the style, colors, and mood.\nTags: 6 to 10, covering subject, theme, style, color, and mood; only what the item itself has, not what it could be used for.\nFor long articles and documents, say what they are about rather than describing the layout.";
+"写 3 到 5 条，让人不看原文也能拿到主要信息。\n每条一句，写具体的事实、观点、数字；不写「介绍了」「讨论了」这种转述。" = "3 to 5 points that give the main information without reading the original.\nOne sentence each, with concrete facts, claims, and numbers; no \"it introduces\" or \"it discusses\".";
+"像聊天一样自然、简洁，一般两三段以内；内容本来就是并列的几项时才用列表。\n用户讲自己的经历和想法，直接接着聊，不用去卡片里找证据，也不用为卡片里没有而道歉。" = "Natural and brief, like a chat, usually two or three paragraphs at most; use a list only when the content is a set of parallel items.\nWhen the user talks about their own experiences and ideas, just carry on; no need to look for evidence in the cards or apologize when the cards don't cover it.";
+"指向具体的卡片和细节，不超过 200 字。" = "Point to specific cards and details, in under 100 words.";
+"从这张卡的具体细节出发，回应用户这句话，不写空话。三到五句，不超过 150 字。" = "Start from this card's specific details and respond to what the user said, with no filler. Three to five sentences, under 75 words.";
+"判断模型用于理解搜索语句、排序结果，宜选较快的模型。" = "The judgment model interprets searches and ranks results, so a faster model works best.";
+"给 AI 的要求" = "Instructions for AI";
+"这里只管写法和侧重。输出格式、出处标注和用哪种语言由片羽决定，不受这里影响。" = "These cover style and focus only. Output format, source citations, and language are handled by Piyi and aren't affected.";
+"恢复默认" = "Restore Default";
+"已修改" = "Edited";
+"标题、描述和标签" = "Titles, Captions, and Tags";
+"搜索框里提问" = "Questions in Search";
+"抽一张" = "Draw a Card";
+"只影响之后整理的卡片，最多保留 5 条。" = "Applies to cards processed from now on. At most 5 points are kept.";
+"每组灵感都要核对说的在卡里看得到，要求越发散，出得越慢、越少。" = "Each idea is checked against what the cards actually show, so the looser the instructions, the slower and fewer the ideas.";
+"界面、卡片上 AI 写的内容和灵感用这种语言；讨论和提问跟着你说的话走。重新打开片羽后生效。" = "Used for the interface, AI-written card content, and ideas; discussions and questions follow the language you write in. Takes effect after reopening Piyi.";
+"详细设置" = "Advanced";
+"用于生成标题、描述、标签和要点，以及搜索和讨论。密钥仅保存在本机。" = "Used for titles, captions, tags, key points, search, and discussions. Keys are stored only on this Mac.";
+"语言" = "Language";
+"跟随系统" = "System";
+"一两句，说完就停，不加建议和感想。\n不讲道理；不用比喻，不用破折号。\n不超过 100 字。" = "One or two sentences, then stop; no advice or reflections.\nDon't moralize; no metaphors, no dashes.\nUnder 50 words.";
+"只影响之后整理的卡片，标签最多保留 10 个。" = "Applies to cards processed from now on. At most 10 tags are kept.";
+"OpenRouter 上未找到该模型，可在详细设置里更换" = "Model not found on OpenRouter; change it in Advanced";

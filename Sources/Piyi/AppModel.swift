@@ -122,6 +122,7 @@ final class AppModel {
 
     func start(quickCollect: QuickCollect) async {
         guard store == nil else { return }
+        Writing.Part.restoreSaved()
         do {
             // 环境变量 PIYI_ROOT 指定另一个资料库目录（试新装用户时用）
             let root = ProcessInfo.processInfo.environment["PIYI_ROOT"].map { URL(fileURLWithPath: $0) }

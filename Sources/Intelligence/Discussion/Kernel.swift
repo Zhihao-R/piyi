@@ -189,7 +189,7 @@ public final class DiscussionKernel: Sendable {
 
     // MARK: 起名
 
-    /// 第一个回答出来后起一个 12 字（英文 6 个词）以内的名字。起不出来就还叫「新讨论」，不打扰。
+    /// 第一个回答出来后起一个 12 字（英文 6 个词）以内的名字，和提问用同一种语言。起不出来就还叫「新讨论」，不打扰。
     /// 和跑一轮分开：答完就能接着问，不用等起名
     public func nameIfNeeded(_ discussion: Int64) async {
         guard (try? await store.discussion(discussion))??.name == nil, let events = try? await store.events(of: discussion),
@@ -197,7 +197,7 @@ public final class DiscussionKernel: Sendable {
               case .answer(let answer)? = events.last(where: { if case .answer = $0.what { true } else { false } })?.what else { return }
         struct Reply: Decodable { var name: String }
         let prompt = """
-            给下面这段讨论起一个名字，\(Writing.length(12))以内的\(Writing.language)，说清在讨论什么，不加引号和标点。
+            给下面这段讨论起一个名字，说清在讨论什么，不加引号和标点。用和提问相同的语言：中文 12 个字以内，其他语言 6 个词以内。
             问：\(asked.prefix(300))
             答：\(Citations.plain(answer.text).prefix(600))
             只输出 JSON：{"name":"名字"}

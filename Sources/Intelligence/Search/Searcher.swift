@@ -311,7 +311,9 @@ public actor Searcher {
         用户说：「\(q.text)」。从他的收藏里随机抽到了这一张，把它当作一张牌来解读\(picture == nil ? "" : "（附图是这张卡）")：
         \(card.brief)
 
-        解读要从这张卡的具体细节出发，回应用户这句话，不写空话。三到五句，不超过 \(Writing.length(150))，用\(Writing.language)写。
+        写法：
+        \(Writing.Part.draw.style)
+        另外：用和用户这句话相同的语言写，看不出来时用\(Writing.language)；换了语言篇幅照样。
         只输出 JSON：{"text":"解读"}
         """
         struct Reply: Decodable { var text: String }
@@ -333,7 +335,10 @@ public actor Searcher {
         guard !sources.isEmpty else { return Reading(text: nil, cards: shown) }
         let prompt = """
         用户问：「\(q.text)」
-        下面是从他的收藏里找到的卡片。只根据这些卡片回答，指向具体的卡片和细节；卡片里没有的就直说没收过相关的。不超过 \(Writing.length(200))，用\(Writing.language)写。
+        下面是从他的收藏里找到的卡片。只根据这些卡片回答；卡片里没有的就直说没收过相关的。
+        写法：
+        \(Writing.Part.answer.style)
+        另外：用和用户这句话相同的语言写，看不出来时用\(Writing.language)；换了语言篇幅照样。
 
         \(sources.enumerated().map { "\($0.offset + 1). \($0.element.brief)" }.joined(separator: "\n"))
 

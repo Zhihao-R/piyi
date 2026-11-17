@@ -2,35 +2,39 @@ import SwiftUI
 import Library
 import Intelligence
 
-/// 设置：云端服务商和密钥、下载本机模型、浏览器扩展、手机
+/// 设置：语言、云端服务商和密钥（模型和写法要求在详细设置里）、下载本机模型、浏览器扩展、手机
 struct SettingsView: View {
     let model: AppModel
 
+    @State private var showingDetails = false
+
     var body: some View {
-        let vendor = model.cloudSetup.vendor
         Form {
+            Section {
+                LanguagePicker()
+            } footer: {
+                Text("界面、卡片上 AI 写的内容和灵感用这种语言；讨论和提问跟着你说的话走。重新打开片羽后生效。").foregroundStyle(.secondary)
+            }
             Section {
                 CloudAccess(model: model)
                 if model.cloudModelUnknown {
-                    Text("OpenRouter 上未找到该模型").font(.caption).foregroundStyle(.secondary)
+                    Text("OpenRouter 上未找到该模型，可在详细设置里更换").font(.caption).foregroundStyle(.secondary)
                 } else if let failure = model.cloudFailure {
                     Text("上次请求未成功。\(failure)").font(.caption).foregroundStyle(.secondary)
                 }
-                // 判断可以另用一个更快的模型。OpenRouter 默认用专做判断的 Jev；别家默认和上面的模型相同，个别有另外推荐的
-                CloudField(title: String(localized: "判断模型"), prompt: vendor == .openRouter ? String(localized: "Jev（推荐）") : vendor.defaultJudgeModel ?? String(localized: "与上方模型相同"),
-                           path: \.judgeModel, vendor: vendor, model: model)
-                if vendor.canSetThinking {
-                    Toggle("讨论时深入思考", isOn: Binding(get: { model.cloudSetup.thinking }, set: { on in
-                        var setup = model.cloudSetup
-                        setup.thinking = on
-                        model.setCloud(setup)
-                    }))
+                Button { showingDetails = true } label: {
+                    HStack {
+                        Text("详细设置")
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             } header: {
                 Text("云端模型")
             } footer: {
-                Text(String(localized: "用于生成标题、描述、标签和总结，以及搜索和讨论。判断模型用于理解搜索语句、排序结果，宜选较快的模型。")
-                     + (vendor.canSetThinking ? String(localized: "深入思考时回答更细致，也更慢。") : "") + String(localized: "密钥仅保存在本机。")
+                Text(String(localized: "用于生成标题、描述、标签和要点，以及搜索和讨论。密钥仅保存在本机。")
                      + (model.sortingUnavailable.map { String(localized: "\($0)。") } ?? ""))
                     .foregroundStyle(.secondary)
             }
@@ -57,8 +61,32 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $showingDetails) { CloudDetails(model: model) }
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+/// 界面语言：跟随系统，或者给片羽单独定一种。和系统设置里给单个 App 选语言是同一个开关（App 自己的 AppleLanguages），
+/// 所以要重新打开才生效；AI 写的标题、描述也跟着界面语言（interfaceLanguage）
+struct LanguagePicker: View {
+    @State private var choice = Self.saved
+
+    var body: some View {
+        Picker("语言", selection: $choice) {
+            Text("跟随系统").tag("")
+            Text(verbatim: "简体中文").tag("zh-Hans")
+            Text(verbatim: "English").tag("en")
+        }
+        .onChange(of: choice) {
+            UserDefaults.standard.set(choice.isEmpty ? nil : [choice], forKey: "AppleLanguages")
+        }
+    }
+
+    /// 只看 App 自己记的，不看系统的：standard 读到的 AppleLanguages 没单独定时是系统的语言列表
+    private static var saved: String {
+        let own = Bundle.main.bundleIdentifier.flatMap { UserDefaults.standard.persistentDomain(forName: $0)?["AppleLanguages"] as? [String] }
+        return own?.first.flatMap { ["zh-Hans", "en"].first(where: $0.hasPrefix) } ?? ""
     }
 }
 
