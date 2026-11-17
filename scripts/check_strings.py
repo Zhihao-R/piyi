@@ -45,6 +45,10 @@ missing = {k: where for k, where in found.items() if k not in translated}
 chinese = set(plistlib.load(open(os.path.join(ROOT, "Localization/zh-Hans.lproj/Localizable.stringsdict"), "rb")))
 for key in sorted(plurals - chinese):
     missing[key] = "zh-Hans.lproj/Localizable.stringsdict 里缺这一句"
+# 同一个键写了两遍时后一条生效，前一条悄悄失效：同一句中文要两种译法时改用 String(localized: "键名", defaultValue: "中文")
+en_keys = re.findall(r'^"((?:[^"\\]|\\.)*)"\s*=', open(f"{EN}/Localizable.strings", encoding="utf-8").read(), re.M)
+for key in sorted({k for k in en_keys if en_keys.count(k) > 1}):
+    missing[unescape(key)] = "en.lproj/Localizable.strings 里这一句写了两遍"
 for key, where in sorted(missing.items(), key=lambda kv: kv[1]):
     print(f"{where}: {key}")
 print(f"共 {len(found)} 句，没翻译的 {len(missing)} 句")
