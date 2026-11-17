@@ -49,7 +49,7 @@ Discuss: click the speech-bubble icon at the top right to open the discussion pa
 
 ## Installation
 
-No prebuilt release is available yet. Building requires macOS 26 or later, Xcode 26, and Node.js for the browser extension. If the command line still points to the standalone Command Line Tools, first run `sudo xcode-select -s /Applications/Xcode.app`.
+No prebuilt release is available yet. Building requires macOS 26 or later, the Xcode 26 Command Line Tools (`xcode-select --install`), and Node.js for the browser extension. The full Xcode is optional: with it, the app icon gets the system's glass effect; without it, the build uses a plain version of the same icon. If you have Xcode but the command line still points to the standalone Command Line Tools, run `sudo xcode-select -s /Applications/Xcode.app` first.
 
 ```sh
 git clone https://github.com/Zhihao-R/piyi.git

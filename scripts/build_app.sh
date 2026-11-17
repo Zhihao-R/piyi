@@ -19,9 +19,15 @@ cp -R "$BIN/Piyi_Piyi.bundle" "$BIN/Piyi_Library.bundle" "$APP/Contents/Resource
 # 界面语言：系统是中文时用中文，其余用英文。翻译表放在 App 自己的 en.lproj 里，SwiftUI 的文字和 String(localized:) 默认都到这里查；
 # 中文就是代码里的原文。两个文件夹都在，系统自带的菜单（文件、编辑、窗口、帮助）和「设置」窗口标题也跟着切
 cp -R Localization/*.lproj "$APP/Contents/Resources/"
-# App 图标：Icon Composer 格式，actool 编译成 Assets.car（系统按层加玻璃质感），另附一份 AppIcon.icns
-xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --app-icon AppIcon --target-device mac \
-  --minimum-deployment-target 26.0 --platform macosx --output-partial-info-plist /dev/null >/dev/null
+# App 图标：Icon Composer 格式，actool 编译成 Assets.car（系统按层加玻璃质感），另附一份 AppIcon.icns。
+# actool 只在完整的 Xcode 里有；只装了 Command Line Tools 时，把同样的图层叠成一张普通图标，没有玻璃质感
+if xcrun --find actool >/dev/null 2>&1; then
+  xcrun actool Resources/AppIcon.icon --compile "$APP/Contents/Resources" --app-icon AppIcon --target-device mac \
+    --minimum-deployment-target 26.0 --platform macosx --output-partial-info-plist /dev/null >/dev/null
+else
+  echo "没找到 Xcode，App 图标改用不带玻璃质感的普通版（装 Xcode 后重新编译即可换成玻璃版）"
+  swift scripts/flat_icon.swift "$APP/Contents/Resources/AppIcon.icns"
+fi
 # llama.cpp 是动态库：放进 Contents/Frameworks，并告诉程序去那里找。本机模型文件不进安装包，在设置里下载
 cp -R "$BIN/llama.framework" "$APP/Contents/Frameworks/"
 install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/Piyi"

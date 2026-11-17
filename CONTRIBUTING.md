@@ -2,7 +2,7 @@
 
 ## 从源码编译
 
-要求：macOS 26 以上，Xcode 26（带 Swift 6 工具链），Node.js（编译浏览器扩展）。
+要求：macOS 26 以上，Xcode 26 的 Command Line Tools（带 Swift 6 工具链），Node.js（编译浏览器扩展）。完整的 Xcode 可选：有它时 App 图标由 actool 编译成玻璃版，没有时 `scripts/flat_icon.swift` 把同样的图层叠成普通的 AppIcon.icns。改了图标后两种都要看一眼。
 
 ```sh
 ./scripts/build_app.sh             # 正式版，生成 build/Piyi.app
